@@ -1,4 +1,4 @@
-import { FieldValues, FormProvider, useForm } from "react-hook-form";
+import { FormProvider, useForm } from "react-hook-form";
 import SignupDetailsForm from "../_components/SignupDetailsForm";
 import SignupForm from "../_components/SignupForm";
 import { useState } from "react";
@@ -6,9 +6,7 @@ import z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft } from "lucide-react";
 import AuthContainer from "../_components/AuthContainer";
-
-const sleep = (n: number) =>
-  new Promise((resolve, _) => setTimeout(resolve, n));
+import { useCustomNavigate } from "@/hooks/useCustomNavigate";
 
 // Schema for step 1
 const firstStepSchema = z.object({
@@ -26,49 +24,46 @@ const secondStepSchema = z.object({
   gender: z.enum(["male", "female", "other"]),
 });
 
+// Merge both schemas into one
+const signupSchema = firstStepSchema.merge(secondStepSchema);
+
+export type SignupFormValues = z.infer<typeof signupSchema>;
+
 function Signup() {
   const [step, setStep] = useState(1);
-  const [firstStepData, setFirstStepData] = useState({});
+  const { navigate } = useCustomNavigate();
 
-  const firstStepMethods = useForm<z.infer<typeof firstStepSchema>>({
-    resolver: zodResolver(firstStepSchema),
+  const methods = useForm<SignupFormValues>({
+    resolver: zodResolver(signupSchema),
     defaultValues: {
       email: "",
       password: "",
-    },
-  });
-
-  const secondStepMethods = useForm<z.infer<typeof secondStepSchema>>({
-    resolver: zodResolver(secondStepSchema),
-    defaultValues: {
       fullname: "",
       dateOfBirth: "",
       gender: "other",
     },
   });
 
-  const nextStep = (data: FieldValues) => {
-    setFirstStepData(data);
-    setStep((cur) => cur + 1);
+  // Validate only the fields for the first step before proceeding
+  const nextStep = async () => {
+    if (step === 1) {
+      const isValid = await methods.trigger(["email", "password"]);
+      console.log("here");
+      if (isValid) {
+        setStep(2);
+      }
+    }
   };
 
-  const prevStep = () => setStep((cur) => (cur > 1 ? cur - 1 : cur));
-
-  const onSubmitSecondStep = async (data: FieldValues): Promise<void> => {
-    const finalData = { ...firstStepData, ...data };
-
+  // Final submission handler for step 2
+  const onSubmit = async (data: SignupFormValues) => {
     try {
-      console.log("loading...");
-      await sleep(2000);
-      console.log("Final Data:", finalData);
-      // navigate("/signup/verify-email", {
-      //   state: finalData,
-      // });
-      // TODO: Add api call here
+      console.log("Final Data:", data);
+      // Simulate async call
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      navigate("/student/dashboard", { replace: true });
     } catch (error) {
       console.error("Error during submission:", error);
-    } finally {
-      console.log("loading end");
     }
   };
 
@@ -76,23 +71,17 @@ function Signup() {
     <AuthContainer>
       {step > 1 && (
         <button
-          onClick={prevStep}
+          onClick={() => setStep((cur) => cur - 1)}
           className="text-xs absolute md:left-[37%] left-3 top-3 flex items-center gap-1 cursor-pointer"
         >
           <ArrowLeft />
         </button>
       )}
 
-      {step === 1 && (
-        <FormProvider {...firstStepMethods}>
-          <SignupForm onNext={nextStep} />
-        </FormProvider>
-      )}
-      {step === 2 && (
-        <FormProvider {...secondStepMethods}>
-          <SignupDetailsForm onSubmit={onSubmitSecondStep} />
-        </FormProvider>
-      )}
+      <FormProvider {...methods}>
+        {step === 1 && <SignupForm onNext={nextStep} />}
+        {step === 2 && <SignupDetailsForm onSubmit={onSubmit} />}
+      </FormProvider>
     </AuthContainer>
   );
 }

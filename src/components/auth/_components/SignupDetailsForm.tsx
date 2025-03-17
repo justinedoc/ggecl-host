@@ -1,13 +1,12 @@
-import { useFormContext, FieldValues } from "react-hook-form";
-
+import { useFormContext } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import {
   Form,
-  FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
+  FormControl,
+  FormDescription,
   FormMessage,
 } from "@/components/ui/form";
 import {
@@ -17,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
 import { Input } from "@/components/ui/input";
 import { FormHead } from "../ui/FormHead";
 import { DarkOverlay } from "../ui/DarkOverlay";
@@ -25,19 +23,20 @@ import LoadingAnim from "../ui/LoadingAnim";
 import AuthDivider from "../ui/AuthDivider";
 import GoogleSigninBtn from "../ui/GoogleSigninBtn";
 import { CustomLink } from "../ui/CustomLink";
+import { SignupFormValues } from "../pages/Signup";
 
-function SignupDetailsForm({
-  onSubmit,
-}: {
-  onSubmit: (data: FieldValues) => void;
-}): JSX.Element {
-  const form = useFormContext();
+interface SignupDetailsFormProps {
+  onSubmit: (data: SignupFormValues) => Promise<void>;
+}
+
+function SignupDetailsForm({ onSubmit }: SignupDetailsFormProps): JSX.Element {
+  const form = useFormContext<SignupFormValues>();
 
   return (
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="flex flex-col gap-3 w-full md:p-5"
+        className="flex flex-col gap-3 w-full md:p-5 relative"
       >
         <FormHead title="Tell us about yourself">
           Let us know more about you
@@ -51,9 +50,9 @@ function SignupDetailsForm({
               <FormLabel>Full Name</FormLabel>
               <FormControl>
                 <Input
-                  className="dark:bg-gray-900 outline-none shadow-sm border border-blue-300/30 dark:border-blue-300/20"
                   placeholder="Full Name Here"
                   {...field}
+                  className="dark:bg-gray-900 outline-none shadow-sm border border-blue-300/30 dark:border-blue-300/20"
                 />
               </FormControl>
               <FormDescription>
@@ -68,9 +67,12 @@ function SignupDetailsForm({
           control={form.control}
           name="gender"
           render={({ field }) => (
-            <FormItem className="w-full">
+            <FormItem>
               <FormLabel>Gender</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select
+                onValueChange={field.onChange}
+                defaultValue={field.value as string}
+              >
                 <FormControl>
                   <SelectTrigger className="dark:bg-gray-900 outline-none shadow-sm border border-blue-300/30 dark:border-blue-300/20">
                     <SelectValue placeholder="Select your gender" />
@@ -91,14 +93,14 @@ function SignupDetailsForm({
           control={form.control}
           name="dateOfBirth"
           render={({ field }) => (
-            <FormItem className="w-full">
+            <FormItem>
               <FormLabel>Date of birth</FormLabel>
               <FormControl>
                 <Input
                   type="date"
-                  className="dark:bg-gray-900 outline-none shadow-sm border border-blue-300/30 dark:border-blue-300/20"
+                  {...field}
                   value={field.value || ""}
-                  onChange={field.onChange}
+                  className="dark:bg-gray-900 outline-none shadow-sm border border-blue-300/30 dark:border-blue-300/20"
                 />
               </FormControl>
               <FormMessage />
