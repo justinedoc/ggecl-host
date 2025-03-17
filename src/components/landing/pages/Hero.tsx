@@ -24,41 +24,51 @@ function Hero() {
       caseStudies: 120,
       instructors: 50,
     };
-    let interval: NodeJS.Timeout;
 
-    const animateCount = () => {
-      interval = setInterval(() => {
-        setCounts((prev) => ({
-          courses: Math.min(prev.courses + 5, targetCounts.courses),
-          students: Math.min(prev.students + 100, targetCounts.students),
-          caseStudies: Math.min(prev.caseStudies + 3, targetCounts.caseStudies),
-          instructors: Math.min(prev.instructors + 2, targetCounts.instructors),
-        }));
+    const incrementValues = {
+      courses: 5,
+      students: 100,
+      caseStudies: 3,
+      instructors: 2,
+    };
+
+    const interval = setInterval(() => {
+      setCounts((prev) => {
+        const newCounts = Object.keys(prev).reduce((acc, key) => {
+          const typedKey = key as keyof typeof prev;
+          acc[typedKey] = Math.min(
+            prev[typedKey] + incrementValues[typedKey],
+            targetCounts[typedKey]
+          );
+          return acc;
+        }, {} as typeof prev);
 
         if (
-          counts.courses >= targetCounts.courses &&
-          counts.students >= targetCounts.students &&
-          counts.caseStudies >= targetCounts.caseStudies &&
-          counts.instructors >= targetCounts.instructors
+          Object.entries(newCounts).every(
+            ([key, value]) => value === targetCounts[key as keyof typeof prev]
+          )
         ) {
           clearInterval(interval);
         }
-      }, 50);
-    };
 
-    animateCount();
+        return newCounts;
+      });
+    }, 50);
+
     return () => clearInterval(interval);
   }, []);
 
   return (
     <div className="relative flex flex-col md:flex-row items-center justify-between px-4 md:px-12 pt-5 pb-36 bg-white dark:bg-gray-900 text-gray-800 dark:text-white w-full">
-      <div className="w-full md:w-1/2 text-center md:text-left space-y-5">
-        <div className="absolute top-16 -left-10 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
+      {/* Background Blur Effect */}
+      <div className="absolute top-16 -left-10 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
+      {/* Left Section - Hero Content */}
+      <div className="w-full md:w-1/2 text-center md:text-left space-y-5">
         <h1 className="font-bold text-[1.7rem] mt-5 md:text-5xl leading-tight md:leading-snug">
-          Empower your future with courses designed to
+          Empower your future with courses tailored to{" "}
           <span className="text-blue-600 flex flex-col items-center md:items-start mt-2">
-            <p>fit your choice.</p>
+            <p>your aspirations.</p>
             <img
               src={sktech}
               alt="Decorative Sketch"
@@ -68,21 +78,25 @@ function Hero() {
         </h1>
 
         <p className="text-md font-light md:text-xl leading-tighter">
-          We bring together world-class instructors, interactive content, and a
-          supportive community to help you achieve your personal and
-          professional goals.
+          Learn from world-class instructors, engage with interactive content,
+          and become part of a thriving educational community.
         </p>
 
-        <Button className="text-white font-semibold px-5 py-5 rounded-md btn w-fit inline-flex items-center" onClick={() => navigate("/signup")}>
-          Start Your Student Journey <FaArrowRight />
+        <Button
+          className="text-white font-semibold px-5 py-5 rounded-md btn w-fit inline-flex items-center"
+          onClick={() => navigate("/signup")}
+        >
+          Start Your Learning Journey <FaArrowRight />
         </Button>
       </div>
 
+      {/* Right Section - Student Illustration */}
       <div className="w-full md:w-1/2 flex justify-center mt-10 md:mt-0 md:ml-10">
         <StudentHero />
       </div>
 
-      <div className="absolute md:top-24 hidden left-12 top-2/4 right-14 animate-spin-slow">
+      {/* Animated Circle Design */}
+      <div className="absolute md:top-24 hidden left-12 top-2/4 right-14 animate-spin-slow pointer-events-none">
         <img
           src={circle2}
           alt="Spinning Design"
@@ -90,8 +104,9 @@ function Hero() {
         />
       </div>
 
+      {/* Stats Section */}
       <div className="absolute left-0 md:bottom-2 bottom-4 text-center w-full md:px-6 px-2">
-        <div className="flex  justify-center text-center bg-gray-50 dark:bg-gray-800 rounded-lg md:px-6 px-1 py-1 shadow-md">
+        <div className="flex justify-center text-center bg-gray-50 dark:bg-gray-800 rounded-lg md:px-6 px-1 py-1 shadow-md">
           {[
             { label: "Courses", value: counts.courses, suffix: "+" },
             { label: "Students", value: counts.students, suffix: "+" },

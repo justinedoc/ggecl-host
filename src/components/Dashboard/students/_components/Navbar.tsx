@@ -1,19 +1,42 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { FaBell, FaChevronDown } from "react-icons/fa";
 import { Moon, Sun } from "lucide-react";
-import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import SearchBar from "@/components/ui/SearchBar";
+import { useCustomNavigate } from "@/hooks/useCustomNavigate";
+import { useLocation } from "react-router";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
+
+// Shadcn UI components for popovers and dropdowns
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+
+const capsFirstLetter = (str: string) =>
+  str.charAt(0).toUpperCase() + str.slice(1);
 
 const Navbar = () => {
-  const [isNotifOpen, setIsNotifOpen] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(
     localStorage.getItem("theme") === "dark"
   );
+  const { state } = useSidebar();
+  const isMobile = useIsMobile();
+  const shouldShowSidebarTrigger = state === "collapsed" || isMobile;
 
-  const notifRef = useRef<HTMLDivElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+  const pathname = location.pathname.split("/").at(-1);
 
   useEffect(() => {
     if (darkMode) {
@@ -25,99 +48,98 @@ const Navbar = () => {
     }
   }, [darkMode]);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
-        setIsNotifOpen(false);
-      }
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   return (
-    <div className="dark:bg-gray-900 bg-white text-gray-700 dark:text-gray-200 p-4 flex items-center justify-between">
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
+    <div
+      className={cn(
+        "bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 p-5 flex items-center justify-between shadow-md"
+      )}
+    >
+      <div className="flex items-center space-x-4">
+        {shouldShowSidebarTrigger && (
+          <>
+            <SidebarTrigger />
+            <Separator orientation="vertical" className="h-6" />
+          </>
+        )}
+        <h1 className="text-2xl font-semibold">
+          {capsFirstLetter(pathname || "Dashboard")}
+        </h1>
+      </div>
 
       <div className="flex items-center space-x-4">
+        {/* Search Bar */}
         <div className="relative">
           <SearchBar />
         </div>
 
-        <div className="relative" ref={notifRef}>
-          <Button
-            variant="ghost"
-            className="relative p-2 px-3 text-gray-800 dark:text-gray-300 dark:bg-gray-800 bg-gray-100"
-            onClick={() => setIsNotifOpen(!isNotifOpen)}
-          >
-            <FaBell className="text-xl" />
-            <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full px-1">
-              3
-            </span>
-          </Button>
-
-          {isNotifOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="fixed top-16 right-4 z-50 w-64 bg-white dark:bg-gray-800 shadow-lg rounded-lg p-3 flex flex-col gap-2"
+        {/* Notifications Popover */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              className="relative p-2 px-3 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             >
-              <p className="text-sm">🔔 New notification 1</p>
-              <hr />
-              <p className="text-sm">🔔 New notification 2</p>
-              <hr />
-              <p className="text-sm">🔔 New notification 3</p>
-            </motion.div>
-          )}
-        </div>
+              <FaBell className="text-xl" />
+              <span className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold rounded-full px-1">
+                3
+              </span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="end"
+            className="w-64 bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 space-y-3"
+          >
+            <p className="text-sm">🔔 New notification 1</p>
+            <hr className="border-gray-200 dark:border-gray-700" />
+            <p className="text-sm">🔔 New notification 2</p>
+            <hr className="border-gray-200 dark:border-gray-700" />
+            <p className="text-sm">🔔 New notification 3</p>
+          </PopoverContent>
+        </Popover>
 
-        <button
+        {/* Dark Mode Toggle */}
+        <Button
           onClick={() => setDarkMode((prev) => !prev)}
-          className="size-9 rounded-full bg-blue-300/30 flex items-center justify-center hover:bg-blue-300/80 transition-all"
+          className="w-9 h-9 rounded-full bg-cyan-950 flex items-center justify-center transition-colors hover:bg-blue-400/30"
           aria-label="Toggle Dark Mode"
         >
           {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-        </button>
+        </Button>
 
-        {/* User Profile & Dropdown */}
-        <div className="relative" ref={dropdownRef}>
-          <Button
-            variant="ghost"
-            className="flex items-center space-x-2 p-2 hover:bg-gray-200 focus:bg-gray-200 dark:focus:bg-gray-800 dark:hover:bg-gray-800"
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          >
-            <img
-              src="https://i.pinimg.com/474x/14/88/f3/1488f35bc175631415a048ca5208aa3f.jpg"
-              alt="User"
-              className="w-8 h-8 rounded-full object-cover"
-            />
-            <span className="text-sm font-medium md:block hidden">Josh Dickson</span>
-            <FaChevronDown className="text-xs" />
-          </Button>
-
-          {isDropdownOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="fixed top-16 right-4 z-50 w-60 bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 flex flex-col gap-3 "
+        {/* User Profile Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             >
-              <div className="hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-gray-300 dark:border-gray-600">
-                ⚙ <span>Settings</span>
-              </div>
-              <div className="hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 cursor-pointer p-2 rounded-lg">
-                🔑 <span>Change Password</span>
-              </div>
-              <div className="hover:bg-red-100 dark:hover:bg-[crimson] text-red-600 dark:text-red-400 dark:hover:text-white flex items-center gap-2 cursor-pointer p-2 rounded-lg">
-                🚪 <span>Logout</span>
-              </div>
-            </motion.div>
-          )}
-        </div>
+              <img
+                src="https://i.pinimg.com/474x/14/88/f3/1488f35bc175631415a048ca5208aa3f.jpg"
+                alt="User"
+                className="w-8 h-8 rounded-full object-cover"
+              />
+              <span className="text-sm font-medium hidden md:block">
+                Josh Dickson
+              </span>
+              <FaChevronDown className="text-xs" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="w-60 bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4"
+          >
+            <DropdownMenuItem className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md p-2">
+              ⚙ <span className="ml-2">Settings</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md p-2">
+              🔑 <span className="ml-2">Change Password</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="my-2" />
+            <DropdownMenuItem className="cursor-pointer text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-700 rounded-md p-2">
+              🚪 <span className="ml-2">Logout</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );

@@ -8,13 +8,21 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarSeparator,
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Link, useLocation } from "react-router";
 import { GoHomeFill } from "react-icons/go";
 import { BiSupport } from "react-icons/bi";
-import { Calendar, ClipboardPaste, GraduationCap, MessagesSquare, Settings } from "lucide-react";
+import {
+  Calendar,
+  ClipboardPaste,
+  GraduationCap,
+  MessagesSquare,
+  Settings,
+} from "lucide-react";
+import logoImg from "@/assets/images/LOGO.png";
 
 interface MenuItem {
   title: string;
@@ -22,35 +30,37 @@ interface MenuItem {
   icon: React.ComponentType;
 }
 
+const urlPrefix = "/student/dashboard";
+
 const menuItems: MenuItem[] = [
   {
     title: "Dashboard",
-    url: "/student/dashboard",
+    url: urlPrefix,
     icon: GoHomeFill,
   },
   {
     title: "Assignments",
-    url: "assignment",
+    url: `${urlPrefix}/assignment`,
     icon: ClipboardPaste,
   },
   {
     title: "Schedule",
-    url: "calendar",
+    url: `${urlPrefix}/calendar`,
     icon: Calendar,
   },
   {
     title: "Discussions",
-    url: "chat",
+    url: `${urlPrefix}/chat`,
     icon: MessagesSquare,
   },
   {
     title: "Courses",
-    url: "courses",
+    url: `${urlPrefix}/courses`,
     icon: GraduationCap,
   },
   {
     title: "Settings",
-    url: "settings",
+    url: `${urlPrefix}/settings`,
     icon: Settings,
   },
 ];
@@ -59,20 +69,12 @@ export function AppSidebar() {
   const location = useLocation();
   const { setOpenMobile } = useSidebar();
 
-  // Determines if the given URL matches the current location.
-  const isActive = (url: string): boolean => {
-    return location.pathname === url || location.pathname.startsWith(url + "/");
-  };
+  const isActive = (url: string): boolean => location.pathname === url;
 
   return (
     <Sidebar>
-      <SidebarHeader className="flex flex-row items-center justify-between px-4 py-5">
-        <img
-          src="/LOGO-dark.png"
-          width={50}
-          alt="Logo"
-          className="-translate-x-3"
-        />
+      <SidebarHeader className="flex flex-row items-center justify-between px-5 py-5">
+        <img src={logoImg} width={50} alt="Logo" className="-translate-x-3" />
         <SidebarTrigger>
           <svg
             className="size-5"
@@ -97,23 +99,22 @@ export function AppSidebar() {
         </SidebarTrigger>
       </SidebarHeader>
 
+      <SidebarSeparator className="bg-blue-300/30" />
+
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupContent className="text-md">
+          <SidebarGroupContent className="text-md py-4">
             <SidebarMenu>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
-                    className="border border-transparent data-[active=true]:border-secondary/60 rounded-sm px-4"
+                    className="border border-transparent dark:data-[active=true]:border-blue-300/30 rounded-sm px-4"
                     isActive={isActive(item.url)}
                     onClick={() => setOpenMobile(false)}
                     size="lg"
                     asChild
                   >
-                    <Link
-                      to={`${item.url}`}
-                      className="flex items-center space-x-2"
-                    >
+                    <Link to={item.url} className="flex items-center space-x-2">
                       <item.icon />
                       <span>{item.title}</span>
                     </Link>
@@ -126,16 +127,17 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="py-10">
+        <SidebarSeparator className="bg-blue-300/30" />
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               className="border border-transparent data-[active=true]:border-secondary/60 rounded-sm px-4"
-              isActive={isActive("/dashboard/support")}
+              isActive={isActive(`${urlPrefix}/support`)}
               size="lg"
               asChild
             >
               <Link
-                to="/dashboard/support"
+                to={`${urlPrefix}/support`}
                 className="flex items-center space-x-2"
               >
                 <BiSupport />
