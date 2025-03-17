@@ -17,21 +17,21 @@ import StudentCalendar from "@/components/Dashboard/students/pages/StudentCalend
 import StudentChat from "@/components/Dashboard/students/pages/StudentChat.tsx";
 import InstructorSettings from "@/components/Dashboard/Instructor/pages/InstructorSettings.tsx";
 import CoursesDetails from "@/components/Dashboard/Instructor/pages/CoursesDetails.tsx";
-import InstructorLayout from "@/components/Dashboard/Instructor/components/InstructorLayout.tsx"
-import Earnings from "@/components/Dashboard/Instructor/pages/Earnings.tsx"
-import InstructorHome from "@/components/Dashboard/Instructor/pages/InstructorHome.tsx"
-import InstructorCourses from "@/components/Dashboard/Instructor/pages/InstructorCourses.tsx"
-import SingleCourse from "@/components/Dashboard/Instructor/pages/SingleCourse.tsx"
-import InstructorLogin from "@/components/Dashboard/Instructor/pages/InstructorLogin.tsx"
-import Chat from "@/components/Dashboard/Instructor/pages/Chat.tsx"
-import AdminLayout from "@/components/Dashboard/admin/components/AdminLayout.tsx"
-import AdminHome from "@/components/Dashboard/admin/pages/AdminHome.tsx"
-import Adminlogin from "@/components/Dashboard/admin/pages/Adminlogin.tsx"
-import StudentLogin from "@/components/Dashboard/students/pages/StudentLogin.tsx"
-import AdminSettings from "@/components/Dashboard/admin/pages/AdminSettings.tsx"
-import Payments from "@/components/Dashboard/admin/pages/Payments.tsx"
-import CourseManagement from "@/components/Dashboard/admin/pages/CourseManagement.tsx"
-import Analytics from "@/components/Dashboard/admin/pages/Analytics.tsx"
+import InstructorLayout from "@/components/Dashboard/Instructor/components/InstructorLayout.tsx";
+import Earnings from "@/components/Dashboard/Instructor/pages/Earnings.tsx";
+import InstructorHome from "@/components/Dashboard/Instructor/pages/InstructorHome.tsx";
+import InstructorCourses from "@/components/Dashboard/Instructor/pages/InstructorCourses.tsx";
+import SingleCourse from "@/components/Dashboard/Instructor/pages/SingleCourse.tsx";
+import InstructorLogin from "@/components/Dashboard/Instructor/pages/InstructorLogin.tsx";
+import Chat from "@/components/Dashboard/Instructor/pages/Chat.tsx";
+import AdminLayout from "@/components/Dashboard/admin/components/AdminLayout.tsx";
+import AdminHome from "@/components/Dashboard/admin/pages/AdminHome.tsx";
+import Adminlogin from "@/components/Dashboard/admin/pages/Adminlogin.tsx";
+import StudentLogin from "@/components/Dashboard/students/pages/StudentLogin.tsx";
+import AdminSettings from "@/components/Dashboard/admin/pages/AdminSettings.tsx";
+import Payments from "@/components/Dashboard/admin/pages/Payments.tsx";
+import CourseManagement from "@/components/Dashboard/admin/pages/CourseManagement.tsx";
+import Analytics from "@/components/Dashboard/admin/pages/Analytics.tsx";
 
 function App() {
   return (
@@ -44,13 +44,13 @@ function App() {
         <Route path="signup" element={<Signup />} />
         <Route path="instructor" element={<Instructor />} />
         <Route path="courses/:id" element={<CoursesPage />} />
+        <Route path="/courses" element={<Courses />} />
+        <Route path="/categories" element={<Courses />} />
 
-
-        
-      {/* Login routes for all accounts */}
-      <Route path="instructor/login" element={<InstructorLogin />} />
-      <Route path="admin/login" element={<Adminlogin />} />
-      <Route path="student/login" element={<StudentLogin />} />
+        {/* Login routes for all accounts */}
+        <Route path="instructor/login" element={<InstructorLogin />} />
+        <Route path="admin/login" element={<Adminlogin />} />
+        <Route path="student/login" element={<StudentLogin />} />
       </Route>
 
       {/* dashboard routes  */}
@@ -71,29 +71,18 @@ function App() {
         <Route index element={<InstructorHome />} />
         <Route path="courses" element={<InstructorCourses />} />
         <Route path="chat" element={<Chat />} />
-        <Route path="course1" element={<SingleCourse />} />                    {/* Justin you go change this stuff to the course/id when picked by the user */}
+        <Route path="course1" element={<SingleCourse />} />{" "}
+        {/* Justin you go change this stuff to the course/id when picked by the user */}
       </Route>
-
-
 
       <Route path="/admin/dashboard" element={<AdminLayout />}>
-      <Route index element={<AdminHome />} />      
-      <Route path="settings" element={<AdminSettings />} />      
-      <Route path="payments" element={<Payments />} />      
-      <Route path="courses" element={<CourseManagement />} />      
-      <Route path="analytics" element={<Analytics />} />      
+        <Route index element={<AdminHome />} />
+        <Route path="settings" element={<AdminSettings />} />
+        <Route path="payments" element={<Payments />} />
+        <Route path="courses" element={<CourseManagement />} />
+        <Route path="analytics" element={<Analytics />} />
       </Route>
 
-
-
-
-
-
-
-
-
-
-      <Route path="/courses" element={<Courses />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

@@ -92,7 +92,7 @@ function Categories() {
   return (
     <ListContainer
       header="Top Categories"
-      path="/categories"
+      path="/courses"
       render={categoriesData.map((category) => (
         <CategoryBox key={category.course} category={category} />
       ))}

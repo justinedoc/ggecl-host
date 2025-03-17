@@ -1,9 +1,7 @@
-import Navbar from "../_components/Navbar";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { tempCourseData } from "../_components/CoursesList";
 import SearchBar from "../../ui/SearchBar";
 import CourseBox, { Star } from "../_components/CourseBox";
-import Footer from "./Footer";
 import { useState } from "react";
 import { Filter } from "lucide-react";
 import { tempInstructorData } from "../_components/InstructorsList";
@@ -20,13 +18,11 @@ const Courses = () => {
   return (
     <>
       <div className="bg-white text-gray-800 dark:text-gray-100 dark:bg-gray-900">
-        <Navbar showNav />
-
         <div className="absolute top-2 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
         <main className="md:py-5 md:px-10 px-5 py-2">
           <header className="flex flex-col md:flex-row justify-between md:items-center space-y-3 md:space-y-0 my-5">
             <h1 className="md:text-3xl text-2xl font-bold">Explore Courses</h1>
-            <SearchBar show />
+            <SearchBar show placeholderText="Search courses..." />
           </header>
 
           {/* Main Content Grid */}
@@ -143,6 +139,7 @@ const Courses = () => {
           </div>
         </main>
       </div>
+
       <ListContainer
         header="Popular Mentors"
         path="/instructors"
@@ -157,7 +154,6 @@ const Courses = () => {
           <CourseBox key={course.id} course={course} />
         ))}
       />
-      <Footer />
     </>
   );
 };

@@ -5,6 +5,7 @@ import circle2 from "@/assets/images/circle2.png";
 import "./styles/styles.css";
 import { Button } from "@/components/ui/button";
 import { FaArrowRight } from "react-icons/fa";
+import { useCustomNavigate } from "@/hooks/useCustomNavigate";
 
 function Hero() {
   const [counts, setCounts] = useState({
@@ -13,6 +14,8 @@ function Hero() {
     caseStudies: 0,
     instructors: 0,
   });
+
+  const { navigate } = useCustomNavigate();
 
   useEffect(() => {
     const targetCounts = {
@@ -70,8 +73,8 @@ function Hero() {
           professional goals.
         </p>
 
-        <Button className="text-white font-semibold px-5 py-5 rounded-md btn w-fit inline-flex items-center">
-          Start your student journey <FaArrowRight />
+        <Button className="text-white font-semibold px-5 py-5 rounded-md btn w-fit inline-flex items-center" onClick={() => navigate("/signup")}>
+          Start Your Student Journey <FaArrowRight />
         </Button>
       </div>
 
