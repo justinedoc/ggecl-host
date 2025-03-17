@@ -10,7 +10,7 @@ import { StarIcon, ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useNavigate } from "react-router";
+import { useCustomNavigate } from "@/hooks/useCustomNavigate";
 
 export interface CourseType {
   course: {
@@ -48,11 +48,20 @@ export interface CourseType {
 }
 
 function CourseBox({ course }: CourseType) {
-  const navigate = useNavigate();
+  const { navigate } = useCustomNavigate();
 
   function handleNavigation(id: number) {
     navigate(`/courses/${id}`);
   }
+
+  // Replace this with your intended cart action
+  function handleCartAction(e: React.MouseEvent) {
+    // Prevent the card onClick from firing
+    e.stopPropagation();
+    console.log("Cart button clicked");
+    // Perform the cart action here (e.g., add the course to cart)
+  }
+
   return (
     <Card
       className="md:max-w-[15rem] xl:max-w-[17rem] py-2 shadow-sm dark:bg-gray-900 dark:border-gray-800 cursor-pointer"
@@ -77,10 +86,7 @@ function CourseBox({ course }: CourseType) {
         </CardDescription>
       </CardHeader>
       <CardContent className="py-0 px-3 space-y-1">
-        <DisplayRating
-          rating={course.totalRating}
-          stars={course.totalStar}
-        />
+        <DisplayRating rating={course.totalRating} stars={course.totalStar} />
         <p className="text-sm dark:text-gray-400 text-gray-600">
           <span>{course.duration}</span> •{" "}
           <span>{course.lectures} Lectures</span> • <span>{course.level}</span>
@@ -94,6 +100,7 @@ function CourseBox({ course }: CourseType) {
           variant="outline"
           size="icon"
           className="border-gray-300 dark:bg-gray-900 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+          onClick={handleCartAction}
         >
           <ShoppingCart className="w-5 h-5 text-gray-700 dark:text-gray-300" />
         </Button>

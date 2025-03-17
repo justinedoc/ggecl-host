@@ -60,6 +60,7 @@ const Courses = () => {
                                 <div key={i} className="flex gap-1 mt-2">
                                   {Array.from({ length: 5 }).map((_, j) => (
                                     <Star
+                                      key={j}
                                       className="size-6"
                                       full={j + 1 <= i + 1}
                                     />
