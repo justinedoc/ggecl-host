@@ -1,5 +1,7 @@
-import authImg from "@/assets/images/signup-img.png";
+import signupImg from "@/assets/images/signup-img.png";
+import loginImg from "@/assets/images/logoforsignup.png";
 import AuthPageLoading from "./AuthPageLoading";
+import { useLocation } from "react-router";
 
 function AuthContainer({
   children,
@@ -8,6 +10,8 @@ function AuthContainer({
   children: React.ReactNode;
   isPending: boolean;
 }) {
+  const { pathname } = useLocation();
+  const authImg = pathname.startsWith("/login") ? loginImg : signupImg;
   return (
     <>
       {isPending && <AuthPageLoading />}
@@ -26,6 +30,7 @@ function AuthContainer({
             src={authImg}
             alt="Authentication"
             className="max-w-md w-full h-auto object-contain"
+            loading="lazy"
           />
         </div>
       </section>

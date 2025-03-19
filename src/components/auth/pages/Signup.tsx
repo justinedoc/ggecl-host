@@ -12,13 +12,7 @@ import { signupStudent } from "@/api/services/students";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
 import { formatZodErrors } from "@/lib/formatZodErrors";
-
-type ErrorResType<T> = {
-  success: boolean;
-  message?: T;
-  error: T | null;
-  errors: { field: T; message: T }[];
-};
+import { ErrorResType } from "@/types/errorResponseType";
 
 // Schema for step 1
 const firstStepSchema = z.object({
@@ -86,11 +80,7 @@ function Signup() {
 
   // Final submission handler for step 2
   const onSubmit = (data: SignupFormValues) => {
-    try {
-      mutate(data);
-    } catch (error) {
-      console.error("Error during submission:", error);
-    }
+    mutate(data);
   };
 
   return (

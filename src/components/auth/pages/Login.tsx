@@ -20,8 +20,15 @@ import LoginPopup from "@/components/ui/LoginPopup";
 import AuthDivider from "../ui/AuthDivider";
 import { FormHead } from "../ui/FormHead";
 import GoogleSigninBtn from "../ui/GoogleSigninBtn";
-import logoForSignUp from "@/assets/images/logoforsignup.png";
 import { CustomLink } from "../ui/CustomLink";
+import { loginStudent } from "@/api/services/students";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { formatZodErrors } from "@/lib/formatZodErrors";
+import { AxiosError } from "axios";
+import { useCustomNavigate } from "@/hooks/useCustomNavigate";
+import { ErrorResType } from "@/types/errorResponseType";
+import AuthContainer from "../_components/AuthContainer";
 
 // Define a schema for our form data.
 const loginSchema = z.object({
@@ -29,10 +36,31 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
-type LoginFormValues = z.infer<typeof loginSchema>;
+export type LoginFormValues = z.infer<typeof loginSchema>;
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const { navigate } = useCustomNavigate();
+  const { mutate, isPending } = useMutation({
+    mutationFn: loginStudent,
+    onSuccess: (data) => {
+      toast.success("Login successful!, Welcome back");
+      console.log(data);
+      navigate("/student/dashboard", { replace: true });
+    },
+    onError: (error: AxiosError) => {
+      const errorResponseData = error?.response?.data as ErrorResType<string>;
+
+      if (errorResponseData?.message?.toLowerCase()?.includes("validation")) {
+        toast.error(formatZodErrors(errorResponseData));
+        return;
+      }
+      toast.error(
+        errorResponseData?.message || "An error occured please try again later"
+      );
+      console.error("Login error:", error.response);
+    },
+  });
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -43,19 +71,14 @@ const Login = () => {
   });
 
   const onSubmit = (data: LoginFormValues) => {
-    console.log("Form submitted:", data);
-    // Add your login logic here.
+    mutate(data);
   };
 
   return (
-    <div className="relative min-h-screen grid lg:grid-cols-2 overflow-hidden dark:bg-gray-900">
-      {/* Background Decorations */}
-      <div className="absolute top-10 left-20 w-56 h-56 bg-blue-500/20 rounded-full blur-3xl" />
-      <div className="absolute top-1/2 left-1/3 w-40 h-40 bg-green-400/20 rounded-full blur-2xl" />
-
+    <AuthContainer isPending={isPending}>
       <div className="flex flex-col justify-center items-center p-6 z-10 mt-8">
         <div className="w-full max-w-md space-y-5">
-          <FormHead title="Login Student">
+          <FormHead title="Student Login">
             Login to your student account to start learning
           </FormHead>
 
@@ -154,12 +177,8 @@ const Login = () => {
         </div>
       </div>
 
-      <Link to="/" className="h-screen max-w-7xl md:block hidden">
-        <img src={logoForSignUp} alt="Logo" />
-      </Link>
-
       <LoginPopup />
-    </div>
+    </AuthContainer>
   );
 };
 

@@ -21,6 +21,16 @@ let accessToken: string | null = null;
 let isRefreshing = false;
 let tokenRefreshSubscribers: TokenRefreshSubscriber[] = [];
 
+// URLs that shouldn't have Authorization header
+const PUBLIC_URLS = [
+  "/student/login",
+  "/instructor/login",
+  "/student/register",
+  "/instructor/register",
+];
+// URLs that shouldn't trigger token refresh
+const SKIP_TOKEN_REFRESH_URLS = ["/refresh", ...PUBLIC_URLS];
+
 export const setAccessToken = (token: string | null): void => {
   accessToken = token;
 };
@@ -31,9 +41,6 @@ const subscribeTokenRefresh = (cb: TokenRefreshSubscriber): void => {
   tokenRefreshSubscribers.push(cb);
 };
 
-/**
- * Notify all waiting subscribers with the new token.
- */
 const onRefreshed = (token: string): void => {
   tokenRefreshSubscribers.forEach((cb) => cb(token));
   tokenRefreshSubscribers = [];
@@ -60,27 +67,37 @@ const refreshAccessToken = async (instance: AxiosInstance): Promise<string> => {
 export const createAuthenticatedAxiosInstance = (): AxiosInstance => {
   const instance = axios.create({
     baseURL: API_URL,
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
     withCredentials: true,
+    timeout: 10000,
   });
 
-  // Request interceptor: attach the access token if available
+  // Request interceptor
   instance.interceptors.request.use((config) => {
     const token = getAccessToken();
-    if (token && config.headers) {
+    const isPublic = PUBLIC_URLS.some((url) => config.url?.includes(url));
+
+    if (token && config.headers && !isPublic) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-
     return config;
   });
 
-  // Response interceptor: handle 401 errors by attempting a token refresh
+  // Response interceptor
   instance.interceptors.response.use(
     (response: AxiosResponse) => response,
     async (error: AxiosError): Promise<AxiosResponse> => {
       const originalRequest = error.config as CustomAxiosRequestConfig;
 
-      if (originalRequest.url?.includes("/refresh")) {
+      // Skip token refresh for excluded URLs
+      if (
+        SKIP_TOKEN_REFRESH_URLS.some((url) =>
+          originalRequest.url?.includes(url)
+        )
+      ) {
         return Promise.reject(error);
       }
 
@@ -131,39 +148,5 @@ export const createAuthenticatedAxiosInstance = (): AxiosInstance => {
 };
 
 export const axiosInstance = createAuthenticatedAxiosInstance();
-
-// --- Auth Provider Helpers ---
-
-export const authProvider = {
-  getAccessToken: (): string | null => getAccessToken(),
-  setAccessToken: (token: string): void => setAccessToken(token),
-  studentLogout: async (): Promise<void> => {
-    try {
-      await axiosInstance.post("/student/logout", {});
-    } catch (error) {
-      console.error("Logout failed:", error);
-    } finally {
-      setAccessToken(null);
-      if (typeof window !== "undefined") {
-        window.location.href = "/";
-      }
-    }
-  },
-  instructorLogout: async (): Promise<void> => {
-    try {
-      await axiosInstance.post("/instructor/logout", {});
-    } catch (error) {
-      console.error("Logout failed:", error);
-    } finally {
-      setAccessToken(null);
-      if (typeof window !== "undefined") {
-        window.location.href = "/";
-      }
-    }
-  },
-  refreshAccessToken: async (): Promise<string> => {
-    return refreshAccessToken(axiosInstance);
-  },
-};
 
 export default axiosInstance;
