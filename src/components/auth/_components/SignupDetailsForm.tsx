@@ -26,7 +26,7 @@ import { CustomLink } from "../ui/CustomLink";
 import { SignupFormValues } from "../pages/Signup";
 
 interface SignupDetailsFormProps {
-  onSubmit: (data: SignupFormValues) => Promise<void>;
+  onSubmit: (data: SignupFormValues) => void;
 }
 
 function SignupDetailsForm({ onSubmit }: SignupDetailsFormProps): JSX.Element {

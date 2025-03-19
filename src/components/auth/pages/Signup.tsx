@@ -7,6 +7,18 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft } from "lucide-react";
 import AuthContainer from "../_components/AuthContainer";
 import { useCustomNavigate } from "@/hooks/useCustomNavigate";
+import { useMutation } from "@tanstack/react-query";
+import { signupStudent } from "@/api/services/students";
+import { toast } from "sonner";
+import { AxiosError } from "axios";
+import { formatZodErrors } from "@/lib/formatZodErrors";
+
+type ErrorResType<T> = {
+  success: boolean;
+  message?: T;
+  error: T | null;
+  errors: { field: T; message: T }[];
+};
 
 // Schema for step 1
 const firstStepSchema = z.object({
@@ -30,9 +42,29 @@ const signupSchema = firstStepSchema.merge(secondStepSchema);
 export type SignupFormValues = z.infer<typeof signupSchema>;
 
 function Signup() {
-  const [step, setStep] = useState(1);
   const { navigate } = useCustomNavigate();
+  const { mutate, isPending } = useMutation({
+    mutationFn: signupStudent,
+    onSuccess: (data) => {
+      toast.success("Registeration successful!");
+      console.log(data);
+      navigate("/student/dashboard", { replace: true });
+    },
+    onError: (error: AxiosError) => {
+      const errorResponseData = error?.response?.data as ErrorResType<string>;
 
+      if (errorResponseData?.message?.toLowerCase()?.includes("validation")) {
+        toast.error(formatZodErrors(errorResponseData));
+        return;
+      }
+      toast.error(
+        errorResponseData?.message || "An error occured please try again later"
+      );
+      console.error("Signup error:", error.response);
+    },
+  });
+
+  const [step, setStep] = useState(1);
   const methods = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
@@ -48,27 +80,21 @@ function Signup() {
   const nextStep = async () => {
     if (step === 1) {
       const isValid = await methods.trigger(["email", "password"]);
-      console.log("here");
-      if (isValid) {
-        setStep(2);
-      }
+      isValid && setStep(2);
     }
   };
 
   // Final submission handler for step 2
-  const onSubmit = async (data: SignupFormValues) => {
+  const onSubmit = (data: SignupFormValues) => {
     try {
-      console.log("Final Data:", data);
-      // Simulate async call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      navigate("/student/dashboard", { replace: true });
+      mutate(data);
     } catch (error) {
       console.error("Error during submission:", error);
     }
   };
 
   return (
-    <AuthContainer>
+    <AuthContainer isPending={isPending}>
       {step > 1 && (
         <button
           onClick={() => setStep((cur) => cur - 1)}

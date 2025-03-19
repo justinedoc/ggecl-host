@@ -3,7 +3,6 @@ import { FaBell, FaChevronDown } from "react-icons/fa";
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SearchBar from "@/components/ui/SearchBar";
-import { useCustomNavigate } from "@/hooks/useCustomNavigate";
 import { useLocation } from "react-router";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";

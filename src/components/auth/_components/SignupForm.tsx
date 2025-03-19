@@ -29,8 +29,6 @@ export default function SignupForm({
   const form = useFormContext();
   const errors = form.formState.errors;
 
-  console.log(errors);
-
   // Check password requirements
   function handleCheckPassword(password: string) {
     return [

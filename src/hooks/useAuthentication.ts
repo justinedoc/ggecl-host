@@ -37,8 +37,12 @@ export const useAuthentication = () => {
     return () => clearInterval(intervalId);
   }, []);
 
-  const logout = useCallback(async () => {
-    return authProvider.logout();
+  const studentLogout = useCallback(async () => {
+    return authProvider.studentLogout();
+  }, []);
+
+  const instructorLogout = useCallback(async () => {
+    return authProvider.studentLogout();
   }, []);
 
   const refreshAccessToken = useCallback(async () => {
@@ -55,7 +59,8 @@ export const useAuthentication = () => {
     isAuthenticated,
     getAccessToken: authProvider.getAccessToken,
     setAccessToken,
-    logout,
+    studentLogout,
+    instructorLogout,
     refreshAccessToken,
   };
 };
