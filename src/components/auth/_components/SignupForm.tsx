@@ -32,7 +32,8 @@ export default function SignupForm({
   // Check password requirements
   function handleCheckPassword(password: string) {
     return [
-      { message: "One letter", isChecked: /[a-z]/.test(password) },
+      { message: "One lowercase letter", isChecked: /[a-z]/.test(password) },
+      { message: "One uppercase letter", isChecked: /[A-Z]/.test(password) },
       { message: "One number", isChecked: /[0-9]/.test(password) },
       {
         message: "One special character",

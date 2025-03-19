@@ -34,15 +34,12 @@ import AdminSettings from "@/components/Dashboard/admin/pages/AdminSettings.tsx"
 import Payments from "@/components/Dashboard/admin/pages/Payments.tsx";
 import CourseManagement from "@/components/Dashboard/admin/pages/CourseManagement.tsx";
 import Analytics from "@/components/Dashboard/admin/pages/Analytics.tsx";
-import Example from "./api/example.tsx";
 
 function App() {
   return (
     <>
       <Toaster />
       <Routes>
-        <Route path="/example" element={<Example />} />
-
         {/* Landing page routes  */}
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />

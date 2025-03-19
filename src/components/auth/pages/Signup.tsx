@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { AxiosError } from "axios";
 import { formatZodErrors } from "@/lib/formatZodErrors";
 import { ErrorResType } from "@/types/errorResponseType";
+import { SignupResponseSchema } from "@/schemas/studentResponse";
+import { useAuth } from "@/lib/auth/AuthContext";
 
 // Schema for step 1
 const firstStepSchema = z.object({
@@ -32,29 +34,37 @@ const secondStepSchema = z.object({
 
 // Merge both schemas into one
 const signupSchema = firstStepSchema.merge(secondStepSchema);
-
 export type SignupFormValues = z.infer<typeof signupSchema>;
 
 function Signup() {
   const { navigate } = useCustomNavigate();
+  const { handleLogin } = useAuth();
   const { mutate, isPending } = useMutation({
     mutationFn: signupStudent,
     onSuccess: (data) => {
-      toast.success("Registeration successful!");
-      console.log(data);
-      navigate("/student/dashboard", { replace: true });
+      try {
+        // Validate response with Zod.
+        const validatedData = SignupResponseSchema.parse(data.data);
+        // Update auth state with the new token.
+        handleLogin(validatedData.accessToken);
+        toast.success("Registration successful!");
+        navigate("/student/dashboard", { replace: true });
+      } catch (parseError) {
+        console.error("Data validation failed:", parseError);
+        toast.error("Unexpected response from server. Please try again.");
+      }
     },
     onError: (error: AxiosError) => {
       const errorResponseData = error?.response?.data as ErrorResType<string>;
-
       if (errorResponseData?.message?.toLowerCase()?.includes("validation")) {
         toast.error(formatZodErrors(errorResponseData));
         return;
       }
       toast.error(
-        errorResponseData?.message || "An error occured please try again later"
+        errorResponseData?.message ||
+          "An error occurred, please try again later"
       );
-      console.error("Signup error:", error.response);
+      console.error("Signup error:", error.response || error);
     },
   });
 
@@ -70,15 +80,15 @@ function Signup() {
     },
   });
 
-  // Validate only the fields for the first step before proceeding
+  // Validate step 1 fields before proceeding.
   const nextStep = async () => {
     if (step === 1) {
       const isValid = await methods.trigger(["email", "password"]);
-      isValid && setStep(2);
+      if (isValid) setStep(2);
     }
   };
 
-  // Final submission handler for step 2
+  // Final submission when step 2 is completed.
   const onSubmit = (data: SignupFormValues) => {
     mutate(data);
   };

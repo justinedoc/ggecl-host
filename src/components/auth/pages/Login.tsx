@@ -29,36 +29,48 @@ import { AxiosError } from "axios";
 import { useCustomNavigate } from "@/hooks/useCustomNavigate";
 import { ErrorResType } from "@/types/errorResponseType";
 import AuthContainer from "../_components/AuthContainer";
+import { useAuth } from "@/lib/auth/AuthContext";
+import { LoginResponseSchema } from "@/schemas/studentResponse";
 
-// Define a schema for our form data.
+// Define a schema for our login form data.
 const loginSchema = z.object({
   email: z.string().min(1, "Email is required").email("Invalid email address"),
   password: z.string().min(1, "Password is required"),
 });
-
 export type LoginFormValues = z.infer<typeof loginSchema>;
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const { navigate } = useCustomNavigate();
+  const { handleLogin } = useAuth();
+
+  // Mutation using react-query.
   const { mutate, isPending } = useMutation({
     mutationFn: loginStudent,
     onSuccess: (data) => {
-      toast.success("Login successful!, Welcome back");
-      console.log(data);
-      navigate("/student/dashboard", { replace: true });
+      try {
+        // Validate server response with Zod.
+        const validatedData = LoginResponseSchema.parse(data.data);
+        // Update global auth state.
+        handleLogin(validatedData.accessToken);
+        toast.success("Login successful! Welcome back");
+        navigate("/student/dashboard", { replace: true });
+      } catch (parseError) {
+        console.error("Data validation failed:", parseError);
+        toast.error("Unexpected response from server. Please try again.");
+      }
     },
     onError: (error: AxiosError) => {
       const errorResponseData = error?.response?.data as ErrorResType<string>;
-
       if (errorResponseData?.message?.toLowerCase()?.includes("validation")) {
         toast.error(formatZodErrors(errorResponseData));
         return;
       }
       toast.error(
-        errorResponseData?.message || "An error occured please try again later"
+        errorResponseData?.message ||
+          "An error occurred, please try again later"
       );
-      console.error("Login error:", error.response);
+      console.error("Login error:", error.response || error);
     },
   });
 
@@ -170,8 +182,8 @@ const Login = () => {
           {/* Signup Link */}
           <div className="text-center mt-4">
             <p className="text-sm">
-              Don't already have an account?{" "}
-              <CustomLink to="/signup">sign up</CustomLink>
+              Don't have an account?{" "}
+              <CustomLink to="/signup">Sign up</CustomLink>
             </p>
           </div>
         </div>

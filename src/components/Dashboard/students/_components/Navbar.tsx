@@ -22,6 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/lib/auth/AuthContext";
 
 const capsFirstLetter = (str: string) =>
   str.charAt(0).toUpperCase() + str.slice(1);
@@ -30,6 +31,8 @@ const Navbar = () => {
   const [darkMode, setDarkMode] = useState(
     localStorage.getItem("theme") === "dark"
   );
+
+  const { handleLogout } = useAuth();
   const { state } = useSidebar();
   const isMobile = useIsMobile();
   const shouldShowSidebarTrigger = state === "collapsed" || isMobile;
@@ -134,7 +137,10 @@ const Navbar = () => {
               🔑 <span className="ml-2">Change Password</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator className="my-2" />
-            <DropdownMenuItem className="cursor-pointer text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-700 rounded-md p-2">
+            <DropdownMenuItem
+              onClick={() => handleLogout("student")}
+              className="cursor-pointer text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-700 rounded-md p-2"
+            >
               🚪 <span className="ml-2">Logout</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
