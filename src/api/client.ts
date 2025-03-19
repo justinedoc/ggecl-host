@@ -149,4 +149,36 @@ export const createAuthenticatedAxiosInstance = (): AxiosInstance => {
 
 export const axiosInstance = createAuthenticatedAxiosInstance();
 
+export const authProvider = {
+  getAccessToken: (): string | null => getAccessToken(),
+  setAccessToken: (token: string): void => setAccessToken(token),
+  studentLogout: async (): Promise<void> => {
+    try {
+      await axiosInstance.post("/student/logout", {});
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      setAccessToken(null);
+      if (typeof window !== "undefined") {
+        window.location.href = "/";
+      }
+    }
+  },
+  instructorLogout: async (): Promise<void> => {
+    try {
+      await axiosInstance.post("/instructor/logout", {});
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      setAccessToken(null);
+      if (typeof window !== "undefined") {
+        window.location.href = "/";
+      }
+    }
+  },
+  refreshAccessToken: async (): Promise<string> => {
+    return refreshAccessToken(axiosInstance);
+  },
+};
+
 export default axiosInstance;
