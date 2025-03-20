@@ -2,7 +2,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { Outlet } from "react-router";
 import { AppSidebar } from "@/components/Dashboard/students/_components/AppSidebar";
 import Navbar from "@/components/Dashboard/students/_components/Navbar";
-import { RequireAuth } from "@/lib/auth/RequireAuth";
+import { RequireAuth } from "@/contexts/RequireAuth";
 
 function InstructorLayout() {
   return (

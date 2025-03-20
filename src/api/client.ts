@@ -117,6 +117,7 @@ export const authProvider = {
   // Call /auth/session to verify that a valid session exists.
   getSession: async (): Promise<{ success: boolean; data: any }> => {
     const response = await axiosInstance.get("/auth/session");
+
     return response.data;
   },
   refreshAccessToken: async (): Promise<string> => {

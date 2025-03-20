@@ -29,7 +29,7 @@ import { AxiosError } from "axios";
 import { useCustomNavigate } from "@/hooks/useCustomNavigate";
 import { ErrorResType } from "@/types/errorResponseType";
 import AuthContainer from "../_components/AuthContainer";
-import { useAuth } from "@/lib/auth/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { LoginResponseSchema } from "@/schemas/studentResponse";
 
 // Define a schema for our login form data.

@@ -1,236 +1,280 @@
 import { useEffect, useState } from "react";
-import { FaClock, FaBook, FaTasks, FaPaintBrush } from "react-icons/fa";
-import { FiBox } from "react-icons/fi";
+import { FaClock, FaBook } from "react-icons/fa";
 import { Calendar } from "@/components/ui/calendar";
-import { LucidePaintbrush } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/contexts/AuthContext";
+import { Student } from "@/types/userTypes";
+import AuthPageLoading from "@/components/auth/_components/AuthPageLoading";
+import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router";
+
+// Type definitions
+interface EnrolledCourse {
+  id: number;
+  title: string;
+  duration: string;
+  lessons: number;
+  progress: number;
+  active: boolean;
+}
+
+interface UpcomingLesson {
+  id: number;
+  title: string;
+  time: string;
+  date: string;
+  duration: string;
+}
+
+interface MetricItemProps {
+  label: string;
+  value: string;
+  trend: "up" | "down" | "neutral";
+}
+
+interface AchievementItemProps {
+  title: string;
+  date: string;
+}
+
+interface TaskItemProps {
+  title: string;
+  dueDate: string;
+}
 
 const StudentHome = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [progress, setProgress] = useState(0);
 
-  const enrolledClasses = [
+  const navigate = useNavigate();
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) return <AuthPageLoading />;
+
+  if (!user) {
+    navigate("/login");
+    return null;
+  }
+
+  if (isLoading) return <AuthPageLoading />;
+
+  const student = user as Student;
+
+  const enrolledCourses: EnrolledCourse[] = [
     {
       id: 1,
       title: "User Experience (UX) Design",
-      time: "5:30hrs",
-      lessons: "05 Lessons",
-      icon: <FiBox className="text-gray-600 text-2xl" />,
+      duration: "5.5 hours",
+      lessons: 5,
+      progress: 65,
       active: true,
-    },
-    {
-      id: 2,
-      title: "Visual Design and Branding",
-      time: "4:00hrs",
-      lessons: "03 Lessons",
-      icon: <FaPaintBrush className="text-gray-600 text-2xl" />,
-      active: false,
-    },
-    {
-      id: 3,
-      title: "Visual Design and Branding",
-      time: "4:00hrs",
-      lessons: "03 Lessons",
-      icon: <FaPaintBrush className="text-gray-600 text-2xl" />,
-      active: false,
     },
   ];
 
-  const upcomingLessons = [
+  const upcomingLessons: UpcomingLesson[] = [
     {
       id: 1,
       title: "UX Design Fundamentals",
-      time: "5:30pm",
-      active: true,
-    },
-    {
-      id: 2,
-      title: "Interaction Design",
-      time: "9:00pm",
-      active: false,
-    },
-    {
-      id: 3,
-      title: "Interaction Design",
-      time: "9:00pm",
-      active: false,
+      time: "17:30",
+      date: "2024-03-25",
+      duration: "90 mins",
     },
   ];
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setProgress(50);
-    }, 500);
-
+    const timer = setTimeout(() => setProgress(65), 500);
     return () => clearTimeout(timer);
   }, []);
 
+  // Get first name from full name
+  const firstName = student.fullName.split(" ")[1] || "Student";
+
   return (
-    <div className="p-4 md:p-8">
-      <div className="flex flex-col gap-3 mb-10">
-        <p className="text-4xl text-gray-800 dark:text-gray-200 font-bold">
-          Hello Joshua
+    <div className="p-6 space-y-8 max-w-7xl mx-auto">
+      <header className="space-y-1">
+        <h1 className="text-3xl font-bold tracking-tight">
+          Welcome back, {firstName}
+        </h1>
+        <p className="text-muted-foreground">
+          You have 3 upcoming assignments and 2 new resources
         </p>
-        <p className="text-gray-700 dark:text-gray-300">
-          Ready to learn today?
-        </p>
-      </div>
+      </header>
 
-      <div className="flex md:flex-row flex-col-reverse gap-4 items-start">
-        <Calendar
-          mode="single"
-          selected={date}
-          onSelect={setDate}
-          className="rounded-md border shadow-md dark:shadow-gray-800"
-        />
-
-        <div className="border border-gray-200 dark:border-gray-700 flex flex-col gap-3 p-4 rounded-lg shadow-md dark:shadow-gray-800 min-w-full md:min-w-[250px]">
-          <p className="text-gray-800 dark:text-gray-200">
-            Recent Enrolled Courses
-          </p>
-          <div className="border border-gray-200 dark:border-gray-700 flex flex-col gap-3 p-4 rounded-md">
-            <LucidePaintbrush
-              size={30}
-              className="text-gray-800 dark:text-gray-200 bg-gray-200 p-2 rounded-sm text-4xl"
-            />
-            <p className="text-gray-800 dark:text-gray-200">
-              Product Design Course
-            </p>
-
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-              <div
-                className="bg-blue-500 h-full rounded-full transition-all duration-1000"
-                style={{ width: `${progress}%` }}
-              />
+      <div className="grid gap-6 md:grid-cols-3">
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle>Learning Progress</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm font-medium">
+                  Current Course Progress
+                </span>
+                <span className="text-sm text-primary">{progress}%</span>
+              </div>
+              <Progress value={progress} className="h-2" />
             </div>
 
-            <p className="text-gray-600 dark:text-gray-400">
-              <span className="text-blue-600 font-bold">{progress}/100</span>{" "}
-              progress
-            </p>
-          </div>
-        </div>
-      </div>
+            <Separator />
 
-      <div className="mt-16 grid grid-cols-1 md:grid-cols-10 gap-4">
-        <div className="bg-white dark:bg-gray-900 p-4 rounded-lg shadow-md md:col-span-4 w-full">
-          <p className="text-md font-bold text-gray-800 dark:text-gray-200 mb-3">
-            Hours Spent
-          </p>
-        </div>
-
-        <div className="bg-white dark:bg-gray-900 p-4 rounded-lg shadow-md md:col-span-3 w-full">
-          <p className="text-md font-bold text-gray-800 dark:text-gray-200 mb-3">
-            Performance
-          </p>
-        </div>
-
-        <div className="bg-white dark:bg-gray-900 p-4 rounded-lg shadow-md md:col-span-3 w-full">
-          <p className="text-md font-bold text-gray-800 dark:text-gray-200 mb-3">
-            To-Do List
-          </p>
-          <div className="space-y-3">
-            {[
-              {
-                title: "Human Interaction Designs",
-                date: "Sunday, 30 June 2024",
-              },
-              { title: "Design System Basics", date: "Monday, 24 June 2024" },
-              { title: "Introduction to UI", date: "Friday, 14 June 2024" },
-              { title: "Basics of Figma", date: "Wednesday, 5 June 2024" },
-            ].map((task, index) => (
-              <div
-                key={index}
-                className="flex items-center gap-4 border-b border-gray-300 dark:border-gray-700 p-2"
-              >
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 appearance-none border border-gray-400 dark:border-gray-600 rounded-md checked:bg-blue-600 checked:border-transparent cursor-pointer transition"
-                />
-                <div>
-                  <p className="text-gray-800 dark:text-gray-200">
-                    {task.title}
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {task.date}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="md:p-2 p-1 grid md:grid-cols-5 grid-cols-1 gap-6 mt-14">
-        <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md w-full col-span-1 md:col-span-3">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-              Recent Enrolled Classes
-            </h2>
-            <span className="text-blue-600 cursor-pointer">All</span>
-          </div>
-          <div className=" h-40 overflow-y-scroll mf">
-              {enrolledClasses.map((course) => (
-                <div
-                  key={course.id}
-                  className={`p-4 rounded-lg border  ${
-                    course.active
-                      ? "border-blue-500 bg-blue-50 dark:bg-gray-900"
-                      : "border-gray-200 dark:border-gray-700"
-                  } flex items-center gap-4 mb-3`}
-                >
-                  <div className="p-2 bg-gray-200 dark:bg-gray-800 rounded-md">
-                    {course.icon}
-                  </div>
-                  <div>
-                    <p
-                      className={
-                        course.active
-                          ? "text-blue-600 font-semibold"
-                          : "text-gray-800 dark:text-gray-200 font-semibold"
-                      }
-                    >
-                      {course.title}
-                    </p>
-                    <div className="flex items-center gap-4 text-gray-600 text-sm mt-1">
-                      <FaClock /> {course.time} <FaBook /> {course.lessons}{" "}
-                      <FaTasks /> Assignments
+            <div className="space-y-4">
+              <h3 className="font-medium">Enrolled Courses</h3>
+              {enrolledCourses.map((course) => (
+                <div key={course.id} className="p-4 rounded-lg border">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h4 className="font-medium">{course.title}</h4>
+                      <div className="text-sm text-muted-foreground flex gap-4 mt-1">
+                        <span className="flex items-center gap-1">
+                          <FaClock className="h-4 w-4" /> {course.duration}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <FaBook className="h-4 w-4" /> {course.lessons}{" "}
+                          lessons
+                        </span>
+                      </div>
                     </div>
+                    <Badge variant={course.active ? "default" : "secondary"}>
+                      {course.active ? "Active" : "Paused"}
+                    </Badge>
                   </div>
                 </div>
               ))}
-          </div>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md w-full md:col-span-2 col-span-1">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
-            Upcoming Lesson
-          </h2>
-          <div className=" h-40 overflow-y-scroll mf">
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Schedule</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Calendar
+                mode="single"
+                selected={date}
+                onSelect={setDate}
+                className="rounded-md border"
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Upcoming Lessons</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               {upcomingLessons.map((lesson) => (
                 <div
                   key={lesson.id}
-                  className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 flex justify-between items-center mb-3 "
+                  className="flex items-center justify-between p-2 rounded-md bg-muted/50"
                 >
                   <div>
-                    <p className="font-semibold text-gray-800 dark:text-gray-200">
-                      {lesson.title}
+                    <p className="font-medium text-sm">{lesson.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {lesson.date} at {lesson.time}
                     </p>
-                    <p className="text-gray-600 text-sm">{lesson.time}</p>
                   </div>
-                  <button
-                    className={`px-4 py-1 text-sm rounded-md ${
-                      lesson.active
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                    }`}
-                  >
+                  <Button size="sm" variant="outline">
                     Join
-                  </button>
+                  </Button>
                 </div>
               ))}
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Academic Overview</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-6 md:grid-cols-3">
+          <div className="space-y-2">
+            <h3 className="font-medium">Performance Metrics</h3>
+            <div className="space-y-4">
+              <MetricItem label="Average Grade" value="A-" trend="up" />
+              <MetricItem
+                label="Completed Courses"
+                value="4/8"
+                trend="neutral"
+              />
+              <MetricItem label="Study Hours" value="56h" trend="up" />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="font-medium">Recent Achievements</h3>
+            <div className="space-y-2">
+              <AchievementItem title="UX Mastery" date="Mar 2024" />
+              <AchievementItem title="Design Prodigy" date="Feb 2024" />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="font-medium">Priority Tasks</h3>
+            <div className="space-y-2">
+              <TaskItem title="Submit Final Project" dueDate="2024-04-15" />
+              <TaskItem title="Peer Review Submission" dueDate="2024-04-10" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+const MetricItem = ({ label, value, trend }: MetricItemProps) => (
+  <div className="flex justify-between items-center p-2 rounded bg-muted/50">
+    <span>{label}</span>
+    <div className="flex items-center gap-2">
+      <span className="font-medium">{value}</span>
+      <span
+        className={cn(
+          "text-sm",
+          trend === "up" && "text-green-400",
+          trend === "down" && "text-red-400",
+          trend === "neutral" && "text-muted-foreground"
+        )}
+      >
+        {trend === "up" ? "↑" : trend === "down" ? "↓" : "-"}
+      </span>
+    </div>
+  </div>
+);
+
+const AchievementItem = ({ title, date }: AchievementItemProps) => (
+  <div className="flex items-center gap-3 p-2 rounded bg-muted/50">
+    <div
+      className={cn(
+        "h-8 w-8 rounded-full flex items-center justify-center",
+        "bg-primary/10 text-primary/80"
+      )}
+    >
+      🏆
+    </div>
+    <div>
+      <p className="font-medium">{title}</p>
+      <p className="text-sm text-muted-foreground">{date}</p>
+    </div>
+  </div>
+);
+
+const TaskItem = ({ title, dueDate }: TaskItemProps) => {
+  const dueDateObj = new Date(dueDate);
+  const isValidDate = !isNaN(dueDateObj.getTime());
+
+  return (
+    <div className="flex justify-between items-center p-2 rounded bg-muted/50">
+      <span className="font-semibold text-sm">{title}</span>
+      <Badge variant="secondary">
+        {isValidDate ? dueDateObj.toLocaleDateString() : "Invalid date"}
+      </Badge>
     </div>
   );
 };

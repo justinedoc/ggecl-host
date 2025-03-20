@@ -1,15 +1,14 @@
+// Navbar.tsx (Improved)
 import { useState, useEffect } from "react";
 import { FaBell, FaChevronDown } from "react-icons/fa";
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SearchBar from "@/components/ui/SearchBar";
-import { useLocation } from "react-router";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
-// Shadcn UI components for popovers and dropdowns
 import {
   Popover,
   PopoverTrigger,
@@ -22,131 +21,147 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { useAuth } from "@/lib/auth/AuthContext";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
-const capsFirstLetter = (str: string) =>
-  str.charAt(0).toUpperCase() + str.slice(1);
+import { useAuth } from "@/contexts/AuthContext";
+import { Student } from "@/types/userTypes";
+import { Link } from "react-router";
+import AuthPageLoading from "@/components/auth/_components/AuthPageLoading";
+
+const formatName = (name: string) => {
+  const [firstName, ...rest] = name.split(" ");
+  return `${firstName} ${rest.map((n) => n[0]).join(". ")}.`;
+};
 
 const Navbar = () => {
   const [darkMode, setDarkMode] = useState(
     localStorage.getItem("theme") === "dark"
   );
 
-  const { handleLogout } = useAuth();
   const { state } = useSidebar();
   const isMobile = useIsMobile();
   const shouldShowSidebarTrigger = state === "collapsed" || isMobile;
 
-  const location = useLocation();
-  const pathname = location.pathname.split("/").at(-1);
+  const { user, isLoading, handleLogout } = useAuth();
+
+  if (isLoading) return <AuthPageLoading />;
+  if (!user) return null;
+
+  const student = user as Student;
 
   useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
+    document.documentElement.classList.toggle("dark", darkMode);
+    localStorage.setItem("theme", darkMode ? "dark" : "light");
   }, [darkMode]);
 
   return (
-    <div
+    <nav
       className={cn(
-        "bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 p-5 flex items-center justify-between shadow-md"
+        "bg-background text-foreground px-6 py-4 flex items-center justify-between border-b",
+        "dark:border-gray-800 shadow-sm"
       )}
     >
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center gap-4">
         {shouldShowSidebarTrigger && (
           <>
             <SidebarTrigger />
             <Separator orientation="vertical" className="h-6" />
           </>
         )}
-        <h1 className="text-2xl font-semibold">
-          {capsFirstLetter(pathname || "Dashboard")}
-        </h1>
       </div>
 
-      <div className="flex items-center space-x-4">
-        {/* Search Bar */}
-        <div className="relative">
-          <SearchBar />
-        </div>
+      <div className="flex items-center gap-4">
+        <SearchBar placeholderText="Search courses..." />
 
-        {/* Notifications Popover */}
         <Popover>
           <PopoverTrigger asChild>
-            <Button
-              variant="ghost"
-              className="relative p-2 px-3 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-            >
-              <FaBell className="text-xl" />
-              <span className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold rounded-full px-1">
-                3
-              </span>
+            <Button variant="ghost" size="icon" className="relative">
+              <FaBell className="h-[1.2rem] w-[1.2rem]" />
+              {student?.notifications.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs h-5 w-5 rounded-full flex items-center justify-center">
+                  {student.notifications.map((n) => !n.isRead).length}
+                </span>
+              )}
             </Button>
           </PopoverTrigger>
-          <PopoverContent
-            align="end"
-            className="w-64 bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 space-y-3"
-          >
-            <p className="text-sm">🔔 New notification 1</p>
-            <hr className="border-gray-200 dark:border-gray-700" />
-            <p className="text-sm">🔔 New notification 2</p>
-            <hr className="border-gray-200 dark:border-gray-700" />
-            <p className="text-sm">🔔 New notification 3</p>
+          <PopoverContent className="w-80 p-2">
+            <div className="px-2 py-1.5 text-sm font-semibold my-2">
+              Notifications
+            </div>
+            <Separator />
+            {student?.notifications.length === 0 ? (
+              <div className="p-4 text-center text-sm text-muted-foreground">
+                No new notifications
+              </div>
+            ) : (
+              student?.notifications.map((notification, index) => (
+                <HoverCard key={index}>
+                  <HoverCardTrigger asChild>
+                    <div className="p-3 text-sm hover:bg-accent rounded cursor-pointer">
+                      {notification.title}
+                    </div>
+                  </HoverCardTrigger>
+                  <HoverCardContent>{notification.content}</HoverCardContent>
+                </HoverCard>
+              ))
+            )}
           </PopoverContent>
         </Popover>
 
-        {/* Dark Mode Toggle */}
         <Button
-          onClick={() => setDarkMode((prev) => !prev)}
-          className="w-9 h-9 rounded-full bg-cyan-950 flex items-center justify-center transition-colors hover:bg-blue-400/30"
-          aria-label="Toggle Dark Mode"
+          variant="ghost"
+          size="icon"
+          onClick={() => setDarkMode(!darkMode)}
+          aria-label="Toggle theme"
         >
-          {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+          {darkMode ? (
+            <Sun className="h-[1.2rem] w-[1.2rem]" />
+          ) : (
+            <Moon className="h-[1.2rem] w-[1.2rem]" />
+          )}
         </Button>
 
-        {/* User Profile Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-            >
+            <Button variant="ghost" className="gap-2 px-2">
               <img
-                src="https://i.pinimg.com/474x/14/88/f3/1488f35bc175631415a048ca5208aa3f.jpg"
-                alt="User"
-                className="w-8 h-8 rounded-full object-cover"
+                src={student.picture}
+                alt={student.fullName}
+                className="h-8 w-8 rounded-full"
               />
-              <span className="text-sm font-medium hidden md:block">
-                Josh Dickson
-              </span>
-              <FaChevronDown className="text-xs" />
+              <div className="flex flex-col items-start">
+                <span className="text-sm font-medium">
+                  {formatName(student.fullName)}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {student.email}
+                </span>
+              </div>
+              <FaChevronDown className="h-4 w-4 ml-2" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="w-60 bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4"
-          >
-            <DropdownMenuItem className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md p-2">
-              ⚙ <span className="ml-2">Settings</span>
+          <DropdownMenuContent className="w-64" align="end">
+            <DropdownMenuItem asChild>
+              <Link to="/student/dashboard/settings" className="cursor-pointer">
+                ⚙️ Account Settings
+              </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md p-2">
-              🔑 <span className="ml-2">Change Password</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator className="my-2" />
+            <DropdownMenuItem>🔒 Privacy & Security</DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => handleLogout("student")}
-              className="cursor-pointer text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-700 rounded-md p-2"
+              className="text-destructive focus:text-destructive"
             >
-              🚪 <span className="ml-2">Logout</span>
+              🚪 Log Out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    </div>
+    </nav>
   );
 };
 

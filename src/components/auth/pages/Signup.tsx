@@ -14,7 +14,7 @@ import { AxiosError } from "axios";
 import { formatZodErrors } from "@/lib/formatZodErrors";
 import { ErrorResType } from "@/types/errorResponseType";
 import { SignupResponseSchema } from "@/schemas/studentResponse";
-import { useAuth } from "@/lib/auth/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Schema for step 1
 const firstStepSchema = z.object({
