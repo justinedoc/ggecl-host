@@ -42,6 +42,7 @@ const About: React.FC = () => {
           <img
             src={aboutImage}
             alt="About LMS"
+            loading="lazy"
             className="w-full max-w-md md:max-w-lg rounded-lg "
           />
         </div>

@@ -11,7 +11,7 @@ export const RequireAuth = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated && !user) {
-      navigate("/login", {
+      navigate("/", {
         replace: true,
         state: { from: location.pathname },
       });

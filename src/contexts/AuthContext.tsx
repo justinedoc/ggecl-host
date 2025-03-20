@@ -95,7 +95,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           isLoading: false,
           user: null,
         });
-        navigate("/login");
       }
     },
     [navigate]
