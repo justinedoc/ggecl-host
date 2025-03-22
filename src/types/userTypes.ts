@@ -1,5 +1,7 @@
 import z from "zod";
 
+export type UserRole = "student" | "instructor";
+
 // ==================== Shared Schemas ====================
 const NotificationSchema = z.object({
   title: z.string().min(1, "Title is required"),

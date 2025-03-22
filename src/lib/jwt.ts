@@ -1,7 +1,9 @@
+import { UserRole } from "@/types/userTypes";
+
 export interface JwtPayloadExtended {
   exp: number;
   id: string;
-  role: string;
+  role: UserRole;
 }
 
 export const parseJwt = (token: string): JwtPayloadExtended => {
@@ -18,6 +20,6 @@ export const parseJwt = (token: string): JwtPayloadExtended => {
     return JSON.parse(jsonPayload);
   } catch (error) {
     console.error("Failed to parse JWT:", error);
-    return { exp: 0, id: "", role: "" };
+    throw new Error("Failed to parse JWT: " + error);
   }
 };

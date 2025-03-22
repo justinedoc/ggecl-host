@@ -1,3 +1,4 @@
+import { UserRole } from "@/types/userTypes";
 import axios, {
   AxiosError,
   AxiosInstance,
@@ -14,9 +15,6 @@ if (!API_URL) {
   throw new Error("VITE_API_BASE_URL is not defined in environment variables");
 }
 
-// In‑memory token (we rely on HTTP‑only cookies for persistence)
-let accessToken: string | null = null;
-
 const PUBLIC_URLS = [
   "/student/login",
   "/instructor/login",
@@ -32,23 +30,43 @@ const SKIP_TOKEN_REFRESH_URLS = [
   "/instructor/logout",
 ];
 
+// In‑memory token (we rely on HTTP‑only cookies for persistence)
+let accessToken: string | null = null;
+
 export const setAccessToken = (token: string | null): void => {
   accessToken = token;
 };
 
 export const getAccessToken = (): string | null => accessToken;
 
+// --- Token refresh queue ---
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (token: string) => void;
+  reject: (err: any) => void;
+}> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else if (token) {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 // Refresh token function – calls your refresh endpoint
 const refreshAccessToken = async (instance: AxiosInstance): Promise<string> => {
   try {
     const response = await instance.post<{ token: string }>("/refresh");
-    console.log("Refresh response:", response.data);
-    if (!response.data.token) {
-      throw new Error("No token in refresh response");
-    }
+    if (!response.data.token) throw new Error("Invalid refresh response");
     return response.data.token;
-  } catch (error: AxiosError | any) {
-    console.error("Token refresh failed:", error?.response);
+  } catch (error) {
+    // Clear tokens and trigger logout on refresh failure
+    authProvider.setAccessToken(null);
+    console.error(error);
     throw new Error("Session expired. Please log in again.");
   }
 };
@@ -67,7 +85,8 @@ export const createAxiosInstance = (): AxiosInstance => {
   // Request interceptor: attach token for non‑public endpoints.
   instance.interceptors.request.use((config) => {
     const token = getAccessToken();
-    const isPublic = PUBLIC_URLS.some((url) => config.url?.includes(url));
+    const isPublic = PUBLIC_URLS.some((url) => config.url === url);
+    console.log(config.url);
     if (token && config.headers && !isPublic) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -86,22 +105,45 @@ export const createAxiosInstance = (): AxiosInstance => {
       ) {
         return Promise.reject(error);
       }
+
       if (
         error.response?.status === 401 &&
         originalRequest &&
         !originalRequest._retry
       ) {
-        originalRequest._retry = true;
-        try {
-          const newToken = await authProvider.refreshAccessToken();
-          authProvider.setAccessToken(newToken);
-          if (originalRequest.headers) {
-            originalRequest.headers.Authorization = `Bearer ${newToken}`;
-          }
-          return instance(originalRequest);
-        } catch (refreshError) {
-          return Promise.reject(refreshError);
+        if (isRefreshing) {
+          // Queue the request while refresh is in progress
+          return new Promise((resolve, reject) => {
+            failedQueue.push({ resolve, reject });
+          })
+            .then((token) => {
+              if (originalRequest.headers) {
+                originalRequest.headers.Authorization = `Bearer ${token}`;
+              }
+              return instance(originalRequest);
+            })
+            .catch((err) => Promise.reject(err));
         }
+
+        originalRequest._retry = true;
+        isRefreshing = true;
+
+        return new Promise(async (resolve, reject) => {
+          try {
+            const newToken = await authProvider.refreshAccessToken();
+            authProvider.setAccessToken(newToken);
+            if (originalRequest.headers) {
+              originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            }
+            processQueue(null, newToken);
+            resolve(instance(originalRequest));
+          } catch (refreshError) {
+            processQueue(refreshError, null);
+            reject(refreshError);
+          } finally {
+            isRefreshing = false;
+          }
+        });
       }
       return Promise.reject(error);
     }
@@ -114,27 +156,43 @@ export const axiosInstance = createAxiosInstance();
 
 // --- authProvider Object ---
 export const authProvider = {
-  // Call /auth/session to verify that a valid session exists.
-  getSession: async (): Promise<{ success: boolean; data: any }> => {
-    const response = await axiosInstance.get("/auth/session");
-
+  getSession: async (
+    signal?: AbortSignal
+  ): Promise<{
+    success: boolean;
+    data: {
+      id: string;
+      role: UserRole;
+    };
+  }> => {
+    const response = await axiosInstance.get("/auth/session", { signal });
+    return response.data;
+  },
+  getUserById: async (
+    id: string,
+    role: UserRole,
+    signal?: AbortSignal
+  ): Promise<{ success: boolean; data: any }> => {
+    const response = await axiosInstance.get(`/${role}/${id}`, {
+      signal,
+    });
     return response.data;
   },
   refreshAccessToken: async (): Promise<string> => {
-    return refreshAccessToken(axiosInstance);
+    return await refreshAccessToken(axiosInstance);
   },
-  studentLogout: async (): Promise<void> => {
+  studentLogout: async (signal?: AbortSignal): Promise<void> => {
     try {
-      await axiosInstance.post("/student/logout");
+      await axiosInstance.post("/student/logout", { signal });
     } catch (error) {
       console.error("Student logout failed", error);
     } finally {
       setAccessToken(null);
     }
   },
-  instructorLogout: async (): Promise<void> => {
+  instructorLogout: async (signal?: AbortSignal): Promise<void> => {
     try {
-      await axiosInstance.post("/instructor/logout");
+      await axiosInstance.post("/instructor/logout", { signal });
     } catch (error) {
       console.error("Instructor logout failed", error);
     } finally {

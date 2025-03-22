@@ -5,21 +5,21 @@ import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router";
 
 export const RequireAuth = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated && !user) {
+    if (!isLoading && !isAuthenticated) {
       navigate("/", {
         replace: true,
         state: { from: location.pathname },
       });
     }
-  }, [isAuthenticated, isLoading, user, navigate, location]);
+  }, [isAuthenticated, isLoading, navigate, location]);
 
-  if (isLoading) return <AuthPageLoading />;
-  if (!isAuthenticated || !user) return null;
+  if (isLoading || !isAuthenticated)
+    return <AuthPageLoading className="bg-opacity-none" />;
 
   return <>{children}</>;
 };
