@@ -69,7 +69,7 @@ export default function SignupForm({
                       type="email"
                       placeholder="Enter your email"
                       className={cn(
-                        "bg-transparent w-full pl-2 py-6 rounded-sm focus:ring-2 focus:ring-blue-300/30 outline-none shadow-sm border border-blue-300/30",
+                        "bg-transparent w-full pl-2 py-6 md:py-5 rounded-sm focus:ring-2 focus:ring-blue-300/30 outline-none shadow-sm border border-blue-300/30",
                         { "border-red-500": errors.email }
                       )}
                     />
@@ -108,7 +108,7 @@ export default function SignupForm({
                       type={isPasswordHidden ? "password" : "text"}
                       placeholder="Enter your password"
                       className={cn(
-                        "bg-transparent w-full pl-2 py-6 rounded-sm focus:ring-2 focus:ring-blue-300/30 outline-none shadow-sm border border-blue-300/30",
+                        "bg-transparent w-full pl-2 py-6 md:py-5 rounded-sm focus:ring-2 focus:ring-blue-300/30 outline-none shadow-sm border border-blue-300/30",
                         { "border-red-500": errors.password }
                       )}
                     />

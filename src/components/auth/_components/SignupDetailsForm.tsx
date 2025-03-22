@@ -52,7 +52,7 @@ function SignupDetailsForm({ onSubmit }: SignupDetailsFormProps): JSX.Element {
                 <Input
                   placeholder="Full Name Here"
                   {...field}
-                  className="dark:bg-gray-900 py-6 outline-none shadow-sm border border-blue-300/30 dark:border-blue-300/20"
+                  className="dark:bg-gray-900 py-6 md:py-5 outline-none shadow-sm border border-blue-300/30 dark:border-blue-300/20"
                 />
               </FormControl>
               <FormDescription>
@@ -74,7 +74,7 @@ function SignupDetailsForm({ onSubmit }: SignupDetailsFormProps): JSX.Element {
                 defaultValue={field.value as string}
               >
                 <FormControl>
-                  <SelectTrigger className="dark:bg-gray-900 py-6 outline-none shadow-sm border border-blue-300/30 dark:border-blue-300/20">
+                  <SelectTrigger className="dark:bg-gray-900 py-6 md:py-5 outline-none shadow-sm border border-blue-300/30 dark:border-blue-300/20">
                     <SelectValue placeholder="Select your gender" />
                   </SelectTrigger>
                 </FormControl>
@@ -100,7 +100,7 @@ function SignupDetailsForm({ onSubmit }: SignupDetailsFormProps): JSX.Element {
                   type="date"
                   {...field}
                   value={field.value || ""}
-                  className="dark:bg-gray-900 py-6 outline-none shadow-sm border border-blue-300/30 dark:border-blue-300/20"
+                  className="dark:bg-gray-900 outline-none shadow-sm border border-blue-300/30 dark:border-blue-300/20"
                 />
               </FormControl>
               <FormMessage />

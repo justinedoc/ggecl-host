@@ -107,7 +107,7 @@ const Login = () => {
                         <Input
                           placeholder="joshdickon@gmail.com"
                           {...field}
-                          className="pl-12 py-6 focus:ring-2 focus:ring-blue-300/30 outline-none shadow-sm border border-blue-300/30"
+                          className="pl-12 py-6 md:py-5 focus:ring-2 focus:ring-blue-300/30 outline-none shadow-sm border border-blue-300/30"
                         />
                       </div>
                     </FormControl>
@@ -130,7 +130,7 @@ const Login = () => {
                           type={showPassword ? "text" : "password"}
                           placeholder="••••••••"
                           {...field}
-                          className="pl-12 py-6 focus:ring-2 focus:ring-blue-300/30 outline-none shadow-sm border border-blue-300/30"
+                          className="pl-12 py-6 md:py-5 focus:ring-2 focus:ring-blue-300/30 outline-none shadow-sm border border-blue-300/30"
                         />
                         <button
                           type="button"
@@ -181,7 +181,7 @@ const Login = () => {
           <div className="text-center space-y-3">
             <p className="text-sm">
               Don't have an account?{" "}
-              <CustomLink to="/signup">Sign up</CustomLink>
+              <CustomLink to="/signup">register</CustomLink>
             </p>
 
             <p className="text-xs text-center">
