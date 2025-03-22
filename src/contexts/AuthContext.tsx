@@ -14,6 +14,7 @@ import {
   Student,
   StudentSchema,
 } from "@/types/userTypes";
+import { AxiosError } from "axios";
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -24,16 +25,18 @@ interface AuthContextType {
   handleLogout: (type: "student" | "instructor") => Promise<() => void>;
 }
 
+interface User {
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  user: Student | Instructor | null;
+}
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [state, setState] = useState<{
-    isAuthenticated: boolean;
-    isLoading: boolean;
-    user: Student | Instructor | null;
-  }>({
+  const [state, setState] = useState<User>({
     isAuthenticated: false,
     isLoading: true,
     user: null,
@@ -80,6 +83,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const initializeAuth = useCallback(
     async (signal?: AbortSignal) => {
       try {
+        if (state.user) return;
+
         setState((prev) => ({ ...prev, isLoading: true }));
 
         try {
@@ -116,6 +121,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       } catch (error) {
         if (!signal?.aborted) {
           console.error("Auth initialization failed:", error);
+          if (
+            error instanceof AxiosError &&
+            (error.response?.data?.message as string)?.includes("expired")
+          ) {
+            console.log("token error: ", error.response?.data?.message);
+            return;
+          }
           authProvider.setAccessToken(null);
           setState({
             isAuthenticated: false,
@@ -125,14 +137,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
     },
-    [handleLogout]
+    [refreshToken, state.user]
   );
 
   const handleLogin = useCallback(
     async (accessToken: string) => {
       try {
         authProvider.setAccessToken(accessToken);
-        await initializeAuth(); // Fetch user data after login
+        await initializeAuth();
       } catch (error) {
         console.error("Login failed:", error);
         throw error;
@@ -144,20 +156,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const abortController = new AbortController();
 
-    const initializeWithAbort = async () => {
-      try {
-        await initializeAuth(abortController.signal);
-      } catch (error) {
-        if (!abortController.signal.aborted) {
-          console.error("Initialization error:", error);
+    initializeAuth(abortController.signal);
+
+    // Silent refresh logic
+    const refreshInterval = setInterval(async () => {
+      if (state.isAuthenticated) {
+        try {
+          await refreshToken();
+          console.log("Token refreshed");
+        } catch (error) {
+          console.error("error in init auth useEffect: ", error);
         }
       }
-    };
-
-    initializeWithAbort();
+    }, 14 * 60 * 1000); // 14 minutes
 
     return () => {
       abortController.abort();
+      clearInterval(refreshInterval);
     };
   }, [initializeAuth]);
 

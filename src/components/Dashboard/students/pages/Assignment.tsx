@@ -136,7 +136,6 @@ export default function Assignment() {
             </TableHead>
           </TableRow>
         </TableHeader>
-        <br />
         <TableBody>
           {paginatedData.map((assignment, index) => (
             <TableRow key={index} className="border mt-20 mb-20 rounded-lg ">

@@ -61,6 +61,7 @@ const processQueue = (error: any, token: string | null = null) => {
 const refreshAccessToken = async (instance: AxiosInstance): Promise<string> => {
   try {
     const response = await instance.post<{ token: string }>("/refresh");
+    console.log("Refresh response: ", response.data);
     if (!response.data.token) throw new Error("Invalid refresh response");
     return response.data.token;
   } catch (error) {
@@ -130,8 +131,8 @@ export const createAxiosInstance = (): AxiosInstance => {
 
         return new Promise(async (resolve, reject) => {
           try {
-            const newToken = await authProvider.refreshAccessToken();
-            authProvider.setAccessToken(newToken);
+            const newToken = await refreshAccessToken(axiosInstance);
+            setAccessToken(newToken);
             if (originalRequest.headers) {
               originalRequest.headers.Authorization = `Bearer ${newToken}`;
             }

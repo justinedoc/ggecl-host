@@ -1,8 +1,7 @@
-// RequireAuth.tsx (Enhanced)
 import AuthPageLoading from "@/components/auth/_components/AuthPageLoading";
-import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
-import { useNavigate, useLocation } from "react-router";
+import { useLocation, useNavigate } from "react-router";
+import { useAuth } from "./AuthContext";
 
 export const RequireAuth = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -13,13 +12,14 @@ export const RequireAuth = ({ children }: { children: React.ReactNode }) => {
     if (!isLoading && !isAuthenticated) {
       navigate("/", {
         replace: true,
-        state: { from: location.pathname },
+        state: { from: location },
       });
     }
-  }, [isAuthenticated, isLoading, navigate, location]);
+  }, [isAuthenticated, isLoading]);
 
-  if (isLoading || !isAuthenticated)
+  if (isLoading) {
     return <AuthPageLoading className="bg-opacity-none" />;
+  }
 
-  return <>{children}</>;
+  return isAuthenticated ? <>{children}</> : null;
 };

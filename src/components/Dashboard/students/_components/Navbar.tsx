@@ -144,7 +144,7 @@ const Navbar = () => {
               <FaChevronDown className="h-4 w-4 ml-2" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-64" align="end">
+          <DropdownMenuContent className="w-64 p-2 space-y-2" align="end">
             <DropdownMenuItem asChild>
               <Link to="/student/dashboard/settings" className="cursor-pointer">
                 ⚙️ Account Settings

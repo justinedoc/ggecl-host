@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
 import { Student } from "@/types/userTypes";
-import AuthPageLoading from "@/components/auth/_components/AuthPageLoading";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router";
 
@@ -51,16 +50,7 @@ const StudentHome = () => {
   const [progress, setProgress] = useState(0);
 
   const navigate = useNavigate();
-  const { user, isLoading } = useAuth();
-
-  if (isLoading) return <AuthPageLoading />;
-
-  if (!user) {
-    navigate("/login");
-    return null;
-  }
-
-  if (isLoading) return <AuthPageLoading />;
+  const { user } = useAuth();
 
   const student = user as Student;
 
@@ -90,7 +80,12 @@ const StudentHome = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Get first name from full name
+  if (!user) {
+    navigate("/login");
+    return null;
+  }
+
+
   const firstName = student.fullName.split(" ")[1] || "Student";
 
   return (
