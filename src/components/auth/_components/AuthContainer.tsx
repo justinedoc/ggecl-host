@@ -15,7 +15,7 @@ function AuthContainer({
   return (
     <>
       {isPending && <AuthPageLoading />}
-      <section className="relative min-h-screen grid lg:grid-cols-2 overflow-hidden dark:bg-gray-900">
+      <section className="relative min-h-max py-10 md:py-0 grid lg:grid-cols-2 overflow-hidden dark:bg-gray-900">
         {/* Background Blur Effects */}
         <div className="absolute top-10 left-20 w-56 h-56 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
 

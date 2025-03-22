@@ -49,9 +49,7 @@ const Login = () => {
     mutationFn: loginStudent,
     onSuccess: (data) => {
       try {
-        // Validate server response with Zod.
         const validatedData = LoginResponseSchema.parse(data.data);
-        // Update global auth state.
         handleLogin(validatedData.accessToken);
         toast.success("Login successful! Welcome back");
         navigate("/student/dashboard", { replace: true });
@@ -88,8 +86,8 @@ const Login = () => {
 
   return (
     <AuthContainer isPending={isPending}>
-      <div className="flex flex-col justify-center items-center p-6 z-10 mt-8">
-        <div className="w-full max-w-md space-y-5">
+      <div className="flex flex-col gap-4 w-full md:mt-5 md:p-5 relative">
+        <div className="w-full space-y-5">
           <FormHead title="Student Login">
             Login to your student account to start learning
           </FormHead>

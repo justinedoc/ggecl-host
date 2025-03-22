@@ -49,9 +49,9 @@ export default function SignupForm({
 
   return (
     <>
-      <form className="flex flex-col gap-4 w-full md:mt-5 md:p-5 relative">
+      <form className="flex flex-col gap-4 w-full md:mt-5 md:p-5 relative space-y-4">
         <FormHead title="Create an account">
-          Already have an account? <CustomLink to="/login">Login</CustomLink>
+          Start your student journey with us Today!
         </FormHead>
 
         <div className="space-y-4">
@@ -153,16 +153,18 @@ export default function SignupForm({
         <AuthDivider />
 
         <GoogleSigninBtn>Continue with Google</GoogleSigninBtn>
-        <p className="text-sm text-center">
-          By creating an account, you agree to GGECL's{" "}
-          <CustomLink to="https://ggecl.com/terms.html">
-            Terms of Service
-          </CustomLink>
-          ,{" "}
-          <CustomLink to="https://ggecl.com/terms.html">
-            Privacy Policy
-          </CustomLink>
-        </p>
+
+        <div className="text-center space-y-3">
+          <p className="text-sm">
+            Already have an account? <CustomLink to="/login">login</CustomLink>
+          </p>
+          <p className="text-xs">
+            By creating an account, you agree to GGECL's{" "}
+            <CustomLink to="https://ggecl.com/terms.html">
+              Terms of Service
+            </CustomLink>
+          </p>
+        </div>
       </form>
     </>
   );
