@@ -74,7 +74,9 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="flex flex-row items-center justify-between px-5 py-5">
-        <img src={logoImg} width={50} alt="Logo" className="-translate-x-3" />
+        <Link to={"/"}>
+          <img src={logoImg} width={50} alt="Logo" className="-translate-x-3" />
+        </Link>
         <SidebarTrigger>
           <svg
             className="size-5"
@@ -108,7 +110,7 @@ export function AppSidebar() {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
-                    className="border border-transparent dark:data-[active=true]:border-blue-300/30 rounded-sm px-4"
+                    className="border border-transparent dark:data-[active=true]:border-blue-300/30 rounded-sm px-4 hover:data-[active=true]:border-transparent"
                     isActive={isActive(item.url)}
                     onClick={() => setOpenMobile(false)}
                     size="lg"

@@ -164,7 +164,7 @@ const Login = () => {
 
               <Button
                 type="submit"
-                className="mt-4 py-2 rounded-md flex gap-2 items-center w-full justify-center"
+                className="bg-gray-900 border border-blue-300/30 disabled:border-0 disabled:bg-gray-400 dark:disabled:bg-gray-700 dark:text-white font-semibold hover:bg-gray-800 w-full"
               >
                 <span>Login</span>
                 <FaArrowRight />
@@ -180,10 +180,17 @@ const Login = () => {
           </div>
 
           {/* Signup Link */}
-          <div className="text-center mt-4">
+          <div className="text-center space-y-3">
             <p className="text-sm">
               Don't have an account?{" "}
               <CustomLink to="/signup">Sign up</CustomLink>
+            </p>
+
+            <p className="text-xs text-center">
+              By creating an account, you agree to GGECL's{" "}
+              <CustomLink to="https://ggecl.com/terms.html">
+                Terms of Service
+              </CustomLink>
             </p>
           </div>
         </div>

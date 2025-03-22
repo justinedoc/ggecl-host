@@ -89,7 +89,7 @@ const StudentHome = () => {
   const firstName = student.fullName.split(" ")[1] || "Student";
 
   return (
-    <div className="p-6 space-y-8 max-w-7xl mx-auto">
+    <div className="p-4 md:p-6 space-y-8 max-w-7xl mx-auto">
       <header className="space-y-1">
         <h1 className="text-3xl font-bold tracking-tight">
           Welcome back, {firstName}
@@ -99,7 +99,7 @@ const StudentHome = () => {
         </p>
       </header>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-5 md:grid-cols-3">
         <Card className="md:col-span-2">
           <CardHeader>
             <CardTitle>Learning Progress</CardTitle>
@@ -167,7 +167,7 @@ const StudentHome = () => {
               {upcomingLessons.map((lesson) => (
                 <div
                   key={lesson.id}
-                  className="flex items-center justify-between p-2 rounded-md bg-muted/50"
+                  className="flex items-center justify-between p-2 rounded-md bg-muted"
                 >
                   <div>
                     <p className="font-medium text-sm">{lesson.title}</p>
@@ -175,7 +175,7 @@ const StudentHome = () => {
                       {lesson.date} at {lesson.time}
                     </p>
                   </div>
-                  <Button size="sm" variant="outline">
+                  <Button className="border-border" size="sm" variant="outline">
                     Join
                   </Button>
                 </div>
@@ -225,7 +225,7 @@ const StudentHome = () => {
 };
 
 const MetricItem = ({ label, value, trend }: MetricItemProps) => (
-  <div className="flex justify-between items-center p-2 rounded bg-muted/50">
+  <div className="flex justify-between items-center p-3 rounded bg-muted">
     <span>{label}</span>
     <div className="flex items-center gap-2">
       <span className="font-medium">{value}</span>
@@ -244,7 +244,7 @@ const MetricItem = ({ label, value, trend }: MetricItemProps) => (
 );
 
 const AchievementItem = ({ title, date }: AchievementItemProps) => (
-  <div className="flex items-center gap-3 p-2 rounded bg-muted/50">
+  <div className="flex items-center gap-3 p-2 rounded bg-muted">
     <div
       className={cn(
         "h-8 w-8 rounded-full flex items-center justify-center",
@@ -265,9 +265,9 @@ const TaskItem = ({ title, dueDate }: TaskItemProps) => {
   const isValidDate = !isNaN(dueDateObj.getTime());
 
   return (
-    <div className="flex justify-between items-center p-2 rounded bg-muted/50">
+    <div className="flex justify-between items-center p-2 rounded bg-muted">
       <span className="font-semibold text-sm">{title}</span>
-      <Badge variant="secondary">
+      <Badge variant="secondary" className="bg-secondary">
         {isValidDate ? dueDateObj.toLocaleDateString() : "Invalid date"}
       </Badge>
     </div>

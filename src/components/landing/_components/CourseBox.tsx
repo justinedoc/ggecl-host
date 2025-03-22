@@ -69,7 +69,7 @@ function CourseBox({ course }: CourseType) {
     >
       <CardHeader className="py-1 px-3 space-y-1 relative">
         {course?.badge && (
-          <Badge className="absolute top-0 w-fit mb-1">{course.badge}</Badge>
+          <Badge className="absolute top-0 w-fit mb-1 bg-[#111827] dark:bg-white">{course.badge}</Badge>
         )}
         <div className="mb-1 rounded-md overflow-hidden md:h-32">
           <img

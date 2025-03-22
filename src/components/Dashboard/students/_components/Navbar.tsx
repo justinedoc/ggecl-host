@@ -133,7 +133,7 @@ const Navbar = () => {
                 alt={student.fullName}
                 className="h-8 w-8 rounded-full"
               />
-              <div className="flex flex-col items-start">
+              <div className="md:flex flex-col hidden items-start">
                 <span className="text-sm font-medium">
                   {formatName(student.fullName)}
                 </span>
@@ -154,7 +154,7 @@ const Navbar = () => {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => handleLogout("student")}
-              className="text-destructive focus:text-destructive"
+              className="text-destructive focus:text-destructive dark:text-red-500"
             >
               🚪 Log Out
             </DropdownMenuItem>
