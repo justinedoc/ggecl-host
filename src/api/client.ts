@@ -20,15 +20,11 @@ const PUBLIC_URLS = [
   "/instructor/login",
   "/student/register",
   "/instructor/register",
+  "/logout",
   "/",
 ];
 
-const SKIP_TOKEN_REFRESH_URLS = [
-  "/refresh",
-  ...PUBLIC_URLS,
-  "/student/logout",
-  "/instructor/logout",
-];
+const SKIP_TOKEN_REFRESH_URLS = ["/refresh", ...PUBLIC_URLS, "/logout"];
 
 // In‑memory token (we rely on HTTP‑only cookies for persistence)
 let accessToken: string | null = null;
@@ -182,20 +178,11 @@ export const authProvider = {
   refreshAccessToken: async (): Promise<string> => {
     return await refreshAccessToken(axiosInstance);
   },
-  studentLogout: async (signal?: AbortSignal): Promise<void> => {
+  logout: async (signal?: AbortSignal): Promise<void> => {
     try {
-      await axiosInstance.post("/student/logout", { signal });
+      await axiosInstance.post("/logout", { signal });
     } catch (error) {
       console.error("Student logout failed", error);
-    } finally {
-      setAccessToken(null);
-    }
-  },
-  instructorLogout: async (signal?: AbortSignal): Promise<void> => {
-    try {
-      await axiosInstance.post("/instructor/logout", { signal });
-    } catch (error) {
-      console.error("Instructor logout failed", error);
     } finally {
       setAccessToken(null);
     }

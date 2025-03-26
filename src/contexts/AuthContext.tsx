@@ -22,7 +22,7 @@ interface AuthContextType {
   user: Student | Instructor | null;
   handleLogin: (accessToken: string) => Promise<void>;
   refreshToken: () => Promise<string>;
-  handleLogout: (type: "student" | "instructor") => Promise<() => void>;
+  handleLogout: () => Promise<() => void>;
 }
 
 interface User {
@@ -45,11 +45,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const navigate = useNavigate();
 
   const handleLogout = useCallback(
-    async (type: "student" | "instructor") => {
+    async () => {
       const abortController = new AbortController();
       try {
         setState((prev) => ({ ...prev, isLoading: true }));
-        await authProvider[`${type}Logout`](abortController.signal);
+        await authProvider.logout(abortController.signal);
       } catch (error) {
         if (!abortController.signal.aborted) {
           console.error("Logout error:", error);
