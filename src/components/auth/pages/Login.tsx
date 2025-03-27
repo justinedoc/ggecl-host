@@ -44,7 +44,6 @@ const Login = () => {
   const { navigate } = useCustomNavigate();
   const { handleLogin } = useAuth();
 
-  // Mutation using react-query.
   const { mutate, isPending } = useMutation({
     mutationFn: loginStudent,
     onSuccess: (data) => {

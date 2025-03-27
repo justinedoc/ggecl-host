@@ -11,11 +11,11 @@ function Home() {
     <>
       <Hero />
       <Categories />
-      <About />
       <CoursesList />
       <InstructorsList />
-      <Testimonials />
       <JoinAs />
+      <Testimonials />
+      <About />
     </>
   );
 }

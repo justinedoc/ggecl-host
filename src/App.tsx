@@ -16,7 +16,7 @@ import CoursesPage from "./components/landing/pages/CoursePage";
 
 // === Lazy Loaded Auth Components (Less Frequently Visited) ===
 const InstructorLogin = lazy(
-  () => import("./components/Dashboard/Instructor/pages/InstructorLogin.tsx")
+  () => import("./components/auth/pages/InstructorLogin.tsx")
 );
 const Adminlogin = lazy(
   () => import("./components/Dashboard/admin/pages/Adminlogin.tsx")
