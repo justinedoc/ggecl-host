@@ -153,7 +153,7 @@ const Navbar = () => {
             <DropdownMenuItem>🔒 Privacy & Security</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={() => handleLogout("student")}
+              onClick={handleLogout}
               className="text-destructive focus:text-destructive dark:text-red-500"
             >
               🚪 Log Out
