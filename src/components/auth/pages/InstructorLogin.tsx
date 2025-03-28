@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { Link } from "react-router-dom";
 import { FaArrowRight } from "react-icons/fa";
-import LoginPopup from "../../Dashboard/Instructor/components/LoginPopup.tsx";
+import LoginPopup from "../../Dashboard/Instructor/_components/LoginPopup.tsx";
 import { FormHead } from "@/components/auth/ui/FormHead.tsx";
 import { useMutation } from "@tanstack/react-query";
 import { loginInstructor } from "@/api/services/instructors.ts";

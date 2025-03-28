@@ -5,7 +5,6 @@ import axios, {
   AxiosResponse,
   AxiosRequestConfig,
 } from "axios";
-
 interface CustomAxiosRequestConfig extends AxiosRequestConfig {
   _retry?: boolean;
 }

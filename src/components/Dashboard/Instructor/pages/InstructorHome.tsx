@@ -17,7 +17,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import profileImg from "@/assets/images/Frame 427319048.png";
-import CourseRating from "../components/CourseRating";
+import CourseRating from "../_components/CourseRating";
 
 const recentActivity = [
   {

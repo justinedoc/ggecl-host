@@ -13,6 +13,7 @@ import Signup from "./components/auth/pages/Signup";
 import Instructor from "./components/landing/pages/Instructor";
 import Courses from "./components/landing/pages/Courses";
 import CoursesPage from "./components/landing/pages/CoursePage";
+import InstructorSignup from "./components/Dashboard/Instructor/pages/InstructorSignup.tsx";
 
 // === Lazy Loaded Auth Components (Less Frequently Visited) ===
 const InstructorLogin = lazy(
@@ -31,7 +32,7 @@ const StudentLayout = lazy(
 );
 const InstructorLayout = lazy(
   () =>
-    import("./components/Dashboard/Instructor/components/InstructorLayout.tsx")
+    import("./components/Dashboard/Instructor/_components/InstructorLayout.tsx")
 );
 const AdminLayout = lazy(
   () => import("./components/Dashboard/admin/components/AdminLayout.tsx")
@@ -119,6 +120,14 @@ function App() {
             element={
               <Suspense fallback={<AuthPageLoading />}>
                 <InstructorLogin />
+              </Suspense>
+            }
+          />
+          <Route
+            path="instructor/signup"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <InstructorSignup />
               </Suspense>
             }
           />

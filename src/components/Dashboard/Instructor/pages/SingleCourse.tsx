@@ -22,7 +22,7 @@ import {
 import { Button } from "@/components/ui/button";
 import img from "@/assets/images/temp-course-img.png";
 import profileImg from "@/assets/images/Frame 427319048.png";
-import CourseRating from "../components/CourseRating";
+import CourseRating from "../_components/CourseRating";
 
 const SingleCourse = () => {
   const revenueData = [
