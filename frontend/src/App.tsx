@@ -1,0 +1,390 @@
+import { Suspense, lazy } from "react";
+import { Route, Routes } from "react-router";
+import { Toaster } from "@/components/ui/sonner";
+import NotFound from "@/components/ui/NotFound.tsx";
+import AuthPageLoading from "@/components/auth/_components/AuthPageLoading.tsx";
+
+// === Landing Page Components (Eagerly Loaded) ===
+import Layout from "@/components/landing/Layout";
+import Home from "@/components/landing/pages/Home";
+
+const Cart = lazy(() => import("@/components/landing/pages/Cart"));
+const Login = lazy(() => import("@/components/auth/pages/Login"));
+const Signup = lazy(() => import("@/components/auth/pages/Signup"));
+const Instructor = lazy(() => import("@/components/landing/pages/Instructor"));
+const Courses = lazy(() => import("@/components/landing/pages/Courses"));
+const CoursePage = lazy(() => import("@/components/landing/pages/CoursePage"));
+const InstructorSignup = lazy(
+  () => import("@/components/auth/pages/InstructorSignup"),
+);
+
+// === Lazy Loaded Auth Components (Less Frequently Visited) ===
+const InstructorLogin = lazy(
+  () => import("@/components/auth/pages/InstructorLogin.tsx"),
+);
+const Adminlogin = lazy(
+  () => import("@/components/dashboard/admin/pages/Adminlogin.tsx"),
+);
+
+const VerifyEmail = lazy(() => import("@/components/utils/VerifyEmail"));
+
+// === Lazy Loaded dashboard Components ===
+const StudentLayout = lazy(
+  () => import("@/components/dashboard/students/_components/StudentLayout.tsx"),
+);
+const InstructorLayout = lazy(
+  () =>
+    import(
+      "@/components/dashboard/instructor/_components/InstructorLayout.tsx"
+    ),
+);
+const AdminLayout = lazy(
+  () => import("@/components/dashboard/admin/components/AdminLayout.tsx"),
+);
+
+// --- Student dashboard Pages ---
+const StudentHome = lazy(
+  () => import("@/components/dashboard/students/pages/StudentHome.tsx"),
+);
+const Assignment = lazy(
+  () => import("@/components/dashboard/students/pages/Assignment.tsx"),
+);
+const Settings = lazy(
+  () => import("@/components/dashboard/students/pages/Settings.tsx"),
+);
+const StudentCourses = lazy(
+  () => import("@/components/dashboard/students/pages/StudentCourses.tsx"),
+);
+const StudentCalendar = lazy(
+  () => import("@/components/dashboard/students/pages/StudentCalendar.tsx"),
+);
+const StudentChat = lazy(
+  () => import("@/components/dashboard/students/pages/StudentChat.tsx"),
+);
+
+// --- Instructor dashboard Pages ---
+const InstructorHome = lazy(
+  () => import("@/components/dashboard/instructor/pages/InstructorHome.tsx"),
+);
+const InstructorSettings = lazy(
+  () =>
+    import("@/components/dashboard/instructor/pages/InstructorSettings.tsx"),
+);
+const CoursesDetails = lazy(
+  () => import("@/components/dashboard/instructor/pages/CoursesDetails.tsx"),
+);
+const Earnings = lazy(
+  () => import("@/components/dashboard/instructor/pages/Earnings.tsx"),
+);
+const InstructorCourses = lazy(
+  () => import("@/components/dashboard/instructor/pages/InstructorCourses.tsx"),
+);
+const SingleCourse = lazy(
+  () => import("@/components/dashboard/instructor/pages/SingleCourse.tsx"),
+);
+const Chat = lazy(
+  () => import("@/components/dashboard/instructor/pages/Chat.tsx"),
+);
+
+// --- Admin dashboard Pages ---
+const AdminHome = lazy(
+  () => import("@/components/dashboard/admin/pages/AdminHome.tsx"),
+);
+const AdminSettings = lazy(
+  () => import("@/components/dashboard/admin/pages/AdminSettings.tsx"),
+);
+const Payments = lazy(
+  () => import("@/components/dashboard/admin/pages/Payments.tsx"),
+);
+const CourseManagement = lazy(
+  () => import("@/components/dashboard/admin/pages/CourseManagement.tsx"),
+);
+const Analytics = lazy(
+  () => import("@/components/dashboard/admin/pages/Analytics.tsx"),
+);
+
+function App() {
+  return (
+    <>
+      <Toaster />
+      <Routes>
+        {/* === Landing Page Routes === */}
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Home />} />
+          <Route
+            path="cart"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <Cart />
+              </Suspense>
+            }
+          />
+          <Route
+            path="login"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <Login />
+              </Suspense>
+            }
+          />
+          <Route
+            path="signup"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <Signup />
+              </Suspense>
+            }
+          />
+          <Route
+            path="instructor"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <Instructor />
+              </Suspense>
+            }
+          />
+          <Route
+            path="courses/:id"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <CoursePage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="courses"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <Courses />
+              </Suspense>
+            }
+          />
+          <Route
+            path="categories"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <Courses />
+              </Suspense>
+            }
+          />
+
+          <Route
+            path="verify-email"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <VerifyEmail />
+              </Suspense>
+            }
+          />
+
+          {/* --- Auth Routes (Lazy Loaded) --- */}
+          <Route
+            path="instructor/login"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <InstructorLogin />
+              </Suspense>
+            }
+          />
+          <Route
+            path="instructor/signup"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <InstructorSignup />
+              </Suspense>
+            }
+          />
+          <Route
+            path="admin/login"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <Adminlogin />
+              </Suspense>
+            }
+          />
+        </Route>
+
+        {/* === Student Dashboard Routes (Lazy Loaded) === */}
+        <Route
+          path="/student/dashboard"
+          element={
+            <Suspense fallback={<AuthPageLoading />}>
+              <StudentLayout />
+            </Suspense>
+          }
+        >
+          <Route
+            index
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <StudentHome />
+              </Suspense>
+            }
+          />
+          <Route
+            path="assignment"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <Assignment />
+              </Suspense>
+            }
+          />
+          <Route
+            path="settings"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <Settings />
+              </Suspense>
+            }
+          />
+          <Route
+            path="courses"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <StudentCourses />
+              </Suspense>
+            }
+          />
+          <Route
+            path="calendar"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <StudentCalendar />
+              </Suspense>
+            }
+          />
+          <Route
+            path="chat"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <StudentChat />
+              </Suspense>
+            }
+          />
+        </Route>
+
+        {/* === Instructor Dashboard Routes (Lazy Loaded) === */}
+        <Route
+          path="/instructor/dashboard"
+          element={
+            <Suspense fallback={<AuthPageLoading />}>
+              <InstructorLayout />
+            </Suspense>
+          }
+        >
+          <Route
+            index
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <InstructorHome />
+              </Suspense>
+            }
+          />
+          <Route
+            path="mycourses"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <CoursesDetails />
+              </Suspense>
+            }
+          />
+          <Route
+            path="settings"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <InstructorSettings />
+              </Suspense>
+            }
+          />
+          <Route
+            path="earnings"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <Earnings />
+              </Suspense>
+            }
+          />
+          <Route
+            path="courses"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <InstructorCourses />
+              </Suspense>
+            }
+          />
+          <Route
+            path="chat"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <Chat />
+              </Suspense>
+            }
+          />
+          <Route
+            path="course1"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <SingleCourse />
+              </Suspense>
+            }
+          />
+        </Route>
+
+        {/* === Admin Dashboard Routes (Lazy Loaded) === */}
+        <Route
+          path="/admin/dashboard"
+          element={
+            <Suspense fallback={<AuthPageLoading />}>
+              <AdminLayout />
+            </Suspense>
+          }
+        >
+          <Route
+            index
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <AdminHome />
+              </Suspense>
+            }
+          />
+          <Route
+            path="settings"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <AdminSettings />
+              </Suspense>
+            }
+          />
+          <Route
+            path="payments"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <Payments />
+              </Suspense>
+            }
+          />
+          <Route
+            path="courses"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <CourseManagement />
+              </Suspense>
+            }
+          />
+          <Route
+            path="analytics"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <Analytics />
+              </Suspense>
+            }
+          />
+        </Route>
+
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
+  );
+}
+
+export default App;
