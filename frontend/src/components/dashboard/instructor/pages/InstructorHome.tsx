@@ -150,10 +150,10 @@ const InstructorHome = () => {
           {features.slice(0, 3).map((feature) => (
             <div
               key={feature.id}
-              className={`flex flex-row gap-4 items-center border shadow-md ${feature.border} rounded-md p-3`}
+              className={`flex flex-row gap-4 items-center border shadow-md ${feature.border} rounded-md p-3 `}
             >
               {feature.icon}
-              <div className="text-gray-700 dark:text-gray-300  whitespace-normal">
+              <div className="text-gray-700 dark:text-gray-300  whitespace-normal ">
                 <p className="text-xl">{feature.amount}</p>
                 <p className="text-sm">{feature.info}</p>
               </div>
