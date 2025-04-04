@@ -67,6 +67,9 @@ const StudentCalendar = lazy(
 const StudentChat = lazy(
   () => import("@/components/dashboard/students/pages/StudentChat.tsx"),
 );
+const Video = lazy(
+  () => import("@/components/dashboard/students/pages/Video.tsx"),
+);
 
 // --- Instructor dashboard Pages ---
 const InstructorHome = lazy(
@@ -281,6 +284,14 @@ function App() {
             element={
               <Suspense fallback={<AuthPageLoading />}>
                 <Assignment />
+              </Suspense>
+            }
+          />
+          <Route
+            path="video"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <Video />
               </Suspense>
             }
           />
