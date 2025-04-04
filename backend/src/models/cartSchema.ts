@@ -1,16 +1,19 @@
-import { Schema, Document } from "mongoose";
+import { z } from "zod";
+import { Schema } from "mongoose";
 
-export interface ICart extends Document {
-  title: string;
-  instructor: string;
-  totalRating: number;
-  totalStar: number;
-  duration: string;
-  lectures: number;
-  level: string;
-  price: number;
-  img: string;
-}
+export const CartZodSchema = z.object({
+  title: z.string(),
+  instructor: z.string(),
+  totalRating: z.number().default(0),
+  totalStar: z.number().default(0),
+  duration: z.string(),
+  lectures: z.number(),
+  level: z.string(),
+  price: z.number(),
+  img: z.string(),
+});
+
+export type ICart = z.infer<typeof CartZodSchema>;
 
 export const CartSchema = new Schema<ICart>({
   title: { type: String, required: true },

@@ -20,6 +20,7 @@ export const authenticator = () =>
       const decoded = jwt.verify(token, envConfig.accessToken) as {
         id?: string;
       };
+      
       if (!decoded?.id) {
         throw new TRPCError({
           code: "UNAUTHORIZED",

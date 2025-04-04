@@ -32,6 +32,7 @@ export const forgotPasswordRouter = router({
       const { initForgotPassword } = passwordServices(role);
 
       const user = await userModel.findOne({ email }).lean();
+
       if (!user) {
         throw new TRPCError({
           code: "NOT_FOUND",
