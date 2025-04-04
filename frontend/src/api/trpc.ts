@@ -1,16 +1,29 @@
-// src/utils/trpc.ts
-import { createTRPCReact } from '@trpc/react-query';
-import type { AppRouter } from '../../../backend/src/routers/appRouter.js'; // adjust path accordingly
-import { httpBatchLink } from '@trpc/client';
+import { createTRPCClient, httpBatchLink } from "@trpc/client";
+import { createTRPCContext } from "@trpc/tanstack-react-query";
 
-export const trpc = createTRPCReact<AppRouter>();
+import { QueryClient } from "@tanstack/react-query";
+import type { AppRouter } from "@backend/src/routers/appRouter";
+import { API_URL, authProvider } from "./client";
 
-export const trpcClient = trpc.createClient({
+export const queryClient = new QueryClient();
+
+export const { TRPCProvider, useTRPC, useTRPCClient } =
+  createTRPCContext<AppRouter>();
+
+export const trpcClient = createTRPCClient<AppRouter>({
   links: [
     httpBatchLink({
-      url: 'http://localhost:4000/trpc',
+      url: API_URL + "/trpc",
+      headers() {
+        return {
+          Authorization: `Bearer ${authProvider.getAccessToken()}`,
+        };
+      },
       fetch(url, options) {
-        return fetch(url, { ...options, credentials: 'include' });
+        return fetch(url, {
+          ...options,
+          credentials: "include",
+        });
       },
     }),
   ],

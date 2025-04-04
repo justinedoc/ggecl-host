@@ -4,4 +4,4 @@ export const createContext = ({ req, res }: CreateExpressContextOptions) => {
   return { req, res };
 };
 
-export type Context = ReturnType<typeof createContext>;
+export type Context = Awaited<ReturnType<typeof createContext>>;

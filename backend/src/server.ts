@@ -18,7 +18,7 @@ import { connectToDb } from "./config/mongodbConfig.js";
 import logoutRoute from "./routes/logoutRoute.js";
 
 import { createContext } from "./context.js";
-import { createExpressMiddleware } from "@trpc/server/adapters/express";
+import * as trpcExpress from '@trpc/server/adapters/express';
 import { appRouter } from "./routers/appRouter.js";
 
 const app = express();
@@ -45,11 +45,11 @@ app.use(ROUTE_PREFIX, sessionRoute);
 app.use(`${ROUTE_PREFIX}`, logoutRoute);
 
 app.use(
-  "/trpc",
-  createExpressMiddleware({
+  `${ROUTE_PREFIX}/trpc`,
+  trpcExpress.createExpressMiddleware({
     router: appRouter,
     createContext,
-  })
+  }),
 );
 
 app.use(`${ROUTE_PREFIX}/health-check`, (req, res) => {

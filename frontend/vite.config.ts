@@ -9,6 +9,10 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "@trpc/server": path.resolve(
+        __dirname,
+        "../backend/node_modules/@trpc/server",
+      ),
     },
   },
 });
