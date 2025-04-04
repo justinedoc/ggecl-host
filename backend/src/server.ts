@@ -12,13 +12,13 @@ import verifyEmailRoutes from "./routes/emailVerifyRoutes.js";
 import sessionRoute from "./routes/sessionRoute.js";
 
 // Configs & Middlewares
-import { errorHandler } from "./middlewares-old/errorHandler.js";
+import { errorHandler } from "./middlewares/errorHandler.js";
 import { connectToCache } from "./config/redisConfig.js";
 import { connectToDb } from "./config/mongodbConfig.js";
 import logoutRoute from "./routes/logoutRoute.js";
 
 import { createContext } from "./context.js";
-import * as trpcExpress from '@trpc/server/adapters/express';
+import * as trpcExpress from "@trpc/server/adapters/express";
 import { appRouter } from "./routers/appRouter.js";
 
 const app = express();
@@ -49,7 +49,7 @@ app.use(
   trpcExpress.createExpressMiddleware({
     router: appRouter,
     createContext,
-  }),
+  })
 );
 
 app.use(`${ROUTE_PREFIX}/health-check`, (req, res) => {

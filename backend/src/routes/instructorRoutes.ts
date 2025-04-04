@@ -1,5 +1,5 @@
 import express from "express";
-import { authenticator } from "../middlewares-old/authenticator.js";
+import { authenticator } from "../middlewares/authenticator.js";
 import { register, login } from "../controllers/instructors/auth.js";
 
 import {

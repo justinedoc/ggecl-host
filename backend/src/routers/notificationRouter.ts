@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "../trpc.js"; // Fixed typo in "procedure"
+import { router, protectedProcedure } from "../trpc.js"; // Fixed typo in "procedure"
 import z from "zod";
 import { combinedUserModel } from "../utils/roleMappings.js";
 import { parseJwt } from "../utils/jwt.js";
@@ -8,7 +8,6 @@ import { parseJwt } from "../utils/jwt.js";
 const NotificationSchema = z.object({
   id: z.string().uuid(),
 });
-
 
 // main notifications router
 export const notificationRouter = router({
