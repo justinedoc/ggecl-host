@@ -46,6 +46,12 @@ const AdminLayout = lazy(
 const StudentHome = lazy(
   () => import("@/components/dashboard/students/pages/StudentHome.tsx"),
 );
+const StudentForgot = lazy(
+  () => import("@/components/dashboard/students/pages/StudentForgot.tsx"),
+);
+const StudentUpdate = lazy(
+  () => import("@/components/dashboard/students/pages/StudentUpdate.tsx"),
+);
 const Assignment = lazy(
   () => import("@/components/dashboard/students/pages/Assignment.tsx"),
 );
@@ -60,6 +66,9 @@ const StudentCalendar = lazy(
 );
 const StudentChat = lazy(
   () => import("@/components/dashboard/students/pages/StudentChat.tsx"),
+);
+const Video = lazy(
+  () => import("@/components/dashboard/students/pages/Video.tsx"),
 );
 
 // --- Instructor dashboard Pages ---
@@ -84,6 +93,21 @@ const SingleCourse = lazy(
 );
 const Chat = lazy(
   () => import("@/components/dashboard/instructor/pages/Chat.tsx"),
+);
+const IsCalendar = lazy(
+  () => import("@/components/dashboard/instructor/pages/IsCalendar.tsx"),
+);
+const AssignmentCheck = lazy(
+  () => import("@/components/dashboard/instructor/pages/AssignmentCheck.tsx"),
+);
+const AddCourse = lazy(
+  () => import("@/components/dashboard/instructor/pages/AddCourse.tsx"),
+);
+const InstructorForgot = lazy(
+  () => import("@/components/dashboard/instructor/pages/InstructorForgot.tsx"),
+);
+const InstructorUpdate = lazy(
+  () => import("@/components/dashboard/instructor/pages/InstructorUpdate.tsx"),
 );
 
 // --- Admin dashboard Pages ---
@@ -124,6 +148,22 @@ function App() {
             element={
               <Suspense fallback={<AuthPageLoading />}>
                 <Login />
+              </Suspense>
+            }
+          />
+          <Route
+            path="forgot-password"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <StudentForgot />
+              </Suspense>
+            }
+          />
+          <Route
+            path="update-password"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <StudentUpdate />
               </Suspense>
             }
           />
@@ -187,6 +227,22 @@ function App() {
             }
           />
           <Route
+            path="instructor/forgotten-password"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <InstructorForgot />
+              </Suspense>
+            }
+          />
+          <Route
+            path="instructor/update-password"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <InstructorUpdate />
+              </Suspense>
+            }
+          />
+          <Route
             path="instructor/signup"
             element={
               <Suspense fallback={<AuthPageLoading />}>
@@ -194,6 +250,7 @@ function App() {
               </Suspense>
             }
           />
+          
           <Route
             path="admin/login"
             element={
@@ -221,11 +278,20 @@ function App() {
               </Suspense>
             }
           />
+          
           <Route
             path="assignment"
             element={
               <Suspense fallback={<AuthPageLoading />}>
                 <Assignment />
+              </Suspense>
+            }
+          />
+          <Route
+            path="video"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <Video />
               </Suspense>
             }
           />
@@ -281,10 +347,34 @@ function App() {
             }
           />
           <Route
+            path="add-course"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <AddCourse />
+              </Suspense>
+            }
+          />
+          <Route
             path="mycourses"
             element={
               <Suspense fallback={<AuthPageLoading />}>
                 <CoursesDetails />
+              </Suspense>
+            }
+          />
+          <Route
+            path="calendar"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <IsCalendar />
+              </Suspense>
+            }
+          />
+          <Route
+            path="check-assignments"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <AssignmentCheck />
               </Suspense>
             }
           />
