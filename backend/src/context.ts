@@ -1,6 +1,6 @@
-import { CreateExpressContextOptions } from "@trpc/server/adapters/express";
+import * as trpcExpress from "@trpc/server/adapters/express";
 
-export const createContext = ({ req, res }: CreateExpressContextOptions) => {
+export const createContext = ({ req, res }: trpcExpress.CreateExpressContextOptions) => {
   return { req, res };
 };
 
