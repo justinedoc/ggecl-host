@@ -10,12 +10,10 @@ import { tempCourseData } from "../_components/CoursesList";
 import { DisplayRating } from "../_components/CourseBox";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { useTRPC } from "@/api/trpc";
 import { useQuery } from "@tanstack/react-query";
+import { trpc } from "@/api/trpc";
 
 function Cart() {
-  const trpc = useTRPC();
-
   const { data } = useQuery(trpc.cart.getAllItems.queryOptions());
 
   console.log(data);
