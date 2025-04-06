@@ -2,6 +2,7 @@ import { z } from "zod";
 import { Schema } from "mongoose";
 
 export const CartZodSchema = z.object({
+  _id: z.string(),
   title: z.string(),
   instructor: z.string(),
   totalRating: z.number().default(0),
@@ -16,6 +17,7 @@ export const CartZodSchema = z.object({
 export type ICart = z.infer<typeof CartZodSchema>;
 
 export const CartSchema = new Schema<ICart>({
+  _id: { type: String, required: true },
   title: { type: String, required: true },
   instructor: { type: String, required: true },
   totalRating: { type: Number, default: 0 },

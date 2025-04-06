@@ -1,5 +1,5 @@
 import { Document, Schema, model } from "mongoose";
-import { CartSchema, ICart } from "./cartSchema.js";
+import { CartSchema, ICart } from "./cartModel.js";
 
 interface IStudentNotification extends Document {
   title: string;

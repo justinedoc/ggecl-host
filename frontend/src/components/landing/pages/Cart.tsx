@@ -9,21 +9,37 @@ import {
 import { DisplayRating } from "../_components/CourseBox";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { trpc } from "@/utils/trpc";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { queryClient, trpc } from "@/utils/trpc";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { slugify } from "@/lib/slugify";
 import { Key } from "react";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 function Cart() {
-  const { data: cartItems } = useSuspenseQuery(trpc.cart.getAllItems.queryOptions());
-
-  const totalPrice = cartItems.reduce(
-    (acc, course) => acc + course.price,
-    0,
+  const { data: cartItems } = useSuspenseQuery(
+    trpc.cart.getAllItems.queryOptions(),
   );
 
-  const discount = 10;
-  const tax = 20;
+  const { mutate: deleteItem, isPending: isDeleting } = useMutation(
+    trpc.cart.deleteItem.mutationOptions({
+      onSuccess() {
+        toast.success("Item removed from cart successfully!");
+
+        queryClient.invalidateQueries({
+          queryKey: trpc.cart.getAllItems.queryKey(),
+        });
+      },
+      onError() {
+        toast.error("Failed to remove item from cart. Please try again.");
+      },
+    }),
+  );
+
+  const totalPrice = cartItems.reduce((acc, course) => acc + course.price, 0);
+
+  const discount = 0;
+  const tax = 0;
   const finalTotal = totalPrice - discount + tax;
 
   return (
@@ -54,15 +70,15 @@ function Cart() {
         </header>
 
         <div className="border-b py-1 text-gray-500 dark:border-gray-700 dark:text-gray-400">
-          {cartItems.length}{" "}
-          {cartItems.length === 1 ? "Course" : "Courses"} in Cart
+          {cartItems.length} {cartItems.length === 1 ? "Course" : "Courses"} in
+          Cart
         </div>
 
         {/* Course List */}
         <article className="mt-4 space-y-6">
           {cartItems.map((course) => (
             <div
-              key={slugify(course.title) as Key}
+              key={slugify(course._id) as Key}
               className="flex flex-col gap-2 rounded-md border p-4 md:flex-row md:gap-4 dark:border-gray-700 dark:bg-gray-800"
             >
               {/* Course Image */}
@@ -103,8 +119,14 @@ function Cart() {
                     Save for later
                   </span>
                   <Separator orientation="vertical" />
-                  <span className="cursor-pointer text-red-500 dark:text-red-400">
-                    Remove
+                  <span
+                    className={cn(
+                      "cursor-pointer text-red-500 dark:text-red-400",
+                      { "pointer-events-none": isDeleting },
+                    )}
+                    onClick={() => deleteItem({ itemId: course._id })}
+                  >
+                    {isDeleting ? "Removing" : "Remove"}
                   </span>
                 </div>
               </div>

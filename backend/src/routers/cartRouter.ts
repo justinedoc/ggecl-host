@@ -1,114 +1,180 @@
 import NodeCache from "node-cache";
 import z from "zod";
-import StudentModel from "../models/studentModel.js";
-import { protectedProcedure, router } from "../trpc.js";
-import { CartZodSchema, ICart } from "../models/cartSchema.js";
 import { TRPCError } from "@trpc/server";
+import { protectedProcedure, router } from "../trpc.js";
 
-const cache = new NodeCache({ stdTTL: 600 });
+import StudentModel from "../models/studentModel.js";
+import CoursesModel from "../models/coursesModel.js";
+import { ICart } from "../models/cartModel.js";
 
-const getCachedCartItems = (key: string): ICart[] | undefined => {
-  return cache.get(`cartItems:${key}`);
+const cache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
+
+const CACHE_PREFIX = "cartItems"; // Prefix for cache keys
+
+const getCachedCartItems = (userId: string): ICart[] | undefined => {
+  return cache.get<ICart[]>(`${CACHE_PREFIX}:${userId}`);
 };
 
-const setCachedCartItems = (key: string, items: ICart[]): void => {
-  cache.set(`cartItems:${key}`, items);
+const setCachedCartItems = (userId: string, items: ICart[]) => {
+  cache.set(`${CACHE_PREFIX}:${userId}`, items);
 };
 
-const deleteCachedCartItems = (id: string) => cache.del(`cartItems:${id}`);
+const deleteCachedCartItems = (userId: string) => {
+  cache.del(`${CACHE_PREFIX}:${userId}`);
+};
+
+// --- tRPC Router ---
 
 export const cartRouter = router({
+  addItem: protectedProcedure
+    .input(
+      z.object({
+        courseId: z.string().min(1, { message: "Course ID is required" }),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.user.id;
+      const { courseId } = input;
+
+      try {
+        const course = await CoursesModel.findById(courseId)
+          .populate<{ instructor: { _id: string; fullName: string } }>(
+            "instructor",
+            "fullName"
+          )
+          .select("-reviews -syllabus")
+          .lean();
+
+        if (!course) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: `Course with ID ${courseId} not found.`,
+          });
+        }
+
+        if (
+          !course.instructor ||
+          typeof course.instructor !== "object" ||
+          !course.instructor.fullName
+        ) {
+          console.error(
+            `Instructor data missing or invalid for course ${courseId}`
+          );
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message:
+              "Course data is incomplete (missing instructor information).",
+          });
+        }
+
+        const cartItemToAdd: ICart = {
+          ...course,
+          _id: course._id.toString(),
+          instructor: course.instructor.fullName,
+        };
+
+        const updatedStudent = await StudentModel.findByIdAndUpdate(
+          userId,
+          { $addToSet: { cartItems: cartItemToAdd } },
+          { new: true }
+        ).lean();
+
+        if (!updatedStudent) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "User not found.",
+          });
+        }
+
+        const updatedCartItems: ICart[] = updatedStudent.cartItems as ICart[];
+        setCachedCartItems(userId, updatedCartItems);
+
+        return updatedCartItems;
+      } catch (error) {
+        console.error("Error adding item to cart:", {
+          userId,
+          courseId,
+          error,
+        });
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            "An unexpected error occurred while adding the item to the cart.",
+        });
+      }
+    }),
+
   getAllItems: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.user.id;
+
     const cachedCartItems = getCachedCartItems(userId);
 
     if (cachedCartItems) {
+      console.log(`Cache hit for cartItems: ${userId}`);
       return cachedCartItems;
     }
 
+    console.log(`Cache miss for cartItems: ${userId}`);
     try {
-      const user = await StudentModel.findById(userId);
+      const student = await StudentModel.findById(userId)
+        .select("cartItems")
+        .lean();
 
-      if (!user) {
+      if (!student) {
         throw new TRPCError({
-          message: "User not found",
           code: "NOT_FOUND",
+          message: "User not found.",
         });
       }
 
-      const cartItems = user.cartItems;
+      const cartItems = student.cartItems as ICart[];
+
       setCachedCartItems(userId, cartItems);
+
       return cartItems;
     } catch (error) {
-      console.error("Failed to retrieve cart items:", error);
+      console.error("Error retrieving cart items:", { userId, error });
       if (error instanceof TRPCError) throw error;
       throw new TRPCError({
-        message: "An unexpected error occurred",
         code: "INTERNAL_SERVER_ERROR",
+        message: "An unexpected error occurred while retrieving cart items.",
       });
     }
   }),
 
   deleteItem: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input: { id: itemId }, ctx: { user } }) => {
-      try {
-        const updatedUser = await StudentModel.findOneAndUpdate(
-          { _id: user.id },
-          { $pull: { cartItems: { _id: itemId } } },
-          { new: true }
-        );
-
-        if (!updatedUser) {
-          throw new TRPCError({
-            message: "User not found",
-            code: "NOT_FOUND",
-          });
-        }
-
-        deleteCachedCartItems(user.id);
-        return true;
-      } catch (error) {
-        console.error("Error occurred while deleting cart item:", error);
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          message: "An unexpected error occurred",
-          code: "INTERNAL_SERVER_ERROR",
-        });
-      }
-    }),
-
-  addItem: protectedProcedure
-    .input(CartZodSchema)
+    .input(
+      z.object({
+        itemId: z.string().min(1, { message: "Item ID is required" }),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.user.id;
+      const { itemId } = input;
 
       try {
-        const updatedUser = await StudentModel.findByIdAndUpdate(
-          userId,
-          { cartItems: { $push: input } },
-          { new: true }
+        const updateResult = await StudentModel.updateOne(
+          { _id: userId },
+          { $pull: { cartItems: { _id: itemId } } }
         );
 
-        if (!updatedUser) {
+        if (updateResult.matchedCount === 0) {
           throw new TRPCError({
-            message: "User not found",
             code: "NOT_FOUND",
+            message: "User not found.",
           });
         }
 
-        const newCartItems = updatedUser.cartItems;
-
         deleteCachedCartItems(userId);
-        setCachedCartItems(userId, newCartItems);
 
-        return newCartItems;
+        return { success: true };
       } catch (error) {
-        console.error("Error occurred while adding cart item:", error);
+        console.error("Error deleting cart item:", { userId, itemId, error });
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({
-          message: "An unexpected error occurred",
           code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occurred while deleting the cart item.",
         });
       }
     }),

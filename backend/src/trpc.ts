@@ -3,12 +3,12 @@ import { Context } from "./context.js";
 import { TRPCError } from "@trpc/server";
 import jwt, { Secret } from "jsonwebtoken";
 import { envConfig } from "./config/envValidator.js";
+import { UserRole } from "./utils/roleMappings.js";
 
 export const t = initTRPC.context<Context>().create();
 
 export const router = t.router;
 export const procedure = t.procedure;
-
 
 export const protectedProcedure = procedure.use(
   t.middleware(({ ctx: { req }, next }) => {
@@ -25,9 +25,10 @@ export const protectedProcedure = procedure.use(
     try {
       const decoded = jwt.verify(token, envConfig.accessToken as Secret) as {
         id?: string;
+        role?: UserRole;
       };
 
-      if (!decoded?.id) {
+      if (!decoded?.id || !decoded?.role) {
         throw new TRPCError({
           code: "UNAUTHORIZED",
           message: "Invalid token payload",
@@ -35,9 +36,11 @@ export const protectedProcedure = procedure.use(
       }
 
       return next({
-        ctx: { user: { id: decoded.id } },
+        ctx: { user: { id: decoded.id, role: decoded.role } },
       });
     } catch (error) {
+      console.error("Authentication error:", error);
+
       if (error instanceof jwt.TokenExpiredError) {
         throw new TRPCError({
           message: "token has expired",
@@ -52,10 +55,11 @@ export const protectedProcedure = procedure.use(
         });
       }
 
-      console.error("Authentication error:", error);
+      if (error instanceof TRPCError) throw error;
+
       throw new TRPCError({
-        message: "Authentication failed",
         code: "INTERNAL_SERVER_ERROR",
+        message: "An unknown error occured",
       });
     }
   })
