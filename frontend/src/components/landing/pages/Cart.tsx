@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { trpc } from "@/utils/trpc";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { slugify } from "@/lib/slugify";
+import { Key } from "react";
 
 function Cart() {
   const { data: cartItems } = useSuspenseQuery(trpc.cart.getAllItems.queryOptions());
@@ -61,7 +62,7 @@ function Cart() {
         <article className="mt-4 space-y-6">
           {cartItems.map((course) => (
             <div
-              key={slugify}
+              key={slugify(course.title) as Key}
               className="flex flex-col gap-2 rounded-md border p-4 md:flex-row md:gap-4 dark:border-gray-700 dark:bg-gray-800"
             >
               {/* Course Image */}
