@@ -1,0 +1,20 @@
+{
+  "name": "ggecl-deploy",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "dependencies": {
+    "@trpc/server": "^11.0.2"
+  },
+  "pnpm": {
+    "peerDependencyRules": {
+      "allowedVersions": {
+        "react-day-picker>react": "19",
+        "react-day-picker>date-fns": "4"
+      }
+    }
+  }
+}

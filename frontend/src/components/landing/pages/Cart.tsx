@@ -14,7 +14,7 @@ import { trpc } from "@/utils/trpc";
 import { useQuery } from "@tanstack/react-query";
 
 function Cart() {
-  const { data } = useQuery(trpc.cart.addItem.queryOptions());
+  const { data } = useQuery(trpc.cart.getAllItems.queryOptions());
 
   const totalPrice = tempCourseData.reduce(
     (acc, course) => acc + course.price,
