@@ -6,17 +6,17 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { tempCourseData } from "../_components/CoursesList";
 import { DisplayRating } from "../_components/CourseBox";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/utils/trpc";
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { slugify } from "@/lib/slugify";
 
 function Cart() {
-  const { data } = useQuery(trpc.cart.getAllItems.queryOptions());
+  const { data: cartItems } = useSuspenseQuery(trpc.cart.getAllItems.queryOptions());
 
-  const totalPrice = tempCourseData.reduce(
+  const totalPrice = cartItems.reduce(
     (acc, course) => acc + course.price,
     0,
   );
@@ -53,15 +53,15 @@ function Cart() {
         </header>
 
         <div className="border-b py-1 text-gray-500 dark:border-gray-700 dark:text-gray-400">
-          {tempCourseData.length}{" "}
-          {tempCourseData.length === 1 ? "Course" : "Courses"} in Cart
+          {cartItems.length}{" "}
+          {cartItems.length === 1 ? "Course" : "Courses"} in Cart
         </div>
 
         {/* Course List */}
         <article className="mt-4 space-y-6">
-          {tempCourseData.map((course) => (
+          {cartItems.map((course) => (
             <div
-              key={course.id}
+              key={slugify}
               className="flex flex-col gap-2 rounded-md border p-4 md:flex-row md:gap-4 dark:border-gray-700 dark:bg-gray-800"
             >
               {/* Course Image */}
@@ -79,7 +79,7 @@ function Cart() {
                   {course.title}
                 </h2>
                 <p className="my-1 text-sm text-gray-500 dark:text-gray-400">
-                  By {course.instructor.name}
+                  By {course.instructor}
                 </p>
 
                 <div className="flex flex-col md:h-[3vh] md:flex-row md:items-center md:space-x-3">
