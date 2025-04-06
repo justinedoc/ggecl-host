@@ -53,7 +53,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Chart */}
-      <div className="bg-white p-4 rounded-md shadow-md min-w-full overflow-x-scroll">
+      <div className="bg-white p-4 rounded-md shadow-md min-w-full overflow-x-scroll dark:bg-gray-800">
         <LineChart width={1200} height={300} data={data}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="name" />
@@ -66,16 +66,16 @@ export default function AdminDashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="p-4 bg-white rounded-md shadow-md">
+      <div className="grid grid-cols-3 gap-4 ">
+        <div className="p-4 bg-white rounded-md shadow-md dark:bg-gray-800">
           <h3 className="text-xl font-bold">$200.00</h3>
           <p className="text-gray-500">Total Redeemed</p>
         </div>
-        <div className="p-4 bg-white rounded-md shadow-md">
+        <div className="p-4 bg-white rounded-md shadow-md dark:bg-gray-800">
           <h3 className="text-xl font-bold">551</h3>
           <p className="text-gray-500">Total Coupons</p>
         </div>
-        <div className="p-4 bg-white rounded-md shadow-md">
+        <div className="p-4 bg-white rounded-md shadow-md dark:bg-gray-800">
           <h3 className="text-xl font-bold">$8,723</h3>
           <p className="text-gray-500">Redeemed Amount</p>
         </div>
