@@ -119,7 +119,9 @@ function Cart() {
                     Save for later
                   </span>
                   <Separator orientation="vertical" />
-                  <span
+                  <Button
+                    variant="link"
+                    disabled={isDeleting}
                     className={cn(
                       "cursor-pointer text-red-500 dark:text-red-400",
                       { "pointer-events-none": isDeleting },
@@ -127,7 +129,7 @@ function Cart() {
                     onClick={() => deleteItem({ itemId: course._id })}
                   >
                     {isDeleting ? "Removing" : "Remove"}
-                  </span>
+                  </Button>
                 </div>
               </div>
 

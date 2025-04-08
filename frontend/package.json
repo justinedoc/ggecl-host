@@ -1,5 +1,5 @@
 {
-  "name": "frontend",
+  "name": "@/ggecl-client",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -46,6 +46,7 @@
     "react-error-boundary": "^5.0.0",
     "react-hook-form": "^7.54.2",
     "react-icons": "^5.5.0",
+    "react-loading-skeleton": "^3.5.0",
     "react-router": "^7.4.0",
     "recharts": "^2.15.1",
     "sonner": "^2.0.2",
