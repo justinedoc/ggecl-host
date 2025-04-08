@@ -120,6 +120,9 @@ const InstructorUpdate = lazy(
 const Support = lazy(
   () => import("@/components/dashboard/instructor/pages/Support.tsx"),
 );
+const VideoCall = lazy(
+  () => import("@/components/dashboard/instructor/pages/VideoCall.tsx"),
+);
 
 // --- Admin dashboard Pages ---
 const AdminHome = lazy(
@@ -374,10 +377,10 @@ function App() {
             }
           />
           <Route
-            path="support"
+            path="video-call"
             element={
               <Suspense fallback={<AuthPageLoading />}>
-                <Support />
+                <VideoCall />
               </Suspense>
             }
           />
