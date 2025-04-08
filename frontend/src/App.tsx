@@ -85,8 +85,7 @@ const InstructorSettings = lazy(
     import("@/components/dashboard/instructor/pages/InstructorSettings.tsx"),
 );
 const StudentList = lazy(
-  () =>
-    import("@/components/dashboard/instructor/pages/StudentList.tsx"),
+  () => import("@/components/dashboard/instructor/pages/StudentList.tsx"),
 );
 const CoursesDetails = lazy(
   () => import("@/components/dashboard/instructor/pages/CoursesDetails.tsx"),
@@ -118,9 +117,11 @@ const InstructorForgot = lazy(
 const InstructorUpdate = lazy(
   () => import("@/components/dashboard/instructor/pages/InstructorUpdate.tsx"),
 );
+
 const Support = lazy(
   () => import("@/components/dashboard/instructor/pages/Support.tsx"),
 );
+
 const VideoCall = lazy(
   () => import("@/components/dashboard/instructor/pages/VideoCall.tsx"),
 );
@@ -174,7 +175,7 @@ function App() {
               </Suspense>
             }
           />
-          
+
           <Route
             path="update-password"
             element={
@@ -294,7 +295,7 @@ function App() {
               </Suspense>
             }
           />
-          
+
           <Route
             path="support"
             element={
@@ -371,6 +372,7 @@ function App() {
               </Suspense>
             }
           />
+
           <Route
             path="add-course"
             element={
@@ -379,6 +381,7 @@ function App() {
               </Suspense>
             }
           />
+
           <Route
             path="video-call"
             element={
@@ -456,6 +459,15 @@ function App() {
             element={
               <Suspense fallback={<AuthPageLoading />}>
                 <SingleCourse />
+              </Suspense>
+            }
+          />
+
+          <Route
+            path="support"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <Support />
               </Suspense>
             }
           />

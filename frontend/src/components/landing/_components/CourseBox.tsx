@@ -11,10 +11,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCustomNavigate } from "@/hooks/useCustomNavigate";
-import { useMutation } from "@tanstack/react-query";
-import { queryClient, trpc } from "@/utils/trpc";
-import { toast } from "sonner";
-import { useTransition } from "react";
+import { useAddCartItem } from "../hooks/useAddCartItem";
 
 export interface CourseType {
   course: {
@@ -53,37 +50,16 @@ export interface CourseType {
 
 function CourseBox({ course }: CourseType) {
   const { navigate } = useCustomNavigate();
-  const [isPendingTransition, startTransition] = useTransition();
-
-  const { mutate: addItemMutate, isPending: isAdding } = useMutation(
-    trpc.cart.addItem.mutationOptions({
-      onSuccess: () => {
-        toast.success(`"${course.title}" added to cart!`);
-        queryClient.invalidateQueries({
-          queryKey: trpc.cart.getAllItems.queryKey(),
-        });
-      },
-
-      onError: (error) => {
-        toast.error(error.message || "Failed to add course to cart.");
-        console.error("Add to cart error:", error);
-      },
-    }),
-  );
+  const { addItemMutate, isAdding } = useAddCartItem(course.title);
 
   const handleNavigateToCourse = () => {
-    // Assuming navigation takes the string _id
     navigate(`/courses/${course.id}`);
   };
 
   const handleAddToCart = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card click navigation
-    startTransition(() => {
-      addItemMutate({ courseId: course.id as unknown as string }); // TODO: Fix type casting
-    });
+    e.stopPropagation();
+    addItemMutate({ courseId: course.id as unknown as string }); // TODO: Fix type casting
   };
-
-  const isProcessing = isAdding || isPendingTransition;
 
   return (
     <Card
@@ -137,10 +113,10 @@ function CourseBox({ course }: CourseType) {
           size="icon"
           className="h-9 w-9 border-gray-300 transition hover:bg-gray-100 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
           onClick={handleAddToCart}
-          disabled={isProcessing}
+          disabled={isAdding}
           aria-label={`Add ${course.title} to cart`}
         >
-          {isProcessing ? (
+          {isAdding ? (
             <Loader className="h-5 w-5 animate-spin" />
           ) : (
             <ShoppingCart className="h-5 w-5 text-gray-700 dark:text-gray-300" />
