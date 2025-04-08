@@ -47,6 +47,9 @@ const AdminLayout = lazy(
 const StudentHome = lazy(
   () => import("@/components/dashboard/students/pages/StudentHome.tsx"),
 );
+const StudentSupport = lazy(
+  () => import("@/components/dashboard/students/pages/StudentSupport.tsx"),
+);
 const StudentForgot = lazy(
   () => import("@/components/dashboard/students/pages/StudentForgot.tsx"),
 );
@@ -76,9 +79,14 @@ const Video = lazy(
 const InstructorHome = lazy(
   () => import("@/components/dashboard/instructor/pages/InstructorHome.tsx"),
 );
+
 const InstructorSettings = lazy(
   () =>
     import("@/components/dashboard/instructor/pages/InstructorSettings.tsx"),
+);
+const StudentList = lazy(
+  () =>
+    import("@/components/dashboard/instructor/pages/StudentList.tsx"),
 );
 const CoursesDetails = lazy(
   () => import("@/components/dashboard/instructor/pages/CoursesDetails.tsx"),
@@ -109,6 +117,12 @@ const InstructorForgot = lazy(
 );
 const InstructorUpdate = lazy(
   () => import("@/components/dashboard/instructor/pages/InstructorUpdate.tsx"),
+);
+const Support = lazy(
+  () => import("@/components/dashboard/instructor/pages/Support.tsx"),
+);
+const VideoCall = lazy(
+  () => import("@/components/dashboard/instructor/pages/VideoCall.tsx"),
 );
 
 // --- Admin dashboard Pages ---
@@ -160,6 +174,7 @@ function App() {
               </Suspense>
             }
           />
+          
           <Route
             path="update-password"
             element={
@@ -279,6 +294,15 @@ function App() {
               </Suspense>
             }
           />
+          
+          <Route
+            path="support"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <StudentSupport />
+              </Suspense>
+            }
+          />
 
           <Route
             path="assignment"
@@ -356,6 +380,14 @@ function App() {
             }
           />
           <Route
+            path="video-call"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <VideoCall />
+              </Suspense>
+            }
+          />
+          <Route
             path="mycourses"
             element={
               <Suspense fallback={<AuthPageLoading />}>
@@ -384,6 +416,14 @@ function App() {
             element={
               <Suspense fallback={<AuthPageLoading />}>
                 <InstructorSettings />
+              </Suspense>
+            }
+          />
+          <Route
+            path="students"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <StudentList />
               </Suspense>
             }
           />

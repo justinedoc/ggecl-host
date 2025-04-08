@@ -101,7 +101,7 @@ export function AppSidebar() {
         </SidebarTrigger>
       </SidebarHeader>
 
-      <SidebarSeparator className="bg-blue-300/30" />
+      <SidebarSeparator className="bg-blue-300/30 -ml-[2px] -mt-[10px]" />
 
       <SidebarContent>
         <SidebarGroup>
