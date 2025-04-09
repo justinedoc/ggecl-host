@@ -152,7 +152,7 @@ export const courseRouter = router({
         console.log("Cache set for:", cacheKey);
 
         return course;
-      } catch (error: unknown) {
+      } catch (error) {
         console.error("Error fetching course:", error);
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({
@@ -200,7 +200,7 @@ export const courseRouter = router({
         deleteAllCoursesCache("courses-");
         return savedCourse;
       } catch (error) {
-        console.error("Error creating course:", error.message || error);
+        console.error("Error creating course:", error);
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -251,7 +251,7 @@ export const courseRouter = router({
 
         return course;
       } catch (error) {
-        console.error("An error occurred while updating the course:", error.message || error);
+        console.error("An error occurred while updating the course:", error);
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
