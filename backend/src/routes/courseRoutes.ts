@@ -1,3 +1,5 @@
+/*
+
 import { Router } from "express";
 import {
   createCourse,
@@ -19,3 +21,4 @@ router.get("/all", getCourses);
 router.get("/:id", getCourseById);
 
 export default router;
+*/

@@ -1,3 +1,4 @@
+/*
 import { Request, Response } from "express";
 import mongoose, { FilterQuery, isValidObjectId } from "mongoose";
 import asyncHandler from "express-async-handler";
@@ -44,9 +45,7 @@ function deleteAllCoursesCache(startWith: string) {
   cache.del(courseKeys);
 }
 
-/**
- * Create a new course with Zod validation
- */
+
 export const createCourse = asyncHandler(
   async (req: Request<object, object, CourseInput>, res: Response) => {
     const validationResult = CourseInputSchema.safeParse(req.body);
@@ -60,7 +59,7 @@ export const createCourse = asyncHandler(
 
     try {
       const instructorId = validationResult.data.instructor;
-
+      
       const instructorExists = await model("instructor").exists({
         _id: instructorId,
       });
@@ -100,9 +99,7 @@ export const createCourse = asyncHandler(
   }
 );
 
-/**
- * Get paginated and filtered courses with caching
- */
+
 export const getCourses = asyncHandler(async (req: Request, res: Response) => {
   const cacheKey = getCacheKey(req);
   const cachedData = cache.get(cacheKey) as Record<string, unknown> | null;
@@ -141,7 +138,7 @@ export const getCourses = asyncHandler(async (req: Request, res: Response) => {
   // Data fetching
   const [courses, total] = await Promise.all([
     Course.find(query)
-      .populate("instructor", "fullName picture")
+    .populate("instructor", "fullName picture")
       .sort(sortOptions)
       .skip(skip)
       .limit(limit)
@@ -166,14 +163,12 @@ export const getCourses = asyncHandler(async (req: Request, res: Response) => {
   res.json({ success: true, ...response });
 });
 
-/**
- * Get single course by ID with caching
- */
+
 export const getCourseById = asyncHandler(
   async (req: Request<{ id: string }>, res: Response) => {
     const cacheKey = `course-${req.params.id}`;
     const cachedData = cache.get(cacheKey);
-
+    
     if (cachedData) {
       res.json({ success: true, fromCache: true, data: cachedData });
       return;
@@ -187,7 +182,7 @@ export const getCourseById = asyncHandler(
     const course = await Course.findById(req.params.id)
       .populate("instructor", "fullName bio picture")
       .populate("reviews");
-
+      
     if (!course) {
       res.status(404);
       throw new Error("Course not found");
@@ -195,14 +190,12 @@ export const getCourseById = asyncHandler(
 
     // Cache the course data
     cache.set(cacheKey, course.toObject());
-
+    
     res.json({ success: true, data: course });
   }
 );
 
-/**
- * Update course by ID with Zod validation
- */
+
 export const updateCourse = asyncHandler(
   async (
     req: Request<{ id: string }, object, CourseUpdateInput>,
@@ -241,9 +234,7 @@ export const updateCourse = asyncHandler(
   }
 );
 
-/**
- * Delete course by ID
- */
+
 export const deleteCourse = asyncHandler(
   async (req: Request<{ id: string }>, res: Response) => {
     if (!isValidObjectId(req.params.id)) {
@@ -260,10 +251,12 @@ export const deleteCourse = asyncHandler(
     // Clear relevant cache
     cache.del(`course-${req.params.id}`);
     deleteAllCoursesCache("courses-"); // Clear all courses lists
-
+    
     res.json({
       success: true,
       data: { message: "Course deleted successfully" },
     });
   }
 );
+
+*/
