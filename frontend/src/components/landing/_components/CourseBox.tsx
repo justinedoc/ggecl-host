@@ -12,76 +12,56 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCustomNavigate } from "@/hooks/useCustomNavigate";
 import { useAddCartItem } from "../hooks/useAddCartItem";
+import { slugify } from "@/lib/slugify";
+import type { ICourseSummary } from "@/utils/trpc";
 
-export interface CourseType {
-  course: {
-    id: number;
-    title: string;
-    instructor: {
-      name: string;
-      role: string;
-      image: string;
-      reviews: number;
-      students: number;
-      courses: number;
-      bio: string;
-    };
-    description: string;
-    certification: string;
-    syllabus: string[];
-    reviews: {
-      rating: number;
-      reviewer: string;
-      date: string;
-      comment: string;
-      image: string;
-      stars: number;
-    }[];
-    totalRating: number;
-    totalStar: number;
-    duration: string;
-    lectures: number;
-    level: string;
-    price: number;
-    img: string;
-    badge?: string;
-  };
-}
 
-function CourseBox({ course }: CourseType) {
+function CourseBox({ course }: { course: ICourseSummary }) {
   const { navigate } = useCustomNavigate();
   const { addItemMutate, isAdding } = useAddCartItem(course.title);
 
+  const instructor = course.instructor as {
+    _id: string;
+    fullName: string;
+    picture: string;
+  };
+
   const handleNavigateToCourse = () => {
-    navigate(`/courses/${course.id}`);
+    navigate(`/courses/${course._id}?title=` + slugify(course.title));
   };
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
-    addItemMutate({ courseId: course.id as unknown as string }); // TODO: Fix type casting
+    addItemMutate({ courseId: course._id.toString() });
   };
 
   return (
     <Card
-      className="flex w-full cursor-pointer flex-col shadow-sm xl:max-w-[17rem] dark:border-gray-800 dark:bg-gray-900"
+      className="flex w-full cursor-pointer flex-col gap-2 py-2 shadow-sm xl:max-w-[17rem] dark:border-gray-800 dark:bg-gray-900"
       onClick={handleNavigateToCourse}
-      role="link" // Better semantics
+      role="link"
       aria-label={`View details for ${course.title}`}
     >
       <CardHeader className="relative flex-shrink-0 px-3 pt-2 pb-1">
-        {course.badge && (
-          <Badge className="absolute top-2 left-2 z-10 w-fit rounded-sm bg-black px-2 py-0.5 text-xs text-white dark:bg-white dark:text-black">
-            {course.badge}
-          </Badge>
-        )}
+        <Badge
+          className={cn(
+            "absolute top-2 left-2 z-10 w-fit rounded-sm bg-black px-2 py-0.5 text-xs text-white dark:bg-white dark:text-black",
+            {
+              hidden: !course?.badge,
+            },
+          )}
+        >
+          {course.badge}
+        </Badge>
+
         <div className="mb-2 aspect-video overflow-hidden rounded-md">
           {" "}
           {/* Maintain aspect ratio */}
           <img
             src={course.img}
-            alt={course.title} // Alt text should be descriptive
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" // Example hover effect (add group class to Card)
-            loading="lazy" // Lazy load images below the fold
+            alt={course.title}
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            loading="lazy"
           />
         </div>
         <CardTitle className="line-clamp-2 text-lg font-semibold tracking-tight text-gray-800 dark:text-white">
@@ -90,23 +70,21 @@ function CourseBox({ course }: CourseType) {
           {course.title}
         </CardTitle>
         <CardDescription className="text-sm text-gray-600 dark:text-gray-400">
-          By {course.instructor.name}
+          By {instructor.fullName}
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow px-3 py-1">
+      <CardContent className="flex-grow px-3">
         {" "}
-        {/* Allow content to grow */}
-        {/* DisplayRating expects rating and stars */}
         <DisplayRating rating={course.totalRating} stars={course.totalStar} />
         <p className="mt-1 line-clamp-1 text-xs text-gray-600 dark:text-gray-400">
-          <span>{course.duration}</span> &bull; {/* Use HTML entity */}
+          <span>{course.duration}</span> &bull;
           <span>{course.lectures} Lectures</span> &bull;{" "}
           <span>{course.level}</span>
         </p>
       </CardContent>
-      <CardFooter className="flex-shrink-0 items-center justify-between px-3 pt-1 pb-3">
+      <CardFooter className="flex-shrink-0 items-center justify-between px-3 pt-1 pb-2">
         <span className="text-lg font-bold text-gray-800 dark:text-white">
-          ${course.price.toFixed(2)} {/* Ensure formatting */}
+          ${course.price.toFixed(2)}
         </span>
         <Button
           variant="outline"

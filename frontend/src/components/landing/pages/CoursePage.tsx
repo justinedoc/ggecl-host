@@ -1,5 +1,4 @@
 import { FaFacebook, FaGithub, FaGoogle, FaTwitter } from "react-icons/fa";
-import { tempCourseData } from "../_components/CoursesList";
 import { useParams } from "react-router";
 import {
   Breadcrumb,
@@ -9,25 +8,32 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import CourseBox, { CourseType, DisplayRating } from "../_components/CourseBox";
+import CourseBox, { DisplayRating } from "../_components/CourseBox";
 import { Separator } from "@/components/ui/separator";
-import tempInstructorImg from "@/assets/images/temp-instructor-img.png";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CourseInfo from "../_components/CourseInfo";
 import ListContainer from "@/components/ui/ListContainer";
+import { GetCourseOutput } from "@/utils/trpc";
+import { useCoursesById } from "../hooks/useCourseById";
+import { useCourses } from "../hooks/useCourses";
+import { TInstructor } from "@/types/instructorType";
 
 const CoursePage = () => {
   const { id } = useParams();
-  const course = tempCourseData.find((course) => course.id === Number(id));
+
+  const { courses, loadingCourses } = useCourses({ limit: 4 });
+  const { singleCourse: course } = useCoursesById(id || "");
 
   if (!course) return "Course not found";
 
+  const instructor = course.instructor as unknown as TInstructor;
+
   return (
     <section>
-      <main className="text-gray-800 dark:text-gray-200 dark:bg-gray-900 relative">
-        <div className="p-4 md:p-10 grid grid-cols-1 md:grid-cols-4 dark:bg-gray-800 bg-[#f8fafc]">
+      <main className="relative text-gray-800 dark:bg-gray-900 dark:text-gray-200">
+        <div className="grid grid-cols-1 bg-[#f8fafc] p-4 md:grid-cols-4 md:p-10 dark:bg-gray-800">
           <div className="md:col-span-3">
             <header>
               <Breadcrumb>
@@ -50,20 +56,20 @@ const CoursePage = () => {
                 </BreadcrumbList>
               </Breadcrumb>
 
-              <h1 className="text-2xl md:text-4xl font-bold my-5 md:my-7">
+              <h1 className="my-5 text-2xl font-bold md:my-7 md:text-4xl">
                 {course.title}
               </h1>
             </header>
 
-            <div className="flex gap-5 flex-col">
-              <p className="text-sm md:text-base w-full md:w-[70%]">
+            <div className="flex flex-col gap-5">
+              <p className="w-full text-sm md:w-[70%] md:text-base">
                 Lorem ipsum dolor sit amet consectetur adipisicing elit. Fugiat
                 exercitationem tempora temporibus quis! Iste, cum. Lorem ipsum
                 dolor sit amet. Lorem ipsum dolor sit amet consectetur
                 adipisicing elit. Iste, asperiores.
               </p>
 
-              <div className="flex flex-col md:flex-row md:items-center md:h-[3vh] md:space-x-3">
+              <div className="flex flex-col md:h-[3vh] md:flex-row md:items-center md:space-x-3">
                 <DisplayRating
                   rating={course.totalRating}
                   stars={course.totalStar}
@@ -72,7 +78,7 @@ const CoursePage = () => {
                   orientation="vertical"
                   className="hidden md:block dark:bg-gray-600"
                 />
-                <p className="text-sm dark:text-gray-400 text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   <span>{course.duration}</span> •{" "}
                   <span>{course.lectures} Lectures</span> •{" "}
                   <span>{course.level}</span>
@@ -81,18 +87,16 @@ const CoursePage = () => {
 
               <div className="flex items-center gap-2">
                 <Avatar className="object-cover">
-                  <AvatarImage src={tempInstructorImg} />
+                  <AvatarImage src={instructor.picture} />
                   <AvatarFallback>CN</AvatarFallback>
                 </Avatar>
                 <p>
                   Created by{" "}
-                  <span className="text-blue-500">
-                    {course.instructor.name}
-                  </span>
+                  <span className="text-blue-500">{instructor.fullName}</span>
                 </p>
               </div>
 
-              <div className="flex gap-2 items-center">
+              <div className="flex items-center gap-2">
                 <Globe />
                 <span className="text-sm text-gray-500">
                   English, Spanish, Italian, German.
@@ -107,24 +111,26 @@ const CoursePage = () => {
         <CourseAction course={course} />
       </main>
 
-      <ListContainer
-        header="Similar courses"
-        path="/courses"
-        render={tempCourseData.map((course) => (
-          <CourseBox key={course.id} course={course} />
-        ))}
-      />
+      {!loadingCourses && (
+        <ListContainer
+          header="Similar courses"
+          path="/courses"
+          render={courses.map((course) => (
+            <CourseBox key={course._id.toString()} course={course} />
+          ))}
+        />
+      )}
     </section>
   );
 };
 
-function CourseAction({ course }: CourseType) {
+function CourseAction({ course }: { course: GetCourseOutput }) {
   return (
-    <div className="bg-gray-50 dark:bg-gray-900 border border-gray-300/30 dark:border-blue-300/20 shadow-md rounded-xl p-4 md:absolute md:top-14 md:right-10 md:w-[18rem]">
-      <div className="md:max-h-36 md:max-w-[17rem] overflow-hidden rounded-lg">
+    <div className="rounded-xl border border-gray-300/30 bg-gray-50 p-4 shadow-md md:absolute md:top-14 md:right-10 md:w-[18rem] dark:border-blue-300/20 dark:bg-gray-900">
+      <div className="overflow-hidden rounded-lg md:max-h-36 md:max-w-[17rem]">
         <img
           src={course.img}
-          className="w-full object-cover rounded-lg"
+          className="w-full rounded-lg object-cover"
           alt={course.title}
         />
       </div>
@@ -134,10 +140,10 @@ function CourseAction({ course }: CourseType) {
             ${(course.price * 0.5).toFixed(2)}
           </span>
           <span className="text-gray-400 line-through">${course.price}</span>
-          <span className="text-green-500 font-bold">50% Off</span>
+          <span className="font-bold text-green-500">50% Off</span>
         </p>
       </div>
-      <div className="flex flex-col gap-4 mt-4">
+      <div className="mt-4 flex flex-col gap-4">
         <Button
           variant="outline"
           className="border-black font-semibold dark:border-blue-300/20 dark:bg-transparent"
@@ -147,7 +153,7 @@ function CourseAction({ course }: CourseType) {
         <Button className="dark:text-gray-800">Buy Now</Button>
       </div>
       <Separator className="my-5" />
-      <div className="flex gap-4 justify-center text-xl text-gray-800 dark:text-gray-400">
+      <div className="flex justify-center gap-4 text-xl text-gray-800 dark:text-gray-400">
         <FaFacebook />
         <FaGithub />
         <FaGoogle />
