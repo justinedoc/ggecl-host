@@ -1,7 +1,7 @@
 import {
     Sidebar,
     SidebarContent,
-    SidebarFooter,
+    // SidebarFooter,
     SidebarGroup,
     SidebarGroupContent,
     SidebarHeader,
@@ -13,7 +13,7 @@ import {
     useSidebar,
   } from "@/components/ui/sidebar";
   import { Link, useLocation } from "react-router";
-  import { BiSupport } from "react-icons/bi";
+//   import { BiSupport } from "react-icons/bi";
   import {
     Calendar,
     ClipboardPaste,

@@ -1,6 +1,7 @@
 import { Suspense, lazy } from "react";
 import { Route, Routes } from "react-router";
 import { Toaster } from "@/components/ui/sonner";
+import { SkeletonTheme } from "react-loading-skeleton";
 import NotFound from "@/components/ui/NotFound.tsx";
 import AuthPageLoading from "@/components/auth/_components/AuthPageLoading.tsx";
 
@@ -143,7 +144,7 @@ const Analytics = lazy(
 
 function App() {
   return (
-    <>
+    <SkeletonTheme baseColor="#313131" highlightColor="#525252">
       <Toaster />
       <Routes>
         {/* === Landing Page Routes === */}
@@ -265,7 +266,15 @@ function App() {
               </Suspense>
             }
           />
-          
+          <Route
+            path="support"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <Support />
+              </Suspense>
+            }
+          />
+
           <Route
             path="admin/login"
             element={
@@ -301,6 +310,7 @@ function App() {
               </Suspense>
             }
           />
+
           <Route
             path="assignment"
             element={
@@ -511,7 +521,7 @@ function App() {
 
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </>
+    </SkeletonTheme>
   );
 }
 

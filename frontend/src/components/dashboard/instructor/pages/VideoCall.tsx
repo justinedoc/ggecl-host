@@ -3,7 +3,7 @@ import {
     FaVideo,
     FaUsers,
     FaCommentDots,
-    FaDesktop,
+    // FaDesktop,
     FaSmile,
     FaPhoneAlt,
     FaTimes,
@@ -43,7 +43,7 @@ import {
   
     const handleStudentClick = (student: Participant) => setSelectedStudent(student);
   
-    const reactions = ["👍", "❤️", "😂", "👏", "🎉"];
+    // const reactions = ["👍", "❤️", "😂", "👏", "🎉"];
   
     if (feedbackPage) {
       return (
