@@ -19,6 +19,7 @@ import { GetCourseOutput } from "@/utils/trpc";
 import { useCoursesById } from "../hooks/useCourseById";
 import { useCourses } from "../hooks/useCourses";
 import { TInstructor } from "@/types/instructorType";
+import { useAddCartItem } from "../hooks/useAddCartItem";
 
 const CoursePage = () => {
   const { id } = useParams();
@@ -28,7 +29,7 @@ const CoursePage = () => {
 
   if (!course) return "Course not found";
 
-  const instructor = course.instructor as unknown as TInstructor;
+  const instructor = course.instructor as TInstructor;
 
   return (
     <section>
@@ -125,6 +126,8 @@ const CoursePage = () => {
 };
 
 function CourseAction({ course }: { course: GetCourseOutput }) {
+  const { addItemMutate, isAdding } = useAddCartItem(course.title);
+
   return (
     <div className="rounded-xl border border-gray-300/30 bg-gray-50 p-4 shadow-md md:absolute md:top-14 md:right-10 md:w-[18rem] dark:border-blue-300/20 dark:bg-gray-900">
       <div className="overflow-hidden rounded-lg md:max-h-36 md:max-w-[17rem]">
@@ -145,10 +148,12 @@ function CourseAction({ course }: { course: GetCourseOutput }) {
       </div>
       <div className="mt-4 flex flex-col gap-4">
         <Button
+          disabled={isAdding}
           variant="outline"
           className="border-black font-semibold dark:border-blue-300/20 dark:bg-transparent"
+          onClick={() => addItemMutate({ courseId: course._id.toString() })}
         >
-          Add To Cart
+          {isAdding ? "Adding to cart" : "Add To Cart"}
         </Button>
         <Button className="dark:text-gray-800">Buy Now</Button>
       </div>

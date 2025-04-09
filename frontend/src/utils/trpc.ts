@@ -10,13 +10,10 @@ import { inferProcedureOutput } from "@trpc/server";
 export type GetAllCoursesOutput = inferProcedureOutput<
   AppRouter["course"]["getAll"]
 >;
+
 export type GetCourseOutput = inferProcedureOutput<
   AppRouter["course"]["getById"]
 >;
-
-export type GetCourseOutputWithOmit = Omit<GetCourseOutput, "_id"> & {
-  _id: string;
-};
 
 export type ICourseSummary = GetAllCoursesOutput["courses"][number];
 
