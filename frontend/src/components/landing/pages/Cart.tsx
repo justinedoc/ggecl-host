@@ -16,7 +16,7 @@ import { useCartItems } from "../hooks/useCartItems";
 import { useDeleteCartItem } from "../hooks/useDeleteCartItem";
 
 function Cart() {
-  const { cartItems } = useCartItems();
+  const { cartItems = [] } = useCartItems();
 
   const { deleteItem, isDeleting } = useDeleteCartItem();
 
