@@ -1,4 +1,4 @@
-import { Schema, model, Document, Types } from "mongoose";
+import { Schema, model, Types } from "mongoose";
 import { type Review, ReviewSchema } from "./reviewSchema.js";
 
 export interface ICourse extends Document {
@@ -6,7 +6,7 @@ export interface ICourse extends Document {
   instructor: Types.ObjectId;
   description: string;
   certification: string;
-  syllabus: string[]; 
+  syllabus: string[];
   reviews: Review[];
   totalRating: number;
   totalStar: number;

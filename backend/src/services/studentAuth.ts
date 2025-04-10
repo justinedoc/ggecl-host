@@ -11,7 +11,7 @@ type StudentRegisterType = z.infer<typeof StudentRegistrationSchema>;
 
 export const studentAuthService = {
   findStudentByEmail: async (email: string) => {
-    return StudentModel.findOne({ email });
+    return StudentModel.exists({ email });
   },
 
   createStudent: async (data: StudentRegisterType): Promise<IStudent> => {

@@ -85,8 +85,7 @@ const InstructorSettings = lazy(
     import("@/components/dashboard/instructor/pages/InstructorSettings.tsx"),
 );
 const StudentList = lazy(
-  () =>
-    import("@/components/dashboard/instructor/pages/StudentList.tsx"),
+  () => import("@/components/dashboard/instructor/pages/StudentList.tsx"),
 );
 const CoursesDetails = lazy(
   () => import("@/components/dashboard/instructor/pages/CoursesDetails.tsx"),
@@ -118,9 +117,11 @@ const InstructorForgot = lazy(
 const InstructorUpdate = lazy(
   () => import("@/components/dashboard/instructor/pages/InstructorUpdate.tsx"),
 );
+
 const Support = lazy(
   () => import("@/components/dashboard/instructor/pages/Support.tsx"),
 );
+
 const VideoCall = lazy(
   () => import("@/components/dashboard/instructor/pages/VideoCall.tsx"),
 );
@@ -132,6 +133,9 @@ const AdminHome = lazy(
 const AdminSettings = lazy(
   () => import("@/components/dashboard/admin/pages/AdminSettings.tsx"),
 );
+const AdminChat = lazy(
+  () => import("@/components/dashboard/admin/pages/AdmnChat.tsx"),
+);
 const Payments = lazy(
   () => import("@/components/dashboard/admin/pages/Payments.tsx"),
 );
@@ -140,6 +144,12 @@ const CourseManagement = lazy(
 );
 const Analytics = lazy(
   () => import("@/components/dashboard/admin/pages/Analytics.tsx"),
+);
+const InstructorInfo = lazy(
+  () => import("@/components/dashboard/admin/pages/InstructorInfo.tsx"),
+);
+const StudentInfo = lazy(
+  () => import("@/components/dashboard/admin/pages/StudentInfo.tsx"),
 );
 
 function App() {
@@ -174,7 +184,7 @@ function App() {
               </Suspense>
             }
           />
-          
+
           <Route
             path="update-password"
             element={
@@ -302,6 +312,7 @@ function App() {
               </Suspense>
             }
           />
+
           <Route
             path="support"
             element={
@@ -378,6 +389,7 @@ function App() {
               </Suspense>
             }
           />
+
           <Route
             path="add-course"
             element={
@@ -386,6 +398,7 @@ function App() {
               </Suspense>
             }
           />
+
           <Route
             path="video-call"
             element={
@@ -466,6 +479,15 @@ function App() {
               </Suspense>
             }
           />
+
+          <Route
+            path="support"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <Support />
+              </Suspense>
+            }
+          />
         </Route>
 
         {/* === Admin Dashboard Routes (Lazy Loaded) === */}
@@ -494,6 +516,14 @@ function App() {
             }
           />
           <Route
+            path="chat"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <AdminChat />
+              </Suspense>
+            }
+          />
+          <Route
             path="payments"
             element={
               <Suspense fallback={<AuthPageLoading />}>
@@ -514,6 +544,22 @@ function App() {
             element={
               <Suspense fallback={<AuthPageLoading />}>
                 <Analytics />
+              </Suspense>
+            }
+          />
+          <Route
+            path="instructors"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <InstructorInfo />
+              </Suspense>
+            }
+          />
+          <Route
+            path="students"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <StudentInfo />
               </Suspense>
             }
           />

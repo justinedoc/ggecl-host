@@ -9,32 +9,16 @@ import {
 import { DisplayRating } from "../_components/CourseBox";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { queryClient, trpc } from "@/utils/trpc";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { slugify } from "@/lib/slugify";
 import { Key } from "react";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useCartItems } from "../hooks/useCartItems";
+import { useDeleteCartItem } from "../hooks/useDeleteCartItem";
 
 function Cart() {
-  const { data: cartItems } = useSuspenseQuery(
-    trpc.cart.getAllItems.queryOptions(),
-  );
+  const { cartItems = [] } = useCartItems();
 
-  const { mutate: deleteItem, isPending: isDeleting } = useMutation(
-    trpc.cart.deleteItem.mutationOptions({
-      onSuccess() {
-        toast.success("Item removed from cart successfully!");
-
-        queryClient.invalidateQueries({
-          queryKey: trpc.cart.getAllItems.queryKey(),
-        });
-      },
-      onError() {
-        toast.error("Failed to remove item from cart. Please try again.");
-      },
-    }),
-  );
+  const { deleteItem, isDeleting } = useDeleteCartItem();
 
   const totalPrice = cartItems.reduce((acc, course) => acc + course.price, 0);
 
@@ -75,72 +59,76 @@ function Cart() {
         </div>
 
         {/* Course List */}
-        <article className="mt-4 space-y-6">
-          {cartItems.map((course) => (
-            <div
-              key={slugify(course._id) as Key}
-              className="flex flex-col gap-2 rounded-md border p-4 md:flex-row md:gap-4 dark:border-gray-700 dark:bg-gray-800"
-            >
-              {/* Course Image */}
-              <div className="w-full overflow-hidden rounded-md md:h-24 md:w-44">
-                <img
-                  src={course.img}
-                  alt={course.title}
-                  className="h-full w-full object-cover"
-                />
-              </div>
-
-              {/* Course Details */}
-              <div className="flex-1">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  {course.title}
-                </h2>
-                <p className="my-1 text-sm text-gray-500 dark:text-gray-400">
-                  By {course.instructor}
-                </p>
-
-                <div className="flex flex-col md:h-[3vh] md:flex-row md:items-center md:space-x-3">
-                  <DisplayRating
-                    rating={course.totalRating}
-                    stars={course.totalStar}
+        {cartItems.length !== 0 ? (
+          <article className="mt-4 space-y-6">
+            {cartItems.map((course) => (
+              <div
+                key={slugify(course._id) as Key}
+                className="flex flex-col gap-2 rounded-md border p-4 md:flex-row md:gap-4 dark:border-gray-700 dark:bg-gray-800"
+              >
+                {/* Course Image */}
+                <div className="w-full overflow-hidden rounded-md md:h-24 md:w-44">
+                  <img
+                    src={course.img}
+                    alt={course.title}
+                    className="h-full w-full object-cover"
                   />
-                  <Separator
-                    orientation="vertical"
-                    className="hidden md:block dark:bg-gray-600"
-                  />
-                  <p className="mt-1 space-x-2 text-xs text-gray-600 md:mt-0 dark:text-gray-400">
-                    <span>{course.duration}</span>
-                    <span>{course.lectures} Lectures</span>
-                    <span>{course.level}</span>
+                </div>
+
+                {/* Course Details */}
+                <div className="flex-1">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    {course.title}
+                  </h2>
+                  <p className="my-1 text-sm text-gray-500 dark:text-gray-400">
+                    By {course.instructor}
                   </p>
-                </div>
-                <div className="mt-2 flex h-[3vh] space-x-3 text-sm">
-                  <span className="cursor-pointer text-blue-500 dark:text-blue-400">
-                    Save for later
-                  </span>
-                  <Separator orientation="vertical" />
-                  <Button
-                    variant="link"
-                    disabled={isDeleting}
-                    className={cn(
-                      "cursor-pointer text-red-500 dark:text-red-400",
-                      { "pointer-events-none": isDeleting },
-                    )}
-                    onClick={() => deleteItem({ itemId: course._id })}
-                  >
-                    {isDeleting ? "Removing" : "Remove"}
-                  </Button>
-                </div>
-              </div>
 
-              <div>
-                <h1 className="text-xl font-bold text-gray-700 dark:text-white">
-                  ${course.price}
-                </h1>
+                  <div className="flex flex-col md:h-[3vh] md:flex-row md:items-center md:space-x-3">
+                    <DisplayRating
+                      rating={course.totalRating}
+                      stars={course.totalStar}
+                    />
+                    <Separator
+                      orientation="vertical"
+                      className="hidden md:block dark:bg-gray-600"
+                    />
+                    <p className="mt-1 space-x-2 text-xs text-gray-600 md:mt-0 dark:text-gray-400">
+                      <span>{course.duration}</span>
+                      <span>{course.lectures} Lectures</span>
+                      <span>{course.level}</span>
+                    </p>
+                  </div>
+                  <div className="mt-2 flex h-[3vh] space-x-3 text-sm">
+                    <span className="cursor-pointer text-blue-500 dark:text-blue-400">
+                      Save for later
+                    </span>
+                    <Separator orientation="vertical" />
+                    <span
+                      className={cn(
+                        "cursor-pointer text-red-500 dark:text-red-400",
+                        { "pointer-events-none": isDeleting },
+                      )}
+                      onClick={() => deleteItem({ itemId: course._id })}
+                    >
+                      {isDeleting ? "Removing" : "Remove"}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <h1 className="text-xl font-bold text-gray-700 dark:text-white">
+                    ${course.price}
+                  </h1>
+                </div>
               </div>
-            </div>
-          ))}
-        </article>
+            ))}
+          </article>
+        ) : (
+          <div>
+            <h1>No items in cart</h1>
+          </div>
+        )}
       </main>
 
       {/* Order Summary */}

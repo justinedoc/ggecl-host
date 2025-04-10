@@ -11,7 +11,7 @@ type InstructorRegisterType = z.infer<typeof InstructorRegistrationSchema>;
 
 export const instructorAuthService = {
   findInstructorByEmail: async (email: string) => {
-    return Instructor.findOne({ email });
+    return Instructor.exists({ email });
   },
 
   createInstructor: async (data: InstructorRegisterType) => {
