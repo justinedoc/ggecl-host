@@ -38,6 +38,8 @@ function validateConfig() {
     smtpHost: process.env.SMTP_HOST,
     smtpPass: process.env.SMTP_PASS,
     googleClientId: process.env.GOOGLE_CLIENT_ID,
+    superadminEmail: process.env.SUPERADMIN_EMAIL,
+    superadminPassword: process.env.SUPERADMIN_PASSWOR,
     redisUrl: process.env.REDIS_URL,
   } as const;
 }
