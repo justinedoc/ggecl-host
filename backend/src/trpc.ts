@@ -1,11 +1,15 @@
 import { initTRPC } from "@trpc/server";
-import { Context } from "./context.js";
+import superjson from "superjson";
 import { TRPCError } from "@trpc/server";
 import jwt, { Secret } from "jsonwebtoken";
+
+import { Context } from "./context.js";
 import { envConfig } from "./config/envValidator.js";
 import { UserRole } from "./utils/roleMappings.js";
 
-export const t = initTRPC.context<Context>().create();
+export const t = initTRPC.context<Context>().create({
+  transformer: superjson,
+});
 
 export const router = t.router;
 export const procedure = t.procedure;

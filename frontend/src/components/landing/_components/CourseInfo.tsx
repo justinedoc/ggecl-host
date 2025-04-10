@@ -1,15 +1,17 @@
 import { useState, useMemo } from "react";
 import { FaAward, FaGraduationCap, FaPlay, FaStar } from "react-icons/fa";
 import SyllabusAccordion from "./SyllabusAccordion";
-import { CourseType } from "./CourseBox";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { generateInitials } from "@/lib/generateInitial";
+import { GetCourseOutput } from "@/utils/trpc";
+import { formatDate } from "date-fns";
+import { TInstructor } from "@/types/instructorType";
 
 const tabs = ["All", "Description", "Instructor", "Syllabus", "Reviews"];
 
-const CourseInfo: React.FC<CourseType> = ({ course }) => {
+const CourseInfo: React.FC<{ course: GetCourseOutput }> = ({ course }) => {
   const [activeTab, setActiveTab] = useState<string>("All");
 
   const renderTabContent = useMemo(() => {
@@ -84,45 +86,49 @@ const CourseDescription: React.FC<{ description: string }> = ({
 
 // Instructor Information
 const InstructorInfo: React.FC<{
-  instructor: CourseType["course"]["instructor"];
-}> = ({ instructor }) => (
-  <section>
-    <h2 className="my-3 text-xl font-bold text-gray-800 dark:text-gray-200">
-      Instructor
-    </h2>
-    <div className="my-2">
-      <h3 className="font-bold text-blue-500">{instructor.name}</h3>
-      <span className="text-sm font-semibold text-gray-500">
-        {instructor.role}
-      </span>
-    </div>
-    <div className="my-5 flex items-center gap-6">
-      <img
-        src={instructor.image}
-        className="h-24 w-24 rounded-full object-cover"
-        alt={instructor.name}
-      />
-      <div className="flex flex-col gap-2 text-sm">
-        <p className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-          <FaAward /> {instructor.reviews} Reviews
-        </p>
-        <p className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-          <FaGraduationCap /> {instructor.students} Students
-        </p>
-        <p className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-          <FaPlay /> {instructor.courses} Courses
-        </p>
+  instructor: GetCourseOutput["instructor"];
+}> = ({ instructor }) => {
+  const fmtInstructor = instructor as TInstructor;
+
+  return (
+    <section>
+      <h2 className="my-3 text-xl font-bold text-gray-800 dark:text-gray-200">
+        Instructor
+      </h2>
+      <div className="my-2">
+        <h3 className="font-bold text-blue-500">{fmtInstructor.fullName}</h3>
+        <span className="text-sm font-semibold text-gray-500">
+          {fmtInstructor.schRole}
+        </span>
       </div>
-    </div>
-    <p className="mt-6 w-full leading-7 text-gray-700 md:w-[65%] dark:text-gray-300">
-      {instructor.bio}
-    </p>
-    <Separator className="my-7 w-full md:w-[65%]" />
-  </section>
-);
+      <div className="my-5 flex items-center gap-6">
+        <img
+          src={fmtInstructor.picture}
+          className="h-24 w-24 rounded-full object-cover"
+          alt={fmtInstructor.fullName}
+        />
+        <div className="flex flex-col gap-2 text-sm">
+          <p className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+            <FaAward /> {fmtInstructor.reviews.length} Reviews
+          </p>
+          <p className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+            <FaGraduationCap /> {fmtInstructor.students.length} Students
+          </p>
+          <p className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+            <FaPlay /> {fmtInstructor.courses.length} Courses
+          </p>
+        </div>
+      </div>
+      <p className="mt-6 w-full leading-7 text-gray-700 md:w-[65%] dark:text-gray-300">
+        {fmtInstructor.bio}
+      </p>
+      <Separator className="my-7 w-full md:w-[65%]" />
+    </section>
+  );
+};
 
 const StudentReviews: React.FC<{
-  reviews: CourseType["course"]["reviews"];
+  reviews: GetCourseOutput["reviews"];
 }> = ({ reviews }) => {
   return (
     <section className="my-4 flex flex-col md:flex-row md:gap-16">
@@ -142,7 +148,9 @@ const StudentReviews: React.FC<{
               <FaStar className="text-yellow-400" />
               <FaStar className="text-gray-300" />
             </div>
-            <span className="text-sm text-gray-500">(146,951 reviews)</span>
+            <span className="text-sm text-gray-500">
+              ({reviews.length} reviews)
+            </span>
           </div>
         </div>
 
@@ -244,7 +252,7 @@ const StudentReviews: React.FC<{
                 <FaStar className="text-yellow-400" />
                 <FaStar className="text-yellow-400" />
                 <span className="ml-4 text-sm text-gray-500">
-                  Reviewed on {review.date}
+                  Reviewed on {formatDate(review.date, "MMM d, yyyy")}
                 </span>
               </div>
               <p className="leading-7 text-gray-700 dark:text-gray-300">

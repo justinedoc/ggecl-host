@@ -1,5 +1,4 @@
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
-import { tempCourseData } from "../_components/CoursesList";
 import SearchBar from "../../ui/SearchBar";
 import CourseBox, { Star } from "../_components/CourseBox";
 import { useState } from "react";
@@ -7,8 +6,10 @@ import { Filter } from "lucide-react";
 import { tempInstructorData } from "../_components/InstructorsList";
 import ListContainer from "@/components/ui/ListContainer";
 import InstructorBox from "../_components/InstructorBox";
+import { useCourses } from "../hooks/useCourses";
 
 const Courses = () => {
+  const { courses, loadingCourses } = useCourses({ limit: 4 });
   const [openAccordion, setOpenAccordion] = useState<number>(0);
 
   const toggleAccordion = (index: number) => {
@@ -17,32 +18,32 @@ const Courses = () => {
 
   return (
     <>
-      <div className="bg-white text-gray-800 dark:text-gray-100 dark:bg-gray-900">
-        <div className="absolute top-2 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
-        <main className="md:py-5 md:px-10 px-5 py-2">
-          <header className="flex flex-col md:flex-row justify-between md:items-center space-y-3 md:space-y-0 my-5">
-            <h1 className="md:text-3xl text-2xl font-bold">Explore Courses</h1>
+      <div className="bg-white text-gray-800 dark:bg-gray-900 dark:text-gray-100">
+        <div className="absolute top-2 right-0 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl"></div>
+        <main className="px-5 py-2 md:px-10 md:py-5">
+          <header className="my-5 flex flex-col justify-between space-y-3 md:flex-row md:items-center md:space-y-0">
+            <h1 className="text-2xl font-bold md:text-3xl">Explore Courses</h1>
             <SearchBar show placeholderText="Search courses..." />
           </header>
 
           {/* Main Content Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 my-8">
+          <div className="my-8 grid grid-cols-1 gap-8 md:grid-cols-12">
             {/* Filter Section */}
             <div className="col-span-3">
-              <button className="flex items-center gap-1 border border-gray-700 rounded-lg px-3 py-[0.45rem]">
+              <button className="flex items-center gap-1 rounded-lg border border-gray-700 px-3 py-[0.45rem]">
                 <Filter size={18} />
                 <span className="font-semibold">Filter</span>
               </button>
 
-              <div className="mt-5 md:w-full w-[20rem]">
+              <div className="mt-5 w-[20rem] md:w-full">
                 {["Rating", "Number of Chapters", "Price", "Category"].map(
                   (title, index) => (
                     <div
                       key={index}
-                      className="border-b border-gray-500/40 py-1 w-full"
+                      className="w-full border-b border-gray-500/40 py-1"
                     >
                       <button
-                        className="flex justify-between items-center w-full text-left py-2"
+                        className="flex w-full items-center justify-between py-2 text-left"
                         onClick={() => toggleAccordion(index)}
                       >
                         {title}
@@ -57,7 +58,7 @@ const Courses = () => {
                           {index === 0 && (
                             <>
                               {Array.from({ length: 5 }).map((_, i) => (
-                                <div key={i} className="flex gap-1 mt-2">
+                                <div key={i} className="mt-2 flex gap-1">
                                   {Array.from({ length: 5 }).map((_, j) => (
                                     <Star
                                       key={j}
@@ -126,16 +127,17 @@ const Courses = () => {
                         </div>
                       )}
                     </div>
-                  )
+                  ),
                 )}
               </div>
             </div>
 
             {/* Courses Section */}
-            <div className="col-span-9 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {tempCourseData.map((course) => (
-                <CourseBox key={course.id} course={course} />
-              ))}
+            <div className="col-span-9 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {!loadingCourses &&
+                courses.map((course) => (
+                  <CourseBox key={course._id.toString()} course={course} />
+                ))}
             </div>
           </div>
         </main>
@@ -151,8 +153,8 @@ const Courses = () => {
       <ListContainer
         header="Featured Courses"
         path="/courses"
-        render={tempCourseData.map((course) => (
-          <CourseBox key={course.id} course={course} />
+        render={courses.map((course) => (
+          <CourseBox key={course._id.toString()} course={course} />
         ))}
       />
     </>

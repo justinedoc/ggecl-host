@@ -5,8 +5,26 @@ import Course, { ICourse } from "../models/coursesModel.js";
 import { FilterQuery } from "mongoose";
 import { TRPCError } from "@trpc/server";
 import Instructor from "../models/instructorModel.js";
+import { Review } from "../models/reviewSchema.js";
 
 const CACHE = new NodeCache({ stdTTL: 600 });
+
+export type ICourseSummary = Omit<
+  ICourse,
+  "description" | "syllabus" | "reviews"
+> & {
+  instructor: { _id: string; fullName: string; picture: string };
+};
+
+interface ICourseListResponse {
+  courses: ICourseSummary[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
 
 // Zod Schemas
 const CourseInputSchema = z.object({
@@ -53,22 +71,18 @@ export const courseRouter = router({
   getAll: procedure.input(GetCoursesZodSchema).query(async ({ input }) => {
     const cacheKey = getCacheKey(input);
 
-    const cachedData = CACHE.get<ICourse>(cacheKey);
-
+    const cachedData = CACHE.get<ICourseListResponse>(cacheKey);
     if (cachedData) {
       console.log("Cache hit for:", cacheKey);
       return cachedData;
     }
-
     console.log("Cache miss for:" + cacheKey);
 
     const { page, limit, search, sortBy, order } = input;
-
     const skip = (page - 1) * limit;
     const sortOrder = order === "asc" ? 1 : -1;
 
     const searchQuery: FilterQuery<ICourse> = {};
-
     if (search) {
       searchQuery.$or = [
         { title: { $regex: search, $options: "i" } },
@@ -82,6 +96,7 @@ export const courseRouter = router({
     }
 
     try {
+      // Get courses with instructor populated, and select only summary fields.
       const [courses, total] = await Promise.all([
         Course.find(searchQuery)
           .populate<{
@@ -126,28 +141,36 @@ export const courseRouter = router({
       const cacheKey = `course-${courseId}`;
 
       const cachedData = CACHE.get<ICourse>(cacheKey);
-
       if (cachedData) {
         console.log("Cache hit for:", cacheKey);
         return cachedData;
       }
-
       console.log("Cache miss for:", cacheKey);
 
       try {
         const course = await Course.findById(courseId)
           .populate<{
-            instructor: { _id: string; fullName: string; picture: string };
-          }>("instructor", "fullName picture")
+            instructor: {
+              _id: string;
+              fullName: string;
+              picture: string;
+              bio: string;
+              schRole: string;
+              reviews: Review[];
+              courses: string[];
+              students: string[];
+            };
+          }>(
+            "instructor",
+            "fullName picture bio schRole reviews courses students"
+          )
           .lean();
-
         if (!course) {
           throw new TRPCError({
             code: "NOT_FOUND",
             message: `Course with ID ${courseId} not found.`,
           });
         }
-
         CACHE.set(cacheKey, course);
         console.log("Cache set for:", cacheKey);
 
@@ -166,7 +189,6 @@ export const courseRouter = router({
     .input(CourseInputSchema)
     .mutation(async ({ input, ctx }) => {
       const { id: instructorId, role } = ctx.user;
-
       if (role !== "instructor") {
         throw new TRPCError({
           code: "FORBIDDEN",
@@ -192,11 +214,9 @@ export const courseRouter = router({
 
       try {
         const savedCourse = await newCourse.save();
-
         await Instructor.findByIdAndUpdate(instructorId, {
           $push: { courses: savedCourse._id },
         });
-
         deleteAllCoursesCache("courses-");
         return savedCourse;
       } catch (error) {
@@ -213,14 +233,13 @@ export const courseRouter = router({
     .input(CourseUpdateInputSchema)
     .mutation(async ({ input, ctx }) => {
       const { id: instructorId, role } = ctx.user;
-
       const { courseId, courseData: updateData } = input;
 
       try {
         if (role !== "instructor") {
           throw new TRPCError({
             code: "FORBIDDEN",
-            message: "ONly instructors are allowed to update courses",
+            message: "Only instructors are allowed to update courses",
           });
         }
 
@@ -228,7 +247,6 @@ export const courseRouter = router({
           _id: courseId,
           instructor: instructorId,
         });
-
         if (!courseExists) {
           throw new TRPCError({
             code: "UNAUTHORIZED",
@@ -248,7 +266,6 @@ export const courseRouter = router({
 
         CACHE.del(`course-${courseId}`);
         deleteAllCoursesCache("courses-");
-
         return course;
       } catch (error) {
         console.error("An error occurred while updating the course:", error);
@@ -265,7 +282,6 @@ export const courseRouter = router({
     .mutation(async ({ input, ctx }) => {
       const { courseId } = input;
       const { id: instructorId, role } = ctx.user;
-
       if (role !== "instructor") {
         throw new TRPCError({
           code: "FORBIDDEN",
@@ -277,7 +293,6 @@ export const courseRouter = router({
           _id: courseId,
           instructor: instructorId,
         });
-
         if (!courseExists) {
           throw new TRPCError({
             code: "UNAUTHORIZED",
@@ -286,10 +301,8 @@ export const courseRouter = router({
         }
 
         await Course.findByIdAndDelete(courseId);
-
         CACHE.del(`course-${courseId}`);
         deleteAllCoursesCache("courses-");
-
         return { success: true };
       } catch (err) {
         console.error("An error occured while deleting course: ", err);

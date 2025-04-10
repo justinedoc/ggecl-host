@@ -1,4 +1,4 @@
-FROM node:20-slim
+FROM node:23-slim
 
 # Set the working directory
 WORKDIR /app
@@ -6,7 +6,7 @@ WORKDIR /app
 # Copy package files and install dependencies
 COPY package*.json ./
 
-RUN npm install
+RUN pnpm install
 
 # Copy the entire codebase
 COPY . .

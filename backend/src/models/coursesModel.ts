@@ -1,7 +1,8 @@
 import { Schema, model, Types } from "mongoose";
 import { type Review, ReviewSchema } from "./reviewSchema.js";
 
-export interface ICourse extends Document {
+export interface ICourse {
+  _id: Types.ObjectId;
   title: string;
   instructor: Types.ObjectId;
   description: string;
@@ -15,6 +16,7 @@ export interface ICourse extends Document {
   level: string;
   price: number;
   img: string;
+  badge: string;
 }
 
 export const CourseSchema = new Schema<ICourse>({
@@ -35,6 +37,7 @@ export const CourseSchema = new Schema<ICourse>({
   level: { type: String, required: true },
   price: { type: Number, required: true },
   img: { type: String, required: true },
+  badge: { type: String },
 });
 
 export default model<ICourse>("course", CourseSchema);

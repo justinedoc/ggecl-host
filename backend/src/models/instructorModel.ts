@@ -31,6 +31,7 @@ export interface IInstructor extends Document {
   courses: Types.ObjectId[];
   bio: string;
   topics: string[];
+  schRole: string;
 }
 
 // Instructor Notification Schema
@@ -79,6 +80,7 @@ export const InstructorSchema = new Schema<IInstructor>(
       },
     ],
     bio: { type: String, default: "" },
+    schRole: { type: String, default: "" },
     topics: { type: [String], default: [] },
   },
   { timestamps: true }
