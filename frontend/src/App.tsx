@@ -122,6 +122,9 @@ const Support = lazy(
   () => import("@/components/dashboard/instructor/pages/Support.tsx"),
 );
 
+const Grading = lazy(
+  () => import("@/components/dashboard/instructor/pages/Grading.tsx"),
+);
 const VideoCall = lazy(
   () => import("@/components/dashboard/instructor/pages/VideoCall.tsx"),
 );
@@ -130,8 +133,14 @@ const VideoCall = lazy(
 const AdminHome = lazy(
   () => import("@/components/dashboard/admin/pages/AdminHome.tsx"),
 );
+const AssignmentAd = lazy(
+  () => import("@/components/dashboard/admin/pages/AssignmentAd.tsx"),
+);
 const AdminSettings = lazy(
   () => import("@/components/dashboard/admin/pages/AdminSettings.tsx"),
+);
+const AdminChat = lazy(
+  () => import("@/components/dashboard/admin/pages/AdminChat.tsx"),
 );
 const Payments = lazy(
   () => import("@/components/dashboard/admin/pages/Payments.tsx"),
@@ -141,6 +150,18 @@ const CourseManagement = lazy(
 );
 const Analytics = lazy(
   () => import("@/components/dashboard/admin/pages/Analytics.tsx"),
+);
+const InstructorInfo = lazy(
+  () => import("@/components/dashboard/admin/pages/InstructorInfo.tsx"),
+);
+const StudentInfo = lazy(
+  () => import("@/components/dashboard/admin/pages/StudentInfo.tsx"),
+);
+const Schedule = lazy(
+  () => import("@/components/dashboard/admin/pages/Shedule.tsx"),
+);
+const AddCourseAd = lazy(
+  () => import("@/components/dashboard/admin/pages/AddCourseAd.tsx"),
 );
 
 function App() {
@@ -372,7 +393,15 @@ function App() {
               </Suspense>
             }
           />
-
+   
+   <Route
+            path="support"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <Support />
+              </Suspense>
+            }
+          />
           <Route
             path="add-course"
             element={
@@ -382,6 +411,14 @@ function App() {
             }
           />
 
+          <Route
+            path="grading"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <Grading />
+              </Suspense>
+            }
+          />
           <Route
             path="video-call"
             element={
@@ -491,10 +528,58 @@ function App() {
             }
           />
           <Route
+            path="check-assignments"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <AssignmentAd />
+              </Suspense>
+            }
+          />
+          <Route
             path="settings"
             element={
               <Suspense fallback={<AuthPageLoading />}>
                 <AdminSettings />
+              </Suspense>
+            }
+          />
+          <Route
+            path="chat"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <AdminChat />
+              </Suspense>
+            }
+          />
+          <Route
+            path="calendar"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <Schedule />
+              </Suspense>
+            }
+          />
+          <Route
+            path="add-course"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <AddCourseAd />
+              </Suspense>
+            }
+          />
+          <Route
+            path="students"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <StudentInfo />
+              </Suspense>
+            }
+          />
+          <Route
+            path="instructors"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <InstructorInfo />
               </Suspense>
             }
           />

@@ -21,6 +21,7 @@ import {
     MessagesSquare,
     Settings,
     Users,
+    Book,
     FileText,
     BarChart,
     BookOpen,
@@ -56,6 +57,11 @@ import {
       title: "Assignments",
       url: `${urlPrefix}/check-assignments`,
       icon: ClipboardPaste,
+    },
+    {
+      title: "Grading",
+      url: `${urlPrefix}/grading`,
+      icon: Book,
     },
     {
       title: "Schedule",

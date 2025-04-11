@@ -68,15 +68,15 @@ import {
       icon: MessagesSquare,
     },
     {
+      title: "Instructor Management",
+      url: `${urlPrefix}/instructors`,
+      icon: Users,
+    },
+    {
       title: "Student Management",
       url: `${urlPrefix}/students`,
       icon: Users,
     },
-    // {
-    //   title: "Reports",
-    //   url: `${urlPrefix}/reports`,
-    //   icon: FileText,
-    // },
     {
       title: "Settings",
       url: `${urlPrefix}/settings`,
@@ -84,7 +84,7 @@ import {
     },
     {
       title: "Earnings & Analytics",
-      url: `${urlPrefix}/earnings`,
+      url: `${urlPrefix}/payments`,
       icon: Briefcase,
     },
   ];
