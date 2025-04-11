@@ -2,7 +2,7 @@ import { Model } from "mongoose";
 import instructorModel, { IInstructor } from "../models/instructorModel.js";
 import studentModel, { IStudent } from "../models/studentModel.js";
 
-export type UserRole = "student" | "instructor";
+export type UserRole = "student" | "instructor" | "admin";
 
 export type RoleConfig = {
   student: { model: Model<IStudent> };
@@ -15,4 +15,4 @@ export const roleMappings: RoleConfig = {
 };
 
 export const combinedUserModel = (role: UserRole) =>
-  roleMappings[role].model as Model<IStudent | IInstructor>;
+  roleMappings[role].model as Model<IStudent | IInstructor >;

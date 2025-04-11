@@ -62,7 +62,7 @@ export const emailService = (role: UserRole) => {
       return result;
     } catch (error) {
       console.error(`Email verification initiation failed for ${role}:`, error);
-      throw new Error("Failed to initiate email verification");
+      throw new Error("Failed to automatically initiate email verification, please login and request for email verification manually");
     }
   }
 

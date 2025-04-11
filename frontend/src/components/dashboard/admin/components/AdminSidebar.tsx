@@ -13,9 +13,9 @@ import {
     useSidebar,
   } from "@/components/ui/sidebar";
   import { Link, useLocation } from "react-router";
-  import { BiSupport } from "react-icons/bi";
+  // import { BiSupport } from "react-icons/bi";
   import {
-    Calendar,
+    // Calendar,
     ClipboardPaste,
     // GraduationCap,
     MessagesSquare,
@@ -63,17 +63,10 @@ import {
       icon: MessagesSquare,
     },
     {
-      title: "Instructor Management",
-      url: `${urlPrefix}/instructors`,
-      icon: Users,
-    },
-    {
       title: "Student Management",
       url: `${urlPrefix}/students`,
       icon: Users,
     },
-<<<<<<< HEAD
-=======
     {
       title: "Instructor Management",
       url: `${urlPrefix}/instructors`,
@@ -84,7 +77,6 @@ import {
     //   url: `${urlPrefix}/reports`,
     //   icon: FileText,
     // },
->>>>>>> 803df116ddc1c9c7f77fc5079ff9652602174dec
     {
       title: "Settings",
       url: `${urlPrefix}/settings`,

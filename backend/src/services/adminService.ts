@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/services/adminService.ts
 import Admin from "../models/adminModel.js";
 import jwt from "jsonwebtoken";

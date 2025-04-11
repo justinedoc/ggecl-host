@@ -26,11 +26,10 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 
-import { Student } from "@/types/userTypes";
 import { Link } from "react-router";
-import AuthPageLoading from "@/components/auth/_components/AuthPageLoading";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
+import { useStudent } from "@/hooks/useStudent";
 
 const formatName = (name: string) => {
   const [firstName, ...rest] = name.split(" ");
@@ -44,18 +43,14 @@ const Navbar = () => {
   const isMobile = useIsMobile();
   const shouldShowSidebarTrigger = state === "collapsed" || isMobile;
 
-  const { user, isLoading, handleLogout } = useAuth();
-
-  if (isLoading) return <AuthPageLoading />;
-  if (!user) return null;
-
-  const student = user as Student;
+  const { handleLogout } = useAuth();
+  const { student } = useStudent();
 
   return (
     <nav
       className={cn(
-        "bg-background text-foreground px-6 py-4 flex items-center justify-between border-b",
-        "dark:border-gray-800 shadow-sm"
+        "bg-background text-foreground flex items-center justify-between border-b px-6 py-4",
+        "shadow-sm dark:border-gray-800",
       )}
     >
       <div className="flex items-center gap-4">
@@ -75,26 +70,26 @@ const Navbar = () => {
             <Button variant="ghost" size="icon" className="relative">
               <FaBell className="h-[1.2rem] w-[1.2rem]" />
               {student?.notifications.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs h-5 w-5 rounded-full flex items-center justify-center">
+                <span className="bg-primary text-primary-foreground absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full text-xs">
                   {student.notifications.map((n) => !n.isRead).length}
                 </span>
               )}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-80 p-2">
-            <div className="px-2 py-1.5 text-sm font-semibold my-2">
+            <div className="my-2 px-2 py-1.5 text-sm font-semibold">
               Notifications
             </div>
             <Separator />
             {student?.notifications.length === 0 ? (
-              <div className="p-4 text-center text-sm text-muted-foreground">
+              <div className="text-muted-foreground p-4 text-center text-sm">
                 No new notifications
               </div>
             ) : (
               student?.notifications.map((notification, index) => (
                 <HoverCard key={index}>
                   <HoverCardTrigger asChild>
-                    <div className="p-3 text-sm hover:bg-accent rounded cursor-pointer">
+                    <div className="hover:bg-accent cursor-pointer rounded p-3 text-sm">
                       {notification.title}
                     </div>
                   </HoverCardTrigger>
@@ -127,18 +122,18 @@ const Navbar = () => {
                 alt={student.fullName}
                 className="h-8 w-8 rounded-full"
               />
-              <div className="md:flex flex-col hidden items-start">
+              <div className="hidden flex-col items-start md:flex">
                 <span className="text-sm font-medium">
                   {formatName(student.fullName)}
                 </span>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-muted-foreground text-xs">
                   {student.email}
                 </span>
               </div>
-              <FaChevronDown className="h-4 w-4 ml-2" />
+              <FaChevronDown className="ml-2 h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-64 p-3 space-y-2" align="end">
+          <DropdownMenuContent className="w-64 space-y-2 p-3" align="end">
             <DropdownMenuItem asChild>
               <Link to="/student/dashboard/settings" className="cursor-pointer">
                 ⚙️ Account Settings

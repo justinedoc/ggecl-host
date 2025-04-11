@@ -11,6 +11,7 @@ interface IInstructorNotification extends Document {
 
 // Main Instructor interface
 export interface IInstructor extends Document {
+  role: "instructor";
   fullName: string;
   gender: string;
   picture: string;
@@ -45,6 +46,10 @@ const InstructorNotificationSchema = new Schema<IInstructorNotification>({
 // Main Instructor Schema
 export const InstructorSchema = new Schema<IInstructor>(
   {
+    role: {
+      type: String,
+      default: "instructor",
+    },
     fullName: { type: String, required: true },
     gender: { type: String, default: "other" },
     picture: {

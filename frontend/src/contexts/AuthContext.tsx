@@ -1,18 +1,12 @@
 import React, { useMemo, useState, useCallback, useEffect } from "react";
 import { authProvider } from "@/api/client";
-import {
-  Instructor,
-  InstructorSchema,
-  Student,
-  StudentSchema,
-} from "@/types/userTypes";
 import { AuthContext } from "@/hooks/useAuth";
 import { useNavigate } from "react-router";
 
 interface User {
   isAuthenticated: boolean;
   isLoading: boolean;
-  user: Student | Instructor | null;
+  userId: string | null;
 }
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -21,7 +15,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [state, setState] = useState<User>({
     isAuthenticated: false,
     isLoading: true,
-    user: null,
+    userId: null,
   });
 
   const navigate = useNavigate();
@@ -43,7 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setState({
         isAuthenticated: false,
         isLoading: false,
-        user: null,
+        userId: null,
       });
     }
 
@@ -62,7 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const initializeAuth = useCallback(
     async (signal?: AbortSignal) => {
       try {
-        if (state.user) return;
+        if (state.userId) return;
 
         setState((prev) => ({ ...prev, isLoading: true }));
 
@@ -77,21 +71,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
         if (!id || !role) throw new Error("Invalid session data");
 
-        const userData = await authProvider.getUserById(id, role, signal);
-
-        const result =
-          role === "student"
-            ? StudentSchema.safeParse(userData.data)
-            : InstructorSchema.safeParse(userData.data);
-
-        if (!result.success) {
-          throw new Error("Invalid user data format");
-        }
-
         setState({
           isAuthenticated: true,
           isLoading: false,
-          user: result.data,
+          userId: id,
         });
       } catch (error: unknown) {
         if (!signal?.aborted) {
@@ -100,12 +83,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           setState({
             isAuthenticated: false,
             isLoading: false,
-            user: null,
+            userId: null,
           });
         }
       }
     },
-    [refreshToken, state.user],
+    [refreshToken, state.userId],
   );
 
   const handleLogin = useCallback(

@@ -18,6 +18,7 @@ export const registerAdmin = async (req: Request, res: Response) => {
     const existingAdmin = await adminService.findAdminByEmail(
       validatedData.email
     );
+    
     if (existingAdmin) {
       return createErrorResponse(res, 400, "Admin already exists");
     }

@@ -1,5 +1,5 @@
 import { formatAxiosError } from "@/lib/formatAxiosError";
-import { Instructor, Student, UserRole } from "@/types/userTypes";
+import { TUser, UserRole } from "@/types/userTypes";
 import axios, {
   AxiosError,
   AxiosInstance,
@@ -99,7 +99,7 @@ export const createAxiosInstance = (): AxiosInstance => {
       const originalRequest = error.config as CustomAxiosRequestConfig;
       if (
         SKIP_TOKEN_REFRESH_URLS.some((url) =>
-          originalRequest.url?.includes(url)
+          originalRequest.url?.includes(url),
         )
       ) {
         return Promise.reject(error);
@@ -147,7 +147,7 @@ export const createAxiosInstance = (): AxiosInstance => {
         });
       }
       return Promise.reject(error);
-    }
+    },
   );
 
   return instance;
@@ -158,7 +158,7 @@ export const axiosInstance = createAxiosInstance();
 // --- authProvider Object ---
 export const authProvider = {
   getSession: async (
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ): Promise<{
     success: boolean;
     data: {
@@ -172,8 +172,8 @@ export const authProvider = {
   getUserById: async (
     id: string,
     role: UserRole,
-    signal?: AbortSignal
-  ): Promise<{ success: boolean; data: Instructor | Student }> => {
+    signal?: AbortSignal,
+  ): Promise<{ success: boolean; data: TUser }> => {
     const response = await axiosInstance.get(`/${role}/${id}`, {
       signal,
     });

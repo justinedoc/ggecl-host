@@ -1,4 +1,3 @@
-import NodeCache from "node-cache";
 import { procedure, router, protectedProcedure } from "../trpc.js";
 import { z } from "zod";
 import Course, { ICourse } from "../models/coursesModel.js";
@@ -6,8 +5,7 @@ import { FilterQuery } from "mongoose";
 import { TRPCError } from "@trpc/server";
 import Instructor from "../models/instructorModel.js";
 import { Review } from "../models/reviewSchema.js";
-
-const CACHE = new NodeCache({ stdTTL: 600 });
+import { CACHE, wildcardDeleteCache } from "../utils/nodeCache.js";
 
 export type ICourseSummary = Omit<
   ICourse,
@@ -36,7 +34,7 @@ const CourseInputSchema = z.object({
   lectures: z.number().int().positive(),
   level: z.enum(["beginner", "intermediate", "advanced"]),
   price: z.number().positive(),
-  img: z.string().url(),
+  img: z.string(),
   totalRating: z.number().min(0).default(0),
   totalStar: z.number().min(0).default(0),
 });
@@ -60,12 +58,6 @@ const getCacheKey = (input: TGetCoursesInput) => {
   const { page, limit, search, sortBy, order } = input || {};
   return `courses-${page}-${limit}-${search}-${sortBy}-${order}`;
 };
-
-function deleteAllCoursesCache(startWith: string) {
-  const keys = CACHE.keys();
-  const courseKeys = keys.filter((key) => key.startsWith(startWith));
-  CACHE.del(courseKeys);
-}
 
 export const courseRouter = router({
   getAll: procedure.input(GetCoursesZodSchema).query(async ({ input }) => {
@@ -171,6 +163,7 @@ export const courseRouter = router({
             message: `Course with ID ${courseId} not found.`,
           });
         }
+
         CACHE.set(cacheKey, course);
         console.log("Cache set for:", cacheKey);
 
@@ -217,7 +210,7 @@ export const courseRouter = router({
         await Instructor.findByIdAndUpdate(instructorId, {
           $push: { courses: savedCourse._id },
         });
-        deleteAllCoursesCache("courses-");
+        wildcardDeleteCache("courses-");
         return savedCourse;
       } catch (error) {
         console.error("Error creating course:", error);
@@ -236,10 +229,11 @@ export const courseRouter = router({
       const { courseId, courseData: updateData } = input;
 
       try {
-        if (role !== "instructor") {
+        if (role !== "instructor" && role !== "admin") {
           throw new TRPCError({
             code: "FORBIDDEN",
-            message: "Only instructors are allowed to update courses",
+            message:
+              "Only instructors and admins are allowed to update courses",
           });
         }
 
@@ -265,7 +259,7 @@ export const courseRouter = router({
           .lean();
 
         CACHE.del(`course-${courseId}`);
-        deleteAllCoursesCache("courses-");
+        wildcardDeleteCache("courses-");
         return course;
       } catch (error) {
         console.error("An error occurred while updating the course:", error);
@@ -302,7 +296,7 @@ export const courseRouter = router({
 
         await Course.findByIdAndDelete(courseId);
         CACHE.del(`course-${courseId}`);
-        deleteAllCoursesCache("courses-");
+        wildcardDeleteCache("courses-");
         return { success: true };
       } catch (err) {
         console.error("An error occured while deleting course: ", err);

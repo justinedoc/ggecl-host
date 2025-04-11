@@ -1,4 +1,3 @@
-import { Instructor, Student } from "@/types/userTypes";
 import { createContext, useContext } from "react";
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -6,7 +5,7 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
-  user: Student | Instructor | null;
+  userId: string | null;
   handleLogin: (accessToken: string) => Promise<void>;
   refreshToken: () => Promise<string>;
   handleLogout: () => Promise<() => void>;

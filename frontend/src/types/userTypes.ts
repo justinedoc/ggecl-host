@@ -1,6 +1,7 @@
+import { GetStudentOutput } from "@/utils/trpc";
 import z from "zod";
 
-export type UserRole = "student" | "instructor";
+export type UserRole = "student" | "instructor" | "admin";
 
 // ==================== Shared Schemas ====================
 const NotificationSchema = z.object({
@@ -25,7 +26,6 @@ const StudentSchemaNotificationSchema = NotificationSchema;
 export const StudentSchema = z.object({
   _id: z.string(),
   fullName: z.string(),
-  dateOfBirth: z.string().optional(),
   gender: z.enum(["male", "female", "other"]).default("other"),
   picture: z.string(),
   username: z.string(),
@@ -44,7 +44,6 @@ const InstructorTopicsSchema = z.array(z.string().min(1));
 
 export const InstructorSchema = z.object({
   fullName: z.string(),
-  dateOfBirth: z.string().optional(),
   gender: z.enum(["male", "female", "other"]).default("other"),
   picture: z.string().url(),
   username: z.string(),
@@ -62,25 +61,9 @@ export const InstructorSchema = z.object({
   topics: InstructorTopicsSchema.default([]),
 });
 
-// ==================== Course Schema ====================
-export const CourseSchema = z.object({
-  title: z.string(),
-  instructor: z.string(),
-  description: z.string().min(10, "Description must be at least 10 characters"),
-  certification: z.string(),
-  syllabus: z.array(z.string()).default([]),
-  reviews: z.array(ReviewSchema).default([]),
-  totalRating: z.number().min(0),
-  totalStar: z.number().min(0),
-  duration: z.string().min(1, "Duration is required"),
-  lectures: z.number().int().positive(),
-  level: z.enum(["beginner", "intermediate", "advanced"]),
-  price: z.number().positive(),
-  img: z.string().url("Invalid image URL"),
-});
 
 // ==================== Utility Types ====================
-export type Instructor = z.infer<typeof InstructorSchema>;
-export type Student = z.infer<typeof StudentSchema>;
-export type Course = z.infer<typeof CourseSchema>;
+export type Student = GetStudentOutput;
 export type Review = z.infer<typeof ReviewSchema>;
+
+export type TUser = Student | null;

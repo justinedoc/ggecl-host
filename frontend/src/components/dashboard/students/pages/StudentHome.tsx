@@ -6,10 +6,9 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Student } from "@/types/userTypes";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/hooks/useAuth";
 import { parseISO, format, isValid } from "date-fns";
+import { useStudent } from "@/hooks/useStudent";
 
 // Type definitions
 interface EnrolledCourse {
@@ -49,10 +48,6 @@ const StudentHome = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [progress, setProgress] = useState(0);
 
-  const { user } = useAuth();
-
-  const student = user as Student;
-
   const enrolledCourses: EnrolledCourse[] = [
     {
       id: 1,
@@ -79,14 +74,12 @@ const StudentHome = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  if (!user) {
-    return null;
-  }
+  const { student } = useStudent();
 
   const firstName = student.fullName.split(" ")[1] || "Student";
 
   return (
-    <div className="p-4 md:p-6 space-y-8 max-w-7xl mx-auto">
+    <div className="mx-auto max-w-7xl space-y-8 p-4 md:p-6">
       <header className="space-y-1">
         <h1 className="text-3xl font-bold tracking-tight">
           Welcome back, <span className="capitalize">{firstName}</span>
@@ -107,7 +100,7 @@ const StudentHome = () => {
                 <span className="text-sm font-medium">
                   Current Course Progress
                 </span>
-                <span className="text-sm text-primary">{progress}%</span>
+                <span className="text-primary text-sm">{progress}%</span>
               </div>
               <Progress value={progress} className="h-2" />
             </div>
@@ -117,11 +110,11 @@ const StudentHome = () => {
             <div className="space-y-4">
               <h3 className="font-medium">Enrolled Courses</h3>
               {enrolledCourses.map((course) => (
-                <div key={course.id} className="p-4 rounded-lg border">
-                  <div className="flex justify-between items-center">
+                <div key={course.id} className="rounded-lg border p-4">
+                  <div className="flex items-center justify-between">
                     <div>
                       <h4 className="font-medium">{course.title}</h4>
-                      <div className="text-sm text-muted-foreground flex gap-4 mt-1">
+                      <div className="text-muted-foreground mt-1 flex gap-4 text-sm">
                         <span className="flex items-center gap-1">
                           <FaClock className="h-4 w-4" /> {course.duration}
                         </span>
@@ -169,11 +162,11 @@ const StudentHome = () => {
                 return (
                   <div
                     key={lesson.id}
-                    className="flex items-center justify-between p-2 rounded-md bg-muted"
+                    className="bg-muted flex items-center justify-between rounded-md p-2"
                   >
                     <div>
-                      <p className="font-medium text-sm">{lesson.title}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-sm font-medium">{lesson.title}</p>
+                      <p className="text-muted-foreground text-xs">
                         {formattedDate} at {lesson.time}
                       </p>
                     </div>
@@ -232,7 +225,7 @@ const StudentHome = () => {
 };
 
 const MetricItem = ({ label, value, trend }: MetricItemProps) => (
-  <div className="flex justify-between items-center p-3 rounded bg-muted">
+  <div className="bg-muted flex items-center justify-between rounded p-3">
     <span>{label}</span>
     <div className="flex items-center gap-2">
       <span className="font-medium">{value}</span>
@@ -241,7 +234,7 @@ const MetricItem = ({ label, value, trend }: MetricItemProps) => (
           "text-sm",
           trend === "up" && "text-green-400",
           trend === "down" && "text-red-400",
-          trend === "neutral" && "text-muted-foreground"
+          trend === "neutral" && "text-muted-foreground",
         )}
       >
         {trend === "up" ? "↑" : trend === "down" ? "↓" : "-"}
@@ -251,18 +244,18 @@ const MetricItem = ({ label, value, trend }: MetricItemProps) => (
 );
 
 const AchievementItem = ({ title, date }: AchievementItemProps) => (
-  <div className="flex items-center gap-3 p-2 rounded bg-muted">
+  <div className="bg-muted flex items-center gap-3 rounded p-2">
     <div
       className={cn(
-        "h-8 w-8 rounded-full flex items-center justify-center",
-        "bg-primary/10 text-primary/80"
+        "flex h-8 w-8 items-center justify-center rounded-full",
+        "bg-primary/10 text-primary/80",
       )}
     >
       🏆
     </div>
     <div>
       <p className="font-medium">{title}</p>
-      <p className="text-sm text-muted-foreground">{date}</p>
+      <p className="text-muted-foreground text-sm">{date}</p>
     </div>
   </div>
 );
@@ -274,8 +267,8 @@ const TaskItem = ({ title, dueDate }: TaskItemProps) => {
     : "Invalid date";
 
   return (
-    <div className="flex justify-between items-center p-2 rounded bg-muted">
-      <span className="font-semibold text-sm">{title}</span>
+    <div className="bg-muted flex items-center justify-between rounded p-2">
+      <span className="text-sm font-semibold">{title}</span>
       <Badge variant="secondary" className="bg-secondary">
         {formattedDueDate}
       </Badge>

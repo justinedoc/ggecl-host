@@ -1,5 +1,7 @@
 import { Document, Schema, model } from "mongoose";
 import { CartSchema, ICart } from "./cartModel.js";
+import { Types } from "mongoose";
+import { AssignmentSchema, IStudentAssignment } from "./assignmentSchema.js";
 
 interface IStudentNotification extends Document {
   title: string;
@@ -9,6 +11,8 @@ interface IStudentNotification extends Document {
 }
 
 export interface IStudent extends Document {
+  _id: Types.ObjectId;
+  role: "student";
   fullName: string;
   gender: string;
   picture: string;
@@ -25,6 +29,7 @@ export interface IStudent extends Document {
   passwordUpdateToken?: string;
   passwordUpdateTokenExpiry?: Date;
   cartItems: ICart[];
+  assignments: IStudentAssignment[];
 }
 
 // Student Notification Schema
@@ -38,6 +43,10 @@ const StudentNotificationSchema = new Schema<IStudentNotification>({
 // Main Student Schema
 export const StudentSchema = new Schema<IStudent>(
   {
+    role: {
+      type: String,
+      default: "student",
+    },
     fullName: { type: String, required: true },
     gender: { type: String, default: "other" },
     picture: {
@@ -57,6 +66,7 @@ export const StudentSchema = new Schema<IStudent>(
     password: { type: String },
     notifications: { type: [StudentNotificationSchema], default: [] },
     cartItems: { type: [CartSchema], default: [] },
+    assignments: { type: [AssignmentSchema], default: [] },
     refreshToken: { type: String, select: false },
   },
   { timestamps: true }

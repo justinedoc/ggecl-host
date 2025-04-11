@@ -1,6 +1,6 @@
 {
   "name": "ggecl-app",
-  "packageManager": "pnpm@10.7.1",
+  "packageManager": "pnpm@10.8.0",
   "engines": {
     "node": "23.x"
   },
@@ -24,6 +24,11 @@
         "react-day-picker>react": "19",
         "react-day-picker>date-fns": "4"
       }
-    }
+    },
+    "onlyBuiltDependencies": [
+      "bcrypt",
+      "esbuild",
+      "msgpackr-extract"
+    ]
   }
 }

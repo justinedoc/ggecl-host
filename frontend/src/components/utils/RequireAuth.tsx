@@ -3,19 +3,25 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
 import { useNavigate } from "react-router";
 
-export const RequireAuth = ({ children }: { children: React.ReactNode }) => {
+export const RequireAuth = ({
+  children,
+  isPending,
+}: {
+  children: React.ReactNode;
+  isPending?: boolean;
+}) => {
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (!isPending && !isLoading && !isAuthenticated) {
       navigate("/", {
         replace: true,
       });
     }
-  }, [isAuthenticated, isLoading, navigate]);
+  }, [isAuthenticated, isLoading, navigate, isPending]);
 
-  if (isLoading) {
+  if (isLoading || isPending) {
     return <AuthPageLoading />;
   }
 
