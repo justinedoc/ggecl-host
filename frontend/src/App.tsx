@@ -140,7 +140,11 @@ const AdminSettings = lazy(
   () => import("@/components/dashboard/admin/pages/AdminSettings.tsx"),
 );
 const AdminChat = lazy(
+<<<<<<< HEAD
   () => import("@/components/dashboard/admin/pages/AdminChat.tsx"),
+=======
+  () => import("@/components/dashboard/admin/pages/AdmnChat.tsx"),
+>>>>>>> 803df116ddc1c9c7f77fc5079ff9652602174dec
 );
 const Payments = lazy(
   () => import("@/components/dashboard/admin/pages/Payments.tsx"),
@@ -157,12 +161,15 @@ const InstructorInfo = lazy(
 const StudentInfo = lazy(
   () => import("@/components/dashboard/admin/pages/StudentInfo.tsx"),
 );
+<<<<<<< HEAD
 const Schedule = lazy(
   () => import("@/components/dashboard/admin/pages/Shedule.tsx"),
 );
 const AddCourseAd = lazy(
   () => import("@/components/dashboard/admin/pages/AddCourseAd.tsx"),
 );
+=======
+>>>>>>> 803df116ddc1c9c7f77fc5079ff9652602174dec
 
 function App() {
   return (
@@ -285,6 +292,14 @@ function App() {
             element={
               <Suspense fallback={<AuthPageLoading />}>
                 <InstructorSignup />
+              </Suspense>
+            }
+          />
+          <Route
+            path="support"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <Support />
               </Suspense>
             }
           />
@@ -552,6 +567,7 @@ function App() {
             }
           />
           <Route
+<<<<<<< HEAD
             path="calendar"
             element={
               <Suspense fallback={<AuthPageLoading />}>
@@ -584,6 +600,8 @@ function App() {
             }
           />
           <Route
+=======
+>>>>>>> 803df116ddc1c9c7f77fc5079ff9652602174dec
             path="payments"
             element={
               <Suspense fallback={<AuthPageLoading />}>
@@ -604,6 +622,22 @@ function App() {
             element={
               <Suspense fallback={<AuthPageLoading />}>
                 <Analytics />
+              </Suspense>
+            }
+          />
+          <Route
+            path="instructors"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <InstructorInfo />
+              </Suspense>
+            }
+          />
+          <Route
+            path="students"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <StudentInfo />
               </Suspense>
             }
           />

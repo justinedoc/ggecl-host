@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
 type StatusType = "Pending" | "Active" | "Completed" | "Inactive" | "Withdrawn";
 
@@ -80,13 +81,33 @@ const data: Student[] = [
 
 const StudentList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [rowsPerPage, setRowsPerPage] = useState<number>(5);
 
   const filteredData: Student[] = data.filter((item) =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+
+  const handlePageChange = (direction: "prev" | "next") => {
+    if (direction === "prev" && currentPage > 1) {
+      setCurrentPage((prev) => prev - 1);
+    } else if (direction === "next" && currentPage < totalPages) {
+      setCurrentPage((prev) => prev + 1);
+    }
+  };
+
+  const handleRowsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setRowsPerPage(Number(e.target.value));
+    setCurrentPage(1); // Reset to the first page
+  };
+
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const paginatedData = filteredData.slice(startIndex, startIndex + rowsPerPage);
+
   return (
-    <div className="p-2 md:p-4 bg-white dark:bg-gray-900 min-h-screen word-">
+    <div className="p-2 md:p-4 bg-white dark:bg-gray-900 min-h-screen">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
         <input
@@ -124,7 +145,7 @@ const StudentList: React.FC = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-gray-700">
-            {filteredData.map((student) => (
+            {paginatedData.map((student) => (
               <tr key={student.email} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition">
                 <td className="px-4 py-3">
                   <input type="checkbox" />
@@ -152,18 +173,38 @@ const StudentList: React.FC = () => {
       <div className="flex justify-between items-center mt-6">
         <div className="text-sm text-gray-600 dark:text-gray-400">
           Show rows:
-          <select className="ml-2 border rounded-md px-2 py-1 dark:bg-gray-800 dark:border-gray-700 dark:text-white">
-            <option>10</option>
-            <option>25</option>
-            <option>50</option>
+          <select
+            className="ml-2 border rounded-md px-2 py-1 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+            value={rowsPerPage}
+            onChange={handleRowsPerPageChange}
+          >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={25}>25</option>
           </select>
         </div>
-        <div className="flex space-x-2 text-sm text-gray-600 dark:text-gray-300">
-          <button className="px-2 py-1 border rounded dark:border-gray-600">1</button>
-          <button className="px-2 py-1 border rounded dark:border-gray-600">2</button>
-          <button className="px-2 py-1 border rounded dark:border-gray-600">3</button>
-          <span>...</span>
-          <button className="px-2 py-1 border rounded dark:border-gray-600">50</button>
+        <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
+          <button
+            onClick={() => handlePageChange("prev")}
+            className={`px-2 py-1 border rounded dark:border-gray-600 ${
+              currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            disabled={currentPage === 1}
+          >
+            <FaChevronLeft />
+          </button>
+          <span>
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => handlePageChange("next")}
+            className={`px-2 py-1 border rounded dark:border-gray-600 ${
+              currentPage === totalPages ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            disabled={currentPage === totalPages}
+          >
+            <FaChevronRight />
+          </button>
         </div>
       </div>
     </div>
