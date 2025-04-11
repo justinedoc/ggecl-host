@@ -3,7 +3,7 @@ import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
 type StatusType = "Pending" | "Active" | "Completed" | "Inactive" | "Withdrawn";
 
-interface Student {
+interface Instructor {
   name: string;
   email: string;
   phone: string;
@@ -20,7 +20,7 @@ const statusClasses: Record<StatusType, string> = {
   Withdrawn: "bg-pink-100 text-pink-800 dark:bg-pink-600/20 dark:text-pink-400",
 };
 
-const data: Student[] = [
+const data: Instructor[] = [
   {
     name: "Ada Johnson",
     email: "ada@email.com",
@@ -79,12 +79,12 @@ const data: Student[] = [
   },
 ];
 
-const StudentList: React.FC = () => {
+const InstructorInfo: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [rowsPerPage, setRowsPerPage] = useState<number>(5);
 
-  const filteredData: Student[] = data.filter((item) =>
+  const filteredData: Instructor[] = data.filter((item) =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -135,7 +135,7 @@ const StudentList: React.FC = () => {
               <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">
                 <input type="checkbox" />
               </th>
-              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Student Name</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Instructor Name</th>
               <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Email</th>
               <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Phone Number</th>
               <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Enrolment Date</th>
@@ -145,21 +145,21 @@ const StudentList: React.FC = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-gray-700">
-            {paginatedData.map((student) => (
-              <tr key={student.email} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+            {paginatedData.map((instructor) => (
+              <tr key={instructor.email} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition">
                 <td className="px-4 py-3">
                   <input type="checkbox" />
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{student.name}</td>
-                <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{student.email}</td>
-                <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{student.phone}</td>
-                <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{student.date}</td>
-                <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{student.progress}</td>
+                <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{instructor.name}</td>
+                <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{instructor.email}</td>
+                <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{instructor.phone}</td>
+                <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{instructor.date}</td>
+                <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{instructor.progress}</td>
                 <td className="px-4 py-3 text-sm">
                   <span
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${statusClasses[student.status]}`}
+                    className={`px-3 py-1 rounded-full text-xs font-medium ${statusClasses[instructor.status]}`}
                   >
-                    {student.status}
+                    {instructor.status}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right text-gray-500 dark:text-gray-400">...</td>
@@ -211,4 +211,4 @@ const StudentList: React.FC = () => {
   );
 };
 
-export default StudentList;
+export default InstructorInfo;

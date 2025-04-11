@@ -79,7 +79,7 @@ const data: Student[] = [
   },
 ];
 
-const StudentList: React.FC = () => {
+const StudentInfo: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [rowsPerPage, setRowsPerPage] = useState<number>(5);
@@ -211,4 +211,4 @@ const StudentList: React.FC = () => {
   );
 };
 
-export default StudentList;
+export default StudentInfo;
