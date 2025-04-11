@@ -9,7 +9,7 @@ export function useStudent() {
   const context = useContext(StudentContext);
 
   if (!context) {
-    throw new Error("useStudent must be used within an StudentContextProvider");
+    throw new Error("useStudent must be used within a StudentContextProvider");
   }
   return context;
 }

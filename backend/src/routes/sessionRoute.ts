@@ -2,12 +2,12 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import { envConfig } from "../config/envValidator.js";
 import { JwtPayload } from "../controllers/refresh.js";
-import { redis } from "../config/redisConfig.js";
 import { combinedUserModel } from "../utils/roleMappings.js";
+import { CACHE } from "../utils/nodeCache.js";
 
 const router = express.Router();
 
-// Cache TTL configuration
+// Cache TTL configuration (1 hour)
 const USER_CACHE_TTL = 3600;
 
 router.get("/auth/session", async (req, res) => {
@@ -23,14 +23,13 @@ router.get("/auth/session", async (req, res) => {
     const { role, id } = decoded;
 
     const cacheKey = `user:${id}:${role}`;
-
-    const cachedUser = await redis.get(cacheKey);
+    const cachedUser = CACHE.get<{ id: string; role: string }>(cacheKey);
 
     if (cachedUser) {
       res.json({
         success: true,
         fromCache: true,
-        data: JSON.parse(cachedUser),
+        data: cachedUser,
       });
       return;
     }
@@ -49,9 +48,10 @@ router.get("/auth/session", async (req, res) => {
       return;
     }
 
-    const sessionData = { id: user._id, role };
+    const sessionData = { id: user._id.toString(), role };
 
-    await redis.setEx(cacheKey, USER_CACHE_TTL, JSON.stringify(sessionData));
+    // ✅ Save to node-cache with TTL
+    CACHE.set(cacheKey, sessionData, USER_CACHE_TTL);
 
     res.json({ success: true, data: sessionData });
   } catch (error) {

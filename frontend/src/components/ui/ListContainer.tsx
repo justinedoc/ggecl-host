@@ -1,23 +1,34 @@
 import { JSX } from "react";
 import { Link } from "react-router";
+import GroupLoadingSkeleton from "../skeletons/LoadingSkeleton";
 
 interface ListContainerTypes {
   header: string;
   render: JSX.Element[];
   path: string;
+  isLoading?: boolean;
 }
 
-function ListContainer({ header, render, path }: ListContainerTypes) {
+function ListContainer({
+  header,
+  render,
+  path,
+  isLoading,
+}: ListContainerTypes) {
   return (
-    <section className="dark:bg-gray-900 md:px-12 px-4 py-10 space-y-7">
-      <header className="w-full flex items-center justify-between">
+    <section className="space-y-7 px-4 py-10 md:px-12 dark:bg-gray-900">
+      <header className="flex w-full items-center justify-between">
         <h1 className="text-2xl font-semibold">{header}</h1>
-        <Link to={path} className="font-light text-blue-500 text-md">
+        <Link to={path} className="text-md font-light text-blue-500">
           See All
         </Link>
       </header>
 
-      <main className="flex gap-5 flex-wrap justify-center">{render}</main>
+      {isLoading ? (
+        <GroupLoadingSkeleton />
+      ) : (
+        <main className="flex flex-wrap justify-center gap-5">{render}</main>
+      )}
     </section>
   );
 }

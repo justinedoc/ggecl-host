@@ -8,17 +8,20 @@ import lightImg from "@/assets/images/LOGO.png";
 import darkImg from "@/assets/images/LOGO-dark.png";
 import { useTheme } from "@/hooks/useTheme";
 import { links } from "@/components/constants/Navlinks";
+import { useAuth } from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
 
 const Navbar = ({ showNav }: { showNav?: boolean }) => {
   const { darkMode, setDarkMode } = useTheme();
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
+  const { userId } = useAuth();
 
   const logoSrc = darkMode ? lightImg : darkImg;
 
   return (
-    <nav className="sticky top-0 left-0 w-full bg-white dark:bg-gray-900 shadow-sm z-50 transition-all duration-300 ease-in-out py-3">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between gap-5 items-center">
+    <nav className="sticky top-0 left-0 z-50 w-full bg-white py-3 shadow-sm transition-all duration-300 ease-in-out dark:bg-gray-900">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between gap-5">
           {/* Logo */}
           <Link
             to="/"
@@ -30,12 +33,12 @@ const Navbar = ({ showNav }: { showNav?: boolean }) => {
           {!showNav ? (
             <SearchBar />
           ) : (
-            <div className="hidden md:flex space-x-6">
+            <div className="hidden space-x-6 md:flex">
               {links.map((link) => (
                 <Link
                   key={link.path}
                   to={link.path}
-                  className="text-gray-700 dark:text-gray-300 hover:text-blue-500 transition-colors duration-150 font-bold"
+                  className="font-bold text-gray-700 transition-colors duration-150 hover:text-blue-500 dark:text-gray-300"
                 >
                   {link.title}
                 </Link>
@@ -46,19 +49,22 @@ const Navbar = ({ showNav }: { showNav?: boolean }) => {
           {/* Actions */}
           <div className="flex items-center space-x-4">
             <Link to="/login">
-              <Button className="hidden md:block font-bold text-gray-700 dark:text-gray-300 border bg-transparent hover:bg-[#123354] hover:text-white transition duration-300 border-cyan-900 rounded-md">
+              <Button className="hidden rounded-md border border-cyan-900 bg-transparent font-bold text-gray-700 transition duration-300 hover:bg-[#123354] hover:text-white md:block dark:text-gray-300">
                 Login
               </Button>
             </Link>
             <Link to="/signup">
-              <Button className="hidden md:block text-white font-bold rounded-md btn">
+              <Button className="btn hidden rounded-md font-bold text-white md:block">
                 Get Started
               </Button>
             </Link>
 
             <Link
               to={"/cart"}
-              className="hidden size-9 rounded-full bg-blue-300/30 md:flex items-center justify-center hover:bg-blue-300/80 transition-all"
+              className={cn(
+                "hidden size-9 items-center justify-center rounded-full bg-blue-300/30 transition-all hover:bg-blue-300/80 md:flex",
+                { "md:hidden": !userId },
+              )}
             >
               <ShoppingCart size={18} />
             </Link>
@@ -67,14 +73,14 @@ const Navbar = ({ showNav }: { showNav?: boolean }) => {
               size={"icon"}
               onClick={() => setDarkMode((prev) => !prev)}
               aria-label="Toggle Dark Mode"
-              className="ring rounded-full"
+              className="rounded-full ring"
             >
               {darkMode ? <Sun size={20} /> : <Moon size={20} />}
             </Button>
             {/* Mobile menu toggle */}
             <button
               onClick={() => setMenuOpen((prev) => !prev)}
-              className="md:hidden p-2 text-gray-800 dark:text-white"
+              className="p-2 text-gray-800 md:hidden dark:text-white"
               aria-label="Toggle Menu"
             >
               {menuOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
@@ -85,12 +91,12 @@ const Navbar = ({ showNav }: { showNav?: boolean }) => {
 
       {/* Mobile Navigation */}
       {menuOpen && (
-        <div className="md:hidden bg-white dark:bg-gray-900 py-4 flex flex-col p-5 gap-4">
+        <div className="flex flex-col gap-4 bg-white p-5 py-4 md:hidden dark:bg-gray-900">
           {links.map((link) => (
             <Link
               key={link.path}
               to={link.path}
-              className="text-gray-700 dark:text-gray-400 hover:text-blue-500 font-bold"
+              className="font-bold text-gray-700 hover:text-blue-500 dark:text-gray-400"
               onClick={() => setMenuOpen(false)}
             >
               {link.title}
@@ -99,17 +105,17 @@ const Navbar = ({ showNav }: { showNav?: boolean }) => {
           <Link
             onClick={() => setMenuOpen(false)}
             to={"/cart"}
-            className="text-gray-700 dark:text-gray-300 hover:text-blue-500 font-bold"
+            className="font-bold text-gray-700 hover:text-blue-500 dark:text-gray-300"
           >
             Cart
           </Link>
           <Link to="/login" onClick={() => setMenuOpen(false)}>
-            <Button className="w-full font-bold text-gray-700 dark:text-gray-300 ring bg-transparent hover:bg-[#123354] transition duration-300 border-blue-300/20 rounded-md">
+            <Button className="w-full rounded-md border-blue-300/20 bg-transparent font-bold text-gray-700 ring transition duration-300 hover:bg-[#123354] dark:text-gray-300">
               Login
             </Button>
           </Link>
           <Link to="/signup" onClick={() => setMenuOpen(false)}>
-            <Button className="w-full text-white font-bold rounded-md bg-gray-900 hover:text-gray-600">
+            <Button className="w-full rounded-md bg-gray-900 font-bold text-white hover:text-gray-600">
               Get Started
             </Button>
           </Link>

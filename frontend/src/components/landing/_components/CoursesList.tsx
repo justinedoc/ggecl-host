@@ -3,14 +3,11 @@ import ListContainer from "../../ui/ListContainer";
 import { useCourses } from "../hooks/useCourses";
 
 function Courses() {
-  const { courses, loadingCourses } = useCourses({ limit: 4 });
-
-  if (loadingCourses) {
-    return "loading";
-  }
+  const { courses, loadingCourses } = useCourses({});
 
   return (
     <ListContainer
+      isLoading={loadingCourses}
       header="Top courses"
       path="/courses"
       render={courses.map((course) => (

@@ -11,6 +11,7 @@ interface IInstructorNotification extends Document {
 
 // Main Instructor interface
 export interface IInstructor extends Document {
+  _id: Types.ObjectId;
   role: "instructor";
   fullName: string;
   gender: string;

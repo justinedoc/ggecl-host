@@ -25,7 +25,6 @@ interface IStudentListResponse {
   };
 }
 
-
 const StudentEditableSchema = z
   .object({
     fullName: z.string().min(2, "Full name must be at least 2 characters"),
@@ -157,7 +156,6 @@ export const studentRouter = router({
           });
         }
 
-        console.log(student)
 
         CACHE.set(cacheKey, student);
         console.log("Cache set for: ", cacheKey);
@@ -169,6 +167,7 @@ export const studentRouter = router({
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
+          message: "Something went wrong, try again later",
         });
       }
     }),

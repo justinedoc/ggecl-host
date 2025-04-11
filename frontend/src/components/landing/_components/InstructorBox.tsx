@@ -5,39 +5,35 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import tempInstructorImg from "../../../assets/images/temp-instructor-img.png";
 import { Star } from "lucide-react";
+import { Instructor } from "@/types/userTypes";
 
-interface InstructorType {
-  instructor: {
-    name: string;
-    category: string;
-    reviews: number;
-    image: string;
-    students: number;
-  };
-}
-
-function InstructorBox({ instructor }: InstructorType) {
+function InstructorBox({ instructor }: { instructor: Instructor }) {
   return (
-    <Card className="w-full md:max-w-[17rem] shadow-sm dark:bg-gray-900 dark:border-gray-800 cursor-pointer">
-      <CardHeader className="py-2 items-center px-3 space-y-0">
-        <div className="mb-2">
-          <img src={tempInstructorImg} alt="course" />
+    <Card className="w-full cursor-pointer overflow-hidden rounded-2xl shadow-md transition hover:shadow-lg md:max-w-[17rem] dark:border-gray-800 dark:bg-gray-900">
+      <CardHeader className="flex flex-col items-center gap-2 px-4 py-3">
+        <div className="h-[180px] w-full overflow-hidden rounded-xl">
+          <img
+            src={instructor.picture}
+            alt={`${instructor.fullName}'s profile`}
+            className="h-full w-full object-cover"
+          />
         </div>
-        <CardTitle className="text-xl md:text-lg md:font-semibold font-medium tracking-normal">
-          {instructor.name}
+        <CardTitle className="mt-2 text-center text-lg font-semibold capitalize">
+          {instructor.fullName}
         </CardTitle>
-        <CardDescription>{instructor.category}</CardDescription>
+        <CardDescription className="text-sm text-gray-400">
+          {instructor.schRole}
+        </CardDescription>
       </CardHeader>
-      <CardContent className="py-2 border-t px-3 flex justify-between items-center">
-        <div className="flex gap-1 items-center">
-          <Star className="fill-[#FFC806] stroke-none" />
-          <span>{instructor.reviews}</span>
-        </div>
 
-        <span className="text-[13px] font-semibold text-gray-500">
-          {instructor.students} students
+      <CardContent className="flex items-center justify-between border-t px-4 py-3 text-sm text-gray-300">
+        <div className="flex items-center gap-1 font-medium">
+          <Star className="h-4 w-4 fill-[#FFC806] stroke-none" />
+          <span>{instructor.reviews.length}</span>
+        </div>
+        <span className="font-medium text-gray-400">
+          {instructor.students.length} students
         </span>
       </CardContent>
     </Card>

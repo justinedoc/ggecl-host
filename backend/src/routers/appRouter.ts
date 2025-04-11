@@ -4,6 +4,7 @@ import { forgotPasswordRouter } from "./forgotPasswordRouter.js";
 import { cartRouter } from "./cartRouter.js";
 import { studentRouter } from "./studentRouter.js";
 import { courseRouter } from "./courseRouter.js";
+import { instructorRouter } from "./instructorRouter.js";
 
 export const appRouter = router({
   notification: notificationRouter,
@@ -11,6 +12,7 @@ export const appRouter = router({
   cart: cartRouter,
   course: courseRouter,
   student: studentRouter,
+  instructor: instructorRouter,
 });
 
 export type AppRouter = typeof appRouter;

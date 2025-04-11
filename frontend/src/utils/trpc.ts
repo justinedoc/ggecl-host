@@ -16,6 +16,7 @@ export type GetCourseOutput = inferProcedureOutput<
 >;
 
 export type GetStudentOutput = inferProcedureOutput<AppRouter["student"]["getById"]>
+export type GetInstructorOutput = inferProcedureOutput<AppRouter["instructor"]["getById"]>
 
 export type ICourseSummary = GetAllCoursesOutput["courses"][number];
 
