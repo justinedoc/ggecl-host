@@ -82,11 +82,11 @@ const handleGoogleSignup = async (
     });
 
     const { accessToken, refreshToken } = authService.generateAuthTokens(
-      instructor._id as string
+      instructor._id.toString()
     );
 
     await authService.updateRefreshToken(
-      instructor._id as string,
+      instructor._id.toString(),
       refreshToken
     );
 
@@ -106,12 +106,12 @@ const handleGoogleSignup = async (
 const handleGoogleLogin = async (instructor: IInstructor) => {
   try {
     const { accessToken, refreshToken } = authService.generateAuthTokens(
-      instructor._id as string
+      instructor._id.toString()
     );
 
     // Update refresh token
     await authService.updateRefreshToken(
-      instructor._id as string,
+      instructor._id.toString(),
       refreshToken
     );
 

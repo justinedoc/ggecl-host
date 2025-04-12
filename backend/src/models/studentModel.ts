@@ -2,13 +2,7 @@ import { Document, Schema, model } from "mongoose";
 import { CartSchema, ICart } from "./cartModel.js";
 import { Types } from "mongoose";
 import { AssignmentSchema, IStudentAssignment } from "./assignmentSchema.js";
-
-interface IStudentNotification extends Document {
-  title: string;
-  content: string;
-  createdAt: Date;
-  isRead: boolean;
-}
+import { INotification, NotificationSchema } from "./NotificationSchema.js";
 
 export interface IStudent extends Document {
   _id: Types.ObjectId;
@@ -22,7 +16,7 @@ export interface IStudent extends Document {
   isVerified: boolean;
   email: string;
   password?: string;
-  notifications: IStudentNotification[];
+  notifications: INotification[];
   refreshToken?: string;
   emailVerificationToken?: string;
   emailVerificationExpires?: Date;
@@ -31,14 +25,6 @@ export interface IStudent extends Document {
   cartItems: ICart[];
   assignments: IStudentAssignment[];
 }
-
-// Student Notification Schema
-const StudentNotificationSchema = new Schema<IStudentNotification>({
-  title: { type: String, required: true },
-  content: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now },
-  isRead: { type: Boolean, default: false },
-});
 
 // Main Student Schema
 export const StudentSchema = new Schema<IStudent>(
@@ -64,7 +50,7 @@ export const StudentSchema = new Schema<IStudent>(
     passwordUpdateTokenExpiry: { type: Date },
     email: { type: String, required: true, unique: true },
     password: { type: String },
-    notifications: { type: [StudentNotificationSchema], default: [] },
+    notifications: { type: [NotificationSchema], default: [] },
     cartItems: { type: [CartSchema], default: [] },
     assignments: { type: [AssignmentSchema], default: [] },
     refreshToken: { type: String, select: false },

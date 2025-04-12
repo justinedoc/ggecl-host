@@ -3,7 +3,7 @@ import "react-loading-skeleton/dist/skeleton.css";
 
 export const CourseCardSkeleton = () => {
   return (
-    <div className="w-[280px] space-y-3 rounded-2xl bg-[#afb0b5] p-4 shadow-md">
+    <div className="w-[280px] space-y-3 rounded-2xl p-4 shadow-md">
       {/* Image Skeleton */}
       <Skeleton height={130} borderRadius="0.5rem" />
 

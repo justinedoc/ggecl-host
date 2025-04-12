@@ -1,13 +1,6 @@
 import { Document, Schema, Types, model } from "mongoose";
 import { Review, ReviewSchema } from "./reviewSchema.js";
-
-// Interface for Instructor Notification subdocument
-interface IInstructorNotification extends Document {
-  title: string;
-  content: string;
-  createdAt: Date;
-  isRead: boolean;
-}
+import { INotification, NotificationSchema } from "./NotificationSchema.js";
 
 // Main Instructor interface
 export interface IInstructor extends Document {
@@ -22,7 +15,7 @@ export interface IInstructor extends Document {
   isVerified: boolean;
   email: string;
   password?: string;
-  notifications: IInstructorNotification[];
+  notifications: INotification[];
   refreshToken?: string;
   emailVerificationToken?: string;
   emailVerificationExpires?: Date;
@@ -35,14 +28,6 @@ export interface IInstructor extends Document {
   topics: string[];
   schRole: string;
 }
-
-// Instructor Notification Schema
-const InstructorNotificationSchema = new Schema<IInstructorNotification>({
-  title: { type: String, required: true },
-  content: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now },
-  isRead: { type: Boolean, default: false },
-});
 
 // Main Instructor Schema
 export const InstructorSchema = new Schema<IInstructor>(
@@ -68,7 +53,7 @@ export const InstructorSchema = new Schema<IInstructor>(
     isVerified: { type: Boolean, default: false },
     email: { type: String, required: true, unique: true },
     password: { type: String },
-    notifications: { type: [InstructorNotificationSchema], default: [] },
+    notifications: { type: [NotificationSchema], default: [] },
     refreshToken: { type: String },
     reviews: { type: [ReviewSchema], default: [] },
     students: [

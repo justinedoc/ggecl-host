@@ -46,17 +46,17 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
 
     const student = await studentAuthService.createStudent(validatedData);
     const { accessToken, refreshToken } = studentAuthService.generateAuthTokens(
-      student._id as string
+      student._id.toString()
     );
 
     await studentAuthService.updateRefreshToken(
-      student._id as string,
+      student._id.toString(),
       refreshToken
     );
 
     setRefreshTokenCookie(res, refreshToken);
 
-    await initiateEmailVerification(student._id as string, student.email);
+    await initiateEmailVerification(student._id.toString(), student.email);
 
     createSuccessResponse(
       res,
@@ -98,11 +98,11 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     }
 
     const { accessToken, refreshToken } = studentAuthService.generateAuthTokens(
-      student._id as string
+      student._id.toString()
     );
 
     await studentAuthService.updateRefreshToken(
-      student._id as string,
+      student._id.toString(),
       refreshToken
     );
     setRefreshTokenCookie(res, refreshToken);

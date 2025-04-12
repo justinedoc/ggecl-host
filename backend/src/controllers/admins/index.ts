@@ -19,9 +19,9 @@ async function initSuperAdmin() {
       email: envConfig.superadminEmail,
       password: await bcrypt.hash(envConfig.superadminPassword, 10), // Hash the password
       fullName: "System Superadmin",
-      role: "superadmin",
+      role: "admin",
       permissions: ["all"],
-      isVerified: true, // Superadmin is automatically verified
+      isVerified: true,
       emailVerified: true,
     };
 

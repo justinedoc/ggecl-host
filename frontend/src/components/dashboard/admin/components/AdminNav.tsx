@@ -27,6 +27,8 @@ import {
 } from "@/components/ui/hover-card";
 import { Link } from "react-router";
 import { useTheme } from "@/hooks/useTheme";
+import { useAdmin } from "@/hooks/useAdmin";
+import { useAuth } from "@/hooks/useAuth";
 
 const formatName = (name: string) => {
   const [firstName, ...rest] = name.split(" ");
@@ -34,6 +36,8 @@ const formatName = (name: string) => {
 };
 
 const AdminNav = () => {
+  const { admin } = useAdmin();
+  const { handleLogout } = useAuth();
   const { darkMode, setDarkMode } = useTheme();
 
   const { state } = useSidebar();
@@ -63,9 +67,9 @@ const AdminNav = () => {
           <PopoverTrigger asChild>
             <Button variant="ghost" size="icon" className="relative">
               <FaBell className="h-[1.2rem] w-[1.2rem]" />
-              {instructor?.notifications.length > 0 && (
+              {admin.notifications.length > 0 && (
                 <span className="bg-primary text-primary-foreground absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full text-xs">
-                  {instructor.notifications.map((n) => !n.isRead).length}
+                  {admin.notifications.map((n) => !n.isRead).length}
                 </span>
               )}
             </Button>
@@ -75,12 +79,12 @@ const AdminNav = () => {
               Notifications
             </div>
             <Separator />
-            {instructor?.notifications.length === 0 ? (
+            {admin.notifications.length === 0 ? (
               <div className="text-muted-foreground p-4 text-center text-sm">
                 No new notifications
               </div>
             ) : (
-              instructor?.notifications.map((notification, index) => (
+              admin.notifications.map((notification, index) => (
                 <HoverCard key={index}>
                   <HoverCardTrigger asChild>
                     <div className="hover:bg-accent cursor-pointer rounded p-3 text-sm">
@@ -112,16 +116,16 @@ const AdminNav = () => {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="gap-2 p-6">
               <img
-                src={instructor.picture}
-                alt={instructor.fullName}
+                src={admin.picture}
+                alt={admin.fullName}
                 className="h-8 w-8 rounded-full"
               />
               <div className="hidden flex-col items-start md:flex">
                 <span className="text-sm font-medium">
-                  {formatName(instructor.fullName)}
+                  {formatName(admin.fullName)}
                 </span>
                 <span className="text-muted-foreground text-xs">
-                  {instructor.email}
+                  {admin.email}
                 </span>
               </div>
               <FaChevronDown className="ml-2 h-4 w-4" />
@@ -129,10 +133,7 @@ const AdminNav = () => {
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-64 space-y-2 p-3" align="end">
             <DropdownMenuItem asChild>
-              <Link
-                to="/instructor/dashboard/settings"
-                className="cursor-pointer"
-              >
+              <Link to="/admin/dashboard/settings" className="cursor-pointer">
                 ⚙️ Account Settings
               </Link>
             </DropdownMenuItem>

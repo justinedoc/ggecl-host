@@ -40,25 +40,25 @@ export const register = asyncHandler(
       const existingInstructor = await authService.findInstructorByEmail(
         validatedData.email
       );
-      
+
       if (existingInstructor) {
         return createErrorResponse(res, 409, "Email is already registered");
       }
 
       const instructor = await authService.createInstructor(validatedData);
       const { accessToken, refreshToken } = authService.generateAuthTokens(
-        instructor._id as string
+        instructor._id.toString()
       );
 
       await authService.updateRefreshToken(
-        instructor._id as string,
+        instructor._id.toString(),
         refreshToken
       );
 
       setRefreshTokenCookie(res, refreshToken);
 
       await initiateEmailVerification(
-        instructor._id as string,
+        instructor._id.toString(),
         instructor.email
       );
 
@@ -103,11 +103,11 @@ export const login = asyncHandler(
       }
 
       const { accessToken, refreshToken } = authService.generateAuthTokens(
-        instructor._id as string
+        instructor._id.toString()
       );
 
       await authService.updateRefreshToken(
-        instructor._id as string,
+        instructor._id.toString(),
         refreshToken
       );
 
