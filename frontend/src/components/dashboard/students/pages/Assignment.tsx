@@ -106,8 +106,7 @@ export default function AssignmentList() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { mutateAsync: createSignatureCloudinary } = useMutation(
-    trpc.assignment.createCloudinarySignature.mutationOptions({
-),
+    trpc.assignment.createCloudinarySignature.mutationOptions(),
   );
 
   const { mutateAsync: markSubmissionComplete } = useMutation(

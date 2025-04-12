@@ -6,6 +6,18 @@ import { cloudinary } from "../cloudinary.js";
 import { envConfig } from "../config/envValidator.js";
 import { protectedProcedure, router } from "../trpc.js";
 import studentModel from "../models/studentModel.js";
+import { IStudentAssignment } from "../models/assignmentSchema.js";
+
+type SubmissionData = Omit<IStudentAssignment, "title" | "lesson" | "dueDate">;
+
+function isErrorWithCode(error: unknown): error is { code: string } {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    typeof error.code === "string"
+  );
+}
 
 export const assignmentRouter = router({
   createCloudinarySignature: protectedProcedure
@@ -28,16 +40,16 @@ export const assignmentRouter = router({
       const public_id = `${folder}/${baseFileName}-${uniqueSuffix}`;
 
       const paramsToSign = {
-        timestamp: timestamp,
-        folder: folder,
-        public_id: public_id,
+        timestamp,
+        folder,
+        public_id,
         resource_type: "raw",
       };
 
       try {
         const signature = cloudinary.utils.api_sign_request(
           paramsToSign,
-          envConfig.CLOUDINARY_API_SECRET
+          envConfig.CLOUDINARY_API_SECRET!
         );
 
         return {
@@ -85,7 +97,7 @@ export const assignmentRouter = router({
 
       const expectedSignature = cloudinary.utils.api_sign_request(
         { public_id: publicId, version: version },
-        envConfig.CLOUDINARY_API_SECRET
+        envConfig.CLOUDINARY_API_SECRET!
       );
 
       if (expectedSignature !== signature) {
@@ -100,7 +112,7 @@ export const assignmentRouter = router({
       }
 
       try {
-        const submissionData = {
+        const submissionData: SubmissionData = {
           status: "submitted",
           submissionDate: new Date(),
           submissionFileUrl: fileUrl,
@@ -110,13 +122,18 @@ export const assignmentRouter = router({
           submissionFileType: fileType,
         };
 
-        const updatePayload = {};
-        for (const key in submissionData) {
-          updatePayload[`assignments.$.${key}`] = submissionData[key];
+        const updatePayload: Record<string, string | number | Date> = {};
+        for (const key of Object.keys(submissionData) as Array<
+          keyof SubmissionData
+        >) {
+          const value = submissionData[key];
+          if (value !== undefined) {
+            updatePayload[`assignments.$.${key}`] = value;
+          }
         }
 
         const updatedAssignment = await studentModel.findOneAndUpdate(
-          { _id: userId, "assignments._id": assignmentId },
+          { _id: userId, "assignments.title": assignmentId }, //FIXME: using title for now change to id
           { $set: updatePayload },
           { new: true, runValidators: true }
         );
@@ -135,7 +152,7 @@ export const assignmentRouter = router({
         return { success: true, assignment: updatedAssignment };
       } catch (error) {
         console.error("Error marking submission complete:", error);
-        if (error?.code !== "NOT_FOUND") {
+        if (isErrorWithCode(error) && error.code !== "NOT_FOUND") {
           try {
             await cloudinary.uploader.destroy(publicId, {
               resource_type: "raw",
@@ -147,7 +164,9 @@ export const assignmentRouter = router({
             );
           }
         }
+
         if (error instanceof TRPCError) throw error;
+
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to update assignment submission.",
