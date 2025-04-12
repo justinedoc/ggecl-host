@@ -25,7 +25,6 @@ import {
     FileText,
     BarChart,
     BookOpen,
-    Briefcase,
   } from "lucide-react";
   import logoImg from "@/assets/images/LOGO.png";
   
@@ -64,7 +63,7 @@ import {
       icon: Book,
     },
     {
-      title: "Schedule",
+      title: "Today's Date",
       url: `${urlPrefix}/calendar`,
       icon: Calendar,
     },
@@ -78,20 +77,10 @@ import {
       url: `${urlPrefix}/students`,
       icon: Users,
     },
-    // {
-    //   title: "Reports",
-    //   url: `${urlPrefix}/reports`,
-    //   icon: FileText,
-    // },
     {
       title: "Settings",
       url: `${urlPrefix}/settings`,
       icon: Settings,
-    },
-    {
-      title: "Earnings & Analytics",
-      url: `${urlPrefix}/earnings`,
-      icon: Briefcase,
     },
   ];
   
