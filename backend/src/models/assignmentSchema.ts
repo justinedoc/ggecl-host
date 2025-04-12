@@ -2,19 +2,14 @@ import { Schema } from "mongoose";
 import { z } from "zod";
 
 export const AssignmentZodSchema = z.object({
-  title: z.string({
-    required_error: "Title is required",
-  }),
-  lesson: z.string({
-    required_error: "Lesson is required",
-  }),
-  dueDate: z.date({
-    required_error: "Due date is required",
-  }),
-  status: z.enum(["pending", "completed"]).default("pending"),
-  submitted: z.boolean({
-    required_error: "Submission status is required",
-  }),
+  title: z.string({ required_error: "Title is required" }),
+  lesson: z.string({ required_error: "Lesson is required" }),
+  dueDate: z.date({ required_error: "Due date is required" }),
+  status: z.enum(["pending", "submitted", "graded"]).default("pending"),
+  submissionDate: z.date().optional(),
+  submissionFileUrl: z.string().url().optional(),
+  submissionFileName: z.string().optional(),
+  submissionFileSize: z.number().optional(),
 });
 
 export type IStudentAssignment = z.infer<typeof AssignmentZodSchema>;
@@ -29,11 +24,14 @@ export const AssignmentSchema = new Schema<IStudentAssignment>(
     dueDate: { type: Date, required: true },
     status: {
       type: String,
-      enum: ["pending", "completed"],
+      enum: ["pending", "completed", "graded"],
       default: "pending",
       required: true,
     },
-    submitted: { type: Boolean, required: true },
+    submissionDate: Date,
+    submissionFileUrl: String,
+    submissionFileName: String,
+    submissionFileSize: Number,
   },
   {
     timestamps: true,

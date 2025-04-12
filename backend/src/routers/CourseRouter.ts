@@ -63,8 +63,6 @@ export const courseRouter = router({
   getAll: procedure.input(GetCoursesZodSchema).query(async ({ input }) => {
     const cacheKey = getCacheKey(input);
 
-    await new Promise((re) => setTimeout(re, 3000));
-
     const cachedData = CACHE.get<ICourseListResponse>(cacheKey);
     if (cachedData) {
       console.log("Cache hit for:", cacheKey);
