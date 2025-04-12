@@ -12,7 +12,7 @@ import sessionRoute from "./routes/sessionRoute.js";
 
 // Configs & Middlewares
 import { errorHandler } from "./middlewares/errorHandler.js";
-import { connectToCache } from "./config/redisConfig.js";
+// import { connectToCache } from "./config/redisConfig.js";
 import { connectToDb } from "./config/mongodbConfig.js";
 import logoutRoute from "./routes/logoutRoute.js";
 
@@ -61,7 +61,7 @@ app.use(errorHandler);
 export async function init() {
   try {
     await connectToDb();
-    await connectToCache();
+    // await connectToCache();
     console.log("✅ Database and Cache connected.");
   } catch (err) {
     console.error("Initialization error:", err);

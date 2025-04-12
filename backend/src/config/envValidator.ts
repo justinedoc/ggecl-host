@@ -16,6 +16,9 @@ function validateConfig() {
     "SMTP_PASS",
     "GOOGLE_CLIENT_ID",
     "REDIS_URL",
+    "CLOUDINARY_CLOUD_NAME",
+    "CLOUDINARY_API_KEY",
+    "CLOUDINARY_API_SECRET",
   ] as const;
 
   for (const secrets of required) {
@@ -41,6 +44,9 @@ function validateConfig() {
     superadminEmail: process.env.SUPERADMIN_EMAIL,
     superadminPassword: process.env.SUPERADMIN_PASSWOR,
     redisUrl: process.env.REDIS_URL,
+    CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
+    CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
+    CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
   } as const;
 }
 

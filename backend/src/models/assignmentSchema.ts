@@ -6,10 +6,14 @@ export const AssignmentZodSchema = z.object({
   lesson: z.string({ required_error: "Lesson is required" }),
   dueDate: z.date({ required_error: "Due date is required" }),
   status: z.enum(["pending", "submitted", "graded"]).default("pending"),
+
   submissionDate: z.date().optional(),
+
+  submissionPublicId: z.string().optional(),
   submissionFileUrl: z.string().url().optional(),
   submissionFileName: z.string().optional(),
   submissionFileSize: z.number().optional(),
+  submissionFileType: z.string().optional(),
 });
 
 export type IStudentAssignment = z.infer<typeof AssignmentZodSchema>;
@@ -30,7 +34,9 @@ export const AssignmentSchema = new Schema<IStudentAssignment>(
     },
     submissionDate: Date,
     submissionFileUrl: String,
+    submissionPublicId: String,
     submissionFileName: String,
+    submissionFileType: String,
     submissionFileSize: Number,
   },
   {

@@ -1,237 +1,439 @@
-import { useState } from "react";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableFooter,
-  TableHead,
-  TableRow,
-  TableCell,
-} from "@/components/ui/table";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { FaSearch } from "react-icons/fa";
+import { useState, useMemo, useCallback, useRef } from "react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import AssignmentModal from "../_components/AssignmentModal";
+import AssignmentTable from "../_components/AssignmentTable";
+import { TableActionName } from "../utils/tableActions";
+import { useMutation } from "@tanstack/react-query";
+import { trpc } from "@/utils/trpc";
+import { toast } from "sonner";
+import axiosInstance from "@/api/client";
+import { AxiosError } from "axios";
 
-const assignments = [
+type AssignmentStatus = "Pending" | "Completed" | "Progress";
+
+export type Assignment = {
+  id: number;
+  title: string;
+  course: string;
+  dueDate: string;
+  status: AssignmentStatus;
+};
+
+const assignmentsData: Assignment[] = [
   {
+    id: 1,
     title: "Math Homework",
     course: "Algebra",
     dueDate: "2025-03-05",
     status: "Pending",
   },
-  {
-    title: "Science Project",
-    course: "Physics",
-    dueDate: "2025-03-10",
-    status: "Completed",
-  },
-  {
-    title: "History Essay",
-    course: "History",
-    dueDate: "2025-03-15",
-    status: "Pending",
-  },
-  {
-    title: "Chemistry Lab",
-    course: "Chemistry",
-    dueDate: "2025-03-20",
-    status: "Completed",
-  },
-  {
-    title: "Literature Review",
-    course: "English",
-    dueDate: "2025-03-25",
-    status: "Pending",
-  },
-  {
-    title: "Python Review",
-    course: "Comp Sci",
-    dueDate: "2025-05-03",
-    status: "Progress",
-  },
 ];
 
-export default function Assignment() {
-  const [filterStatus, setFilterStatus] = useState("All");
-  const [filterDate, setFilterDate] = useState("");
-  const [rowsPerPage, setRowsPerPage] = useState(3);
-  const [currentPage, setCurrentPage] = useState(1);
+const ROWS_PER_PAGE_OPTIONS = [3, 5, 10];
+const STATUS_OPTIONS: ["All", ...AssignmentStatus[]] = [
+  "All",
+  "Pending",
+  "Completed",
+  "Progress",
+];
 
-  const filteredAssignments = assignments
-    .filter((a) => (filterStatus === "All" ? true : a.status === filterStatus))
-    .filter((a) => (filterDate ? a.dueDate === filterDate : true));
+function validateFile(file: File): { valid: boolean; error?: string } {
+  const maxSize = 22 * 1024 * 1024; // 22MB
+  if (file.type !== "application/pdf") {
+    return {
+      valid: false,
+      error: "Invalid file format. Please select a PDF file.",
+    };
+  }
+  if (file.size > maxSize) {
+    return {
+      valid: false,
+      error: `File is too large. Maximum size is ${maxSize / (1024 * 1024)}MB.`,
+    };
+  }
+  return { valid: true };
+}
+
+function UploadOverlay({
+  progress,
+  showSuccess,
+}: {
+  progress: number;
+  showSuccess: boolean;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/50">
+      <div className="w-11/12 max-w-md rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
+        {showSuccess ? (
+          <h2 className="mb-4 text-center text-xl font-semibold text-green-600">
+            Upload Successful!
+          </h2>
+        ) : (
+          <>
+            <h2 className="mb-2 text-center text-xl font-semibold">
+              Uploading Assignment
+            </h2>
+            <div className="w-full rounded-full bg-gray-200 dark:bg-gray-700">
+              <div
+                className="h-4 rounded-full bg-blue-600 transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
+            <p className="mt-2 text-center text-sm">{progress}%</p>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function AssignmentList() {
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [assignmentToSubmitFor, setAssignmentToSubmitFor] =
+    useState<Assignment | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [filterStatus, setFilterStatus] = useState<AssignmentStatus | "All">(
+    "All",
+  );
+  const [filterDate, setFilterDate] = useState("");
+  const [rowsPerPage, setRowsPerPage] = useState(ROWS_PER_PAGE_OPTIONS[1]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedAssignment, setSelectedAssignment] =
+    useState<Assignment | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { mutateAsync: createSignatureCloudinary } = useMutation(
+    trpc.assignment.createCloudinarySignature.mutationOptions({
+),
+  );
+
+  const { mutateAsync: markSubmissionComplete } = useMutation(
+    trpc.assignment.markSubmissionComplete.mutationOptions({
+      onSuccess: (data) => {
+        if (data.success) {
+          toast.success("Assignment submitted for marking");
+          // Invalidate queries ...
+        }
+      },
+    }),
+  );
+
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    setUploadProgress(0);
+    if (!file) return;
+
+    if (!assignmentToSubmitFor) {
+      console.error("Upload triggered without an assignment context.");
+      e.target.value = "";
+      setAssignmentToSubmitFor(null);
+      return;
+    }
+
+    const { valid, error } = validateFile(file);
+    if (!valid) {
+      toast.error(error);
+    } else {
+      handleSubmitAssignment(assignmentToSubmitFor, file);
+    }
+
+    e.target.value = "";
+  };
+
+  const handleSubmitAssignment = useCallback(
+    async (assignment: Assignment, selectedFile: File) => {
+      if (!selectedFile) {
+        toast.error("Please select a PDF file to upload.");
+        return;
+      }
+      setIsSubmitting(true);
+      setUploadProgress(0);
+
+      try {
+        const signatureData = await createSignatureCloudinary({
+          assignmentId: assignment.title,
+          originalFileName: selectedFile.name,
+        });
+
+        const { signature, timestamp, apiKey, cloudName, folder, publicId } =
+          signatureData;
+
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+        formData.append("api_key", apiKey);
+        formData.append("timestamp", String(timestamp));
+        formData.append("signature", signature);
+        formData.append("folder", folder);
+        formData.append("public_id", publicId);
+
+        const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`;
+
+        const cloudinaryResponse = await axiosInstance.post(
+          cloudinaryUrl,
+          formData,
+          {
+            headers: { "Content-Type": "multipart/form-data" },
+            onUploadProgress: (progressEvent) => {
+              const percentCompleted = Math.round(
+                (progressEvent.loaded * 100) /
+                  (progressEvent.total ?? selectedFile.size),
+              );
+              setUploadProgress(percentCompleted);
+            },
+          },
+        );
+
+        if (
+          cloudinaryResponse.status < 200 ||
+          cloudinaryResponse.status >= 300
+        ) {
+          toast.error(
+            `Assignment upload failed: ${cloudinaryResponse.statusText}`,
+          );
+          return;
+        }
+
+        await markSubmissionComplete({
+          assignmentId: assignment.title,
+          publicId: cloudinaryResponse.data.public_id,
+          version: cloudinaryResponse.data.version,
+          signature: cloudinaryResponse.data.signature,
+          fileName: selectedFile.name,
+          fileSize: cloudinaryResponse.data.bytes,
+          fileType:
+            cloudinaryResponse.data.resource_type === "raw"
+              ? selectedFile.type
+              : cloudinaryResponse.data.format,
+          fileUrl: cloudinaryResponse.data.secure_url,
+        });
+
+        console.log("Cloudinary Upload Result:", cloudinaryResponse.data);
+      } catch (err) {
+        console.error("Submission Process Error:", err);
+        let message = "An unexpected error occurred.";
+        if (err instanceof AxiosError && err.response?.data?.error?.message) {
+          message = `Upload failed: ${err.response.data.error.message}`;
+        } else if (err instanceof Error) {
+          message = err.message;
+        } else if (typeof err === "string") {
+          message = err;
+        }
+        toast.error(`Submission failed: ${message}`);
+      } finally {
+        // Briefly show success state before hiding the overlay.
+        setTimeout(() => {
+          setIsSubmitting(false);
+          setUploadProgress(0);
+        }, 1500);
+      }
+    },
+    [createSignatureCloudinary, markSubmissionComplete],
+  );
+
+  const filteredAssignments = useMemo(() => {
+    return assignmentsData
+      .filter((a) =>
+        filterStatus === "All" ? true : a.status === filterStatus,
+      )
+      .filter((a) => (filterDate ? a.dueDate === filterDate : true));
+  }, [filterStatus, filterDate]);
 
   const totalPages = Math.ceil(filteredAssignments.length / rowsPerPage);
-  const paginatedData = filteredAssignments.slice(
-    (currentPage - 1) * rowsPerPage,
-    currentPage * rowsPerPage
+
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    return filteredAssignments.slice(startIndex, startIndex + rowsPerPage);
+  }, [filteredAssignments, currentPage, rowsPerPage]);
+
+  const handleViewAssignment = useCallback((assignment: Assignment) => {
+    setSelectedAssignment(assignment);
+    setIsModalOpen(true);
+  }, []);
+
+  const handleUploadAction = useCallback((assignment: Assignment) => {
+    console.log("Initiating upload for:", assignment);
+    setAssignmentToSubmitFor(assignment);
+    setUploadProgress(0);
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  }, []);
+
+  const handleTableAction = useCallback(
+    (actionName: TableActionName, assignment: Assignment) => {
+      switch (actionName) {
+        case "View":
+          handleViewAssignment(assignment);
+          break;
+        case "Upload":
+          handleUploadAction(assignment);
+          break;
+        default:
+          break;
+      }
+    },
+    [handleViewAssignment, handleUploadAction],
+  );
+
+  const handleModalClose = useCallback(() => {
+    setIsModalOpen(false);
+    setTimeout(() => setSelectedAssignment(null), 300);
+  }, []);
+
+  const handlePageChange = useCallback(
+    (newPage: number) => {
+      setCurrentPage(Math.max(1, Math.min(newPage, totalPages)));
+    },
+    [totalPages],
+  );
+
+  const handleRowsPerPageChange = useCallback(
+    (event: React.ChangeEvent<HTMLSelectElement>) => {
+      setRowsPerPage(Number(event.target.value));
+      setCurrentPage(1);
+    },
+    [],
+  );
+
+  const handleStatusFilterChange = useCallback(
+    (event: React.ChangeEvent<HTMLSelectElement>) => {
+      setFilterStatus(event.target.value as AssignmentStatus | "All");
+      setCurrentPage(1);
+    },
+    [],
+  );
+
+  const handleDateFilterChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setFilterDate(event.target.value);
+      setCurrentPage(1);
+    },
+    [],
   );
 
   return (
-    <div className="container mx-auto py-8 px-4 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200">
-      {/* Header */}
-      <div className="md:grid grid-cols-1 md:grid-cols-2 flex flex-col justify-between items-start md:items-center mb-6 px-4">
+    <div className="container mx-auto bg-white px-4 py-8 text-gray-800 md:px-10 dark:bg-gray-900 dark:text-gray-200">
+      {/* Hidden file input for PDF uploads */}
+      <input
+        type="file"
+        accept="application/pdf"
+        ref={fileInputRef}
+        onChange={onFileChange}
+        className="hidden"
+      />
+
+      {/* Upload overlay modal */}
+      {isSubmitting && (
+        <UploadOverlay
+          progress={uploadProgress}
+          showSuccess={uploadProgress === 100}
+        />
+      )}
+
+      <div className="mb-6 flex flex-col items-start justify-between gap-4 px-1 md:flex-row md:items-center">
         <div>
-          <h1 className="text-4xl font-bold mb-5">Assignments</h1>
-          <p>View and manage your course assignments</p>
+          <h1 className="mb-2 text-3xl font-bold md:text-4xl">Assignments</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            View and manage your course assignments.
+          </p>
         </div>
-        <div className="flex gap-4 items-center justify-start md:flex-row flex-row-reverse md:justify-end">
-          <FaSearch className="bg-gray-100 dark:bg-gray-800 p-2 rounded-md text-[2rem] text-gray-700 dark:text-gray-300" />
+        <div className="flex w-full flex-wrap items-center justify-start gap-2 md:w-auto md:justify-end">
+          <Button variant="ghost" size="icon" aria-label="Search assignments">
+            <Search className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+          </Button>
           <select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="p-2 bg-transparent outline-none border-none shadow-none"
+            onChange={handleStatusFilterChange}
+            className="rounded border bg-transparent p-2 text-sm"
+            aria-label="Filter by status"
           >
-            <option
-              className="dark:bg-gray-900 bg-gray-100 outline-none"
-              value="All"
-            >
-              All Status
-            </option>
-            <option
-              className="dark:bg-gray-900 bg-gray-100 outline-none"
-              value="Pending"
-            >
-              Pending
-            </option>
-            <option
-              className="dark:bg-gray-900 bg-gray-100 outline-none"
-              value="Completed"
-            >
-              Completed
-            </option>
-            <option
-              className="dark:bg-gray-900 bg-gray-100 outline-none"
-              value="progress"
-            >
-              Progress
-            </option>
+            {STATUS_OPTIONS.map((status) => (
+              <option
+                key={status}
+                className="bg-gray-100 dark:bg-gray-800"
+                value={status}
+              >
+                {status === "All" ? "All Status" : status}
+              </option>
+            ))}
           </select>
-          {/* Filter by Date */}
           <input
             type="date"
             value={filterDate}
-            onChange={(e) => setFilterDate(e.target.value)}
-            className="p-2 bg-transparent outline-none"
+            onChange={handleDateFilterChange}
+            className="rounded border bg-transparent p-2 text-sm"
+            aria-label="Filter by due date"
           />
         </div>
       </div>
 
-      <Table>
-        <TableHeader className="border bg-gray-50 dark:bg-secondary rounded-lg">
-          <TableRow>
-            <TableHead className="font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">
-              Assignment Title
-            </TableHead>
-            <TableHead className="font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">
-              Course/Lesson
-            </TableHead>
-            <TableHead className="font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">
-              Due Date
-            </TableHead>
-            <TableHead className="font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">
-              Status
-            </TableHead>
-            <TableHead className="font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">
-              Submit
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {paginatedData.map((assignment, index) => (
-            <TableRow key={index} className="border mt-20 mb-20 rounded-lg ">
-              <TableCell className="whitespace-nowrap">
-                {assignment.title}
-              </TableCell>
-              <TableCell className="whitespace-nowrap">
-                {assignment.course}
-              </TableCell>
-              <TableCell className="whitespace-nowrap">
-                {assignment.dueDate}
-              </TableCell>
-              <TableCell className="whitespace-nowrap">
-                {assignment.status}
-              </TableCell>
-              <TableCell className="whitespace-nowrap">
-                {assignment.status === "Pending" ? (
-                  <button className="bg-gray-800 text-md text-white px-3 py-1 rounded-md">
-                    Submit
-                  </button>
-                ) : (
-                  "Submitted"
-                )}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-        <TableFooter>
-          <TableRow>
-            <TableCell colSpan={5}>
-              Total Assignments: {filteredAssignments.length}
-            </TableCell>
-          </TableRow>
-        </TableFooter>
-      </Table>
+      <div className="overflow-x-auto">
+        <AssignmentTable
+          totalAssignments={filteredAssignments.length}
+          onHandleTableAction={handleTableAction}
+          paginatedData={paginatedData}
+        />
+      </div>
 
-      <div className="flex justify-between items-center mt-4">
-        <div>
-          <span className="mr-2">Show</span>
+      <div className="mt-6 flex flex-col items-center justify-between gap-4 md:flex-row">
+        <div className="flex items-center gap-2 text-sm">
+          <span>Rows per page:</span>
           <select
             value={rowsPerPage}
-            onChange={(e) => setRowsPerPage(Number(e.target.value))}
-            className="border rounded-lg p-2 bg-transparent outline-none border-none shadow-none"
+            onChange={handleRowsPerPageChange}
+            className="rounded border bg-transparent p-1"
+            aria-label="Select number of rows per page"
           >
-            <option
-              className="dark:bg-gray-900 bg-gray-100 outline-none"
-              value={3}
-            >
-              3
-            </option>
-            <option
-              className="dark:bg-gray-900 bg-gray-100 outline-none"
-              value={5}
-            >
-              5
-            </option>
-            <option
-              className="dark:bg-gray-900 bg-gray-100 outline-none"
-              value={10}
-            >
-              10
-            </option>
+            {ROWS_PER_PAGE_OPTIONS.map((option) => (
+              <option
+                key={option}
+                className="bg-gray-100 dark:bg-gray-800"
+                value={option}
+              >
+                {option}
+              </option>
+            ))}
           </select>
-          <span className="ml-2">rows</span>
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="p-2 border rounded-md disabled:opacity-50"
+            aria-label="Go to previous page"
+            className="h-8 w-8"
           >
-            <ChevronLeft size={20} />
-          </button>
-          {Array.from({ length: totalPages }, (_, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrentPage(i + 1)}
-              className={`px-3 py-1 border rounded-md ${
-                currentPage === i + 1 ? "bg-gray-300 dark:bg-gray-800" : ""
-              }`}
-            >
-              {i + 1}
-            </button>
-          ))}
-          <button
-            onClick={() =>
-              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-            }
-            disabled={currentPage === totalPages}
-            className="p-2 border rounded-md disabled:opacity-50 "
+            <ChevronLeft size={16} />
+          </Button>
+          <span className="text-sm">
+            Page {currentPage} of {totalPages || 1}
+          </span>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages || totalPages === 0}
+            aria-label="Go to next page"
+            className="h-8 w-8"
           >
-            <ChevronRight size={20} />
-          </button>
+            <ChevronRight size={16} />
+          </Button>
         </div>
       </div>
+
+      {selectedAssignment && (
+        <AssignmentModal
+          assignment={selectedAssignment}
+          isOpen={isModalOpen}
+          onClose={handleModalClose}
+          onUpload={handleUploadAction}
+        />
+      )}
     </div>
   );
 }
