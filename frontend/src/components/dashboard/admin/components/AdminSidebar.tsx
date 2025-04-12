@@ -13,11 +13,8 @@ import {
     useSidebar,
   } from "@/components/ui/sidebar";
   import { Link, useLocation } from "react-router";
-  // import { BiSupport } from "react-icons/bi";
   import {
-    // Calendar,
     ClipboardPaste,
-    // GraduationCap,
     MessagesSquare,
     Settings,
     Users,
@@ -72,11 +69,6 @@ import {
       url: `${urlPrefix}/instructors`,
       icon: Users,
     },
-    // {
-    //   title: "Reports",
-    //   url: `${urlPrefix}/reports`,
-    //   icon: FileText,
-    // },
     {
       title: "Settings",
       url: `${urlPrefix}/settings`,
