@@ -7,7 +7,6 @@ import compression from "compression";
 import refresh from "./controllers/refresh.js";
 import studentRoutes from "./routes/studentRoutes.js";
 import instructorRoutes from "./routes/instructorRoutes.js";
-// import courseRoutes from "./routes/courseRoutes.js";
 import verifyEmailRoutes from "./routes/emailVerifyRoutes.js";
 import sessionRoute from "./routes/sessionRoute.js";
 

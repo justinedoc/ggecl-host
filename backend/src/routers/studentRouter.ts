@@ -1,10 +1,11 @@
 import { procedure, protectedProcedure, router } from "../trpc.js";
-import z from "zod";
+import { z } from "zod";
 import { CACHE, wildcardDeleteCache } from "../utils/nodeCache.js";
 import studentModel, { IStudent } from "../models/studentModel.js";
 import { TRPCError } from "@trpc/server";
-import { FilterQuery } from "mongoose";
+import { FilterQuery, isValidObjectId } from "mongoose";
 
+// Define a summary type for students by omitting sensitive fields.
 type IStudentSummary = Omit<
   IStudent,
   | "password"
@@ -25,6 +26,7 @@ interface IStudentListResponse {
   };
 }
 
+// Schema for editable student fields.
 const StudentEditableSchema = z
   .object({
     fullName: z.string().min(2, "Full name must be at least 2 characters"),
@@ -37,44 +39,45 @@ const StudentEditableSchema = z
   })
   .partial();
 
+const StudentUpdateZodSchema = z.object({
+  data: StudentEditableSchema,
+  id: z.string().refine(isValidObjectId, { message: "Invalid Student ID" }),
+});
+
+// Schema for querying a paginated list of students.
 const GetStudentsZodSchema = z.object({
   page: z.number().default(1),
   limit: z.number().default(10),
   search: z.string().optional(),
-  sortBy: z.enum(["isVerified", "fullName", "email"]).default("isVerified"),
+  sortBy: z.enum(["isVerified", "fullName", "email"]).default("fullName"),
   order: z.enum(["asc", "desc"]).default("asc"),
 });
-
 type TGetStudentsInput = z.infer<typeof GetStudentsZodSchema>;
 
+// Helper to build a cache key for student lists.
 const getCacheKey = (input: TGetStudentsInput) => {
-  const { page, limit, search, sortBy, order } = input || {};
+  const { page, limit, search, sortBy, order } = input;
   return `students-${page}-${limit}-${search}-${sortBy}-${order}`;
 };
 
 export const studentRouter = router({
+  // Get all students (paginated, searchable, and sortable).
   getAll: protectedProcedure
     .input(GetStudentsZodSchema)
-    .query(async ({ input, ctx }) => {
-      if (ctx.user?.role !== "admin" && ctx.user?.role !== "instructor") {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-        });
-      }
-
+    .query(async ({ input }) => {
       const cacheKey = getCacheKey(input);
-
       const cachedData = CACHE.get<IStudentListResponse>(cacheKey);
       if (cachedData) {
-        console.log("Cache hit for:", cacheKey);
+        console.log(`[CACHE] Hit for ${cacheKey}`);
         return cachedData;
       }
-      console.log("Cache miss for:" + cacheKey);
+      console.log(`[CACHE] Miss for ${cacheKey}`);
 
       const { page, limit, search, sortBy, order } = input;
       const skip = (page - 1) * limit;
       const sortOrder = order === "asc" ? 1 : -1;
 
+      // Build search query based on optional search term.
       const searchQuery: FilterQuery<IStudentSummary> = {};
       if (search) {
         searchQuery.$or = [
@@ -84,10 +87,7 @@ export const studentRouter = router({
         ];
       }
 
-      const sortOptions: Record<string, 1 | -1> = {};
-      if (sortBy) {
-        sortOptions[sortBy] = sortOrder;
-      }
+      const sortOptions: Record<string, 1 | -1> = { [sortBy]: sortOrder };
 
       try {
         const [students, total] = await Promise.all([
@@ -103,7 +103,7 @@ export const studentRouter = router({
           studentModel.countDocuments(searchQuery),
         ]);
 
-        const response = {
+        const response: IStudentListResponse = {
           students,
           meta: {
             total,
@@ -114,11 +114,10 @@ export const studentRouter = router({
         };
 
         CACHE.set(cacheKey, response);
-        console.log("Cache set for:", cacheKey);
-
+        console.log(`[CACHE] Set for ${cacheKey}`);
         return response;
       } catch (error) {
-        console.error("Error fetching students:", error);
+        console.error(`[ERROR] Fetching students failed:`, error);
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -127,19 +126,24 @@ export const studentRouter = router({
       }
     }),
 
+  // Get a single student by ID.
   getById: procedure
-    .input(z.object({ id: z.string() }))
+    .input(
+      z.object({
+        id: z
+          .string()
+          .refine(isValidObjectId, { message: "Invalid student ID" }),
+      })
+    )
     .query(async ({ input }) => {
       const { id: studentId } = input;
-
       const cacheKey = `student-${studentId}`;
-
       const cachedData = CACHE.get<IStudentSummary>(cacheKey);
       if (cachedData) {
-        console.log("Cache hit for:", cacheKey);
+        console.log(`[CACHE] Hit for ${cacheKey}`);
         return cachedData;
       }
-      console.log("Cache miss for:", cacheKey);
+      console.log(`[CACHE] Miss for ${cacheKey}`);
 
       try {
         const student = await studentModel
@@ -156,30 +160,28 @@ export const studentRouter = router({
           });
         }
 
-
         CACHE.set(cacheKey, student);
-        console.log("Cache set for: ", cacheKey);
-
+        console.log(`[CACHE] Set for ${cacheKey}`);
         return student;
       } catch (error) {
-        console.log("Error while fetching student with id", error);
-
+        console.error(`[ERROR] Fetching student failed:`, error);
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Something went wrong, try again later",
+          message: "Something went wrong, please try again later",
         });
       }
     }),
 
+  // Update a student's profile.
   update: protectedProcedure
-    .input(StudentEditableSchema)
+    .input(StudentUpdateZodSchema)
     .mutation(async ({ ctx, input }) => {
-      const { id: studentId } = ctx.user;
-
+      const { id: currentStudentId, role } = ctx.user;
+      const { data, id: studentId } = input;
       try {
+        // Ensure the student exists.
         const studentExists = await studentModel.exists({ _id: studentId });
-
         if (!studentExists) {
           throw new TRPCError({
             code: "NOT_FOUND",
@@ -187,17 +189,40 @@ export const studentRouter = router({
           });
         }
 
-        await studentModel.findByIdAndUpdate(studentId, input, {
-          runValidators: true,
-        });
+        const filterQuery: FilterQuery<IStudent> = {
+          $and: [
+            { _id: studentId },
+            ...(role !== "admin" ? [{ _id: currentStudentId }] : []),
+          ],
+        };
 
+        const updatedStudent = await studentModel.findOneAndUpdate(
+          filterQuery,
+          data,
+          {
+            new: true,
+            runValidators: true,
+          }
+        );
+
+        if (!updatedStudent) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You are not authorized to update this student",
+          });
+        }
+
+        // Invalidate cache entries related to this student.
         CACHE.del(`student-${studentId}`);
         wildcardDeleteCache("students-");
+
+        return updatedStudent;
       } catch (err) {
-        console.error("Error updating student: ", err);
+        console.error(`[ERROR] Updating student failed:`, err);
         if (err instanceof TRPCError) throw err;
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occurred",
         });
       }
     }),

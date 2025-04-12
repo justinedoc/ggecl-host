@@ -1,4 +1,8 @@
-import { GetInstructorOutput, GetStudentOutput } from "@/utils/trpc";
+import {
+  GetAdminOutput,
+  GetInstructorOutput,
+  GetStudentOutput,
+} from "@/utils/trpc";
 import z from "zod";
 
 export type UserRole = "student" | "instructor" | "admin";
@@ -64,6 +68,8 @@ export const InstructorSchema = z.object({
 // ==================== Utility Types ====================
 export type Student = GetStudentOutput;
 export type Instructor = GetInstructorOutput;
+export type Admin = GetAdminOutput;
+
 export type Review = z.infer<typeof ReviewSchema>;
 
-export type TUser = Student | Instructor | null;
+export type TUser = Student | Instructor | Admin | null;

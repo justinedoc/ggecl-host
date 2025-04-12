@@ -1,6 +1,6 @@
 import { sendVerificationToEmail } from "./sendVerificationToEmail.js";
 import { z } from "zod";
-import { combinedUserModel } from "../utils/roleMappings.js";
+import { combinedUserModel, UserRole } from "../utils/roleMappings.js";
 import {
   constructVerificationLink,
   generateVerificationToken,
@@ -25,9 +25,6 @@ export const resendVerificationSchema = z.object({
   role: z.enum(["student", "instructor"]),
 });
 
-// The role type
-type UserRole = "student" | "instructor";
-
 export const emailService = (role: UserRole) => {
   const UserModel = combinedUserModel(role);
 
@@ -41,7 +38,7 @@ export const emailService = (role: UserRole) => {
           emailVerificationToken: token,
           emailVerificationExpires: expires,
         },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true, upsert: true }
       ).select("+emailVerificationToken +emailVerificationExpires");
 
       if (!user) {
@@ -62,7 +59,9 @@ export const emailService = (role: UserRole) => {
       return result;
     } catch (error) {
       console.error(`Email verification initiation failed for ${role}:`, error);
-      throw new Error("Failed to automatically initiate email verification, please login and request for email verification manually");
+      throw new Error(
+        "Failed to automatically initiate email verification, please login and request for email verification manually"
+      );
     }
   }
 

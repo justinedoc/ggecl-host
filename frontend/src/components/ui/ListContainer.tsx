@@ -1,6 +1,6 @@
 import { JSX } from "react";
 import { Link } from "react-router";
-import GroupLoadingSkeleton from "../skeletons/LoadingSkeleton";
+import GroupLoadingSkeleton from "../skeletons/CardsLoadingSkeleton";
 
 interface ListContainerTypes {
   header: string;

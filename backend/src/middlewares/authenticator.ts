@@ -20,7 +20,7 @@ export function authenticator(
   const token = authHeader.split(" ")[1];
 
   try {
-    const decoded = jwt.verify(token, envConfig.accessToken) as { id?: string };
+    const decoded = jwt.verify(token, envConfig.accessToken) as { id: string };
     if (!decoded?.id) {
       res.status(401).json({
         success: false,

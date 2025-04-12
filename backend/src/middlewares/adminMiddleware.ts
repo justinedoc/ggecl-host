@@ -1,8 +1,6 @@
-// src/middleware/adminMiddleware.ts
+/* eslint-disable @typescript-eslint/no-namespace */
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
 import Admin from "../models/adminModel.js";
-import { envConfig } from "../config/envValidator.js";
 import { createErrorResponse } from "../utils/responseUtils.js";
 import { verifyToken } from "../utils/tokenUtils.js";
 

@@ -2,13 +2,17 @@
 import { Document, Schema, model } from "mongoose";
 import bcrypt from "bcrypt";
 
-interface IAdmin extends Document {
+export interface IAdmin extends Document {
   email: string;
   password: string;
   fullName: string;
-  role: "admin" | "superadmin";
+  role: "admin";
   permissions: string[];
   refreshToken?: string;
+  emailVerificationToken?: string;
+  emailVerificationExpires?: Date;
+  passwordUpdateToken?: string;
+  passwordUpdateTokenExpiry?: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
@@ -32,9 +36,7 @@ const AdminSchema = new Schema<IAdmin>(
     },
     role: {
       type: String,
-      enum: ["admin", "superadmin"],
       default: "admin",
-      required: true,
     },
     permissions: {
       type: [String],

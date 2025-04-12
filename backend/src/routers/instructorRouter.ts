@@ -1,10 +1,11 @@
 import { procedure, protectedProcedure, router } from "../trpc.js";
-import z from "zod";
+import { z } from "zod";
 import { CACHE, wildcardDeleteCache } from "../utils/nodeCache.js";
 import instructorModel, { IInstructor } from "../models/instructorModel.js";
 import { TRPCError } from "@trpc/server";
-import { FilterQuery } from "mongoose";
+import { FilterQuery, isValidObjectId } from "mongoose";
 
+// Define the instructor summary type by omitting sensitive fields.
 type IInstructorSummary = Omit<
   IInstructor,
   | "password"
@@ -25,6 +26,7 @@ interface IInstructorListResponse {
   };
 }
 
+// Schema for fields that can be edited.
 const InstructorEditableSchema = z
   .object({
     fullName: z.string().min(2, "Full name must be at least 2 characters"),
@@ -38,6 +40,13 @@ const InstructorEditableSchema = z
   })
   .partial();
 
+// Schema for updating an instructor.
+const InstructorUpdateSchema = z.object({
+  data: InstructorEditableSchema,
+  id: z.string().refine(isValidObjectId, { message: "Invalid instructor ID" }),
+});
+
+// Schema for querying instructors with pagination, search, and sorting.
 const GetInstructorsZodSchema = z.object({
   page: z.number().default(1),
   limit: z.number().default(10),
@@ -47,24 +56,24 @@ const GetInstructorsZodSchema = z.object({
     .default("isVerified"),
   order: z.enum(["asc", "desc"]).default("asc"),
 });
-
 type TGetInstructorsInput = z.infer<typeof GetInstructorsZodSchema>;
 
+// Helper to generate cache key for instructor list.
 const getCacheKey = (input: TGetInstructorsInput) => {
-  const { page, limit, search, sortBy, order } = input || {};
+  const { page, limit, search, sortBy, order } = input;
   return `instructors-${page}-${limit}-${search}-${sortBy}-${order}`;
 };
 
 export const instructorRouter = router({
+  // Get a paginated list of instructors with optional search and sorting.
   getAll: procedure.input(GetInstructorsZodSchema).query(async ({ input }) => {
     const cacheKey = getCacheKey(input);
-
     const cachedData = CACHE.get<IInstructorListResponse>(cacheKey);
     if (cachedData) {
-      console.log("Cache hit for:", cacheKey);
+      console.log(`[CACHE] Hit for ${cacheKey}`);
       return cachedData;
     }
-    console.log("Cache miss for:" + cacheKey);
+    console.log(`[CACHE] Miss for ${cacheKey}`);
 
     const { page, limit, search, sortBy, order } = input;
     const skip = (page - 1) * limit;
@@ -80,10 +89,7 @@ export const instructorRouter = router({
       ];
     }
 
-    const sortOptions: Record<string, 1 | -1> = {};
-    if (sortBy) {
-      sortOptions[sortBy] = sortOrder;
-    }
+    const sortOptions: Record<string, 1 | -1> = { [sortBy]: sortOrder };
 
     try {
       const [instructors, total] = await Promise.all([
@@ -118,11 +124,11 @@ export const instructorRouter = router({
       };
 
       CACHE.set(cacheKey, response);
-      console.log("Cache set for:", cacheKey);
+      console.log(`[CACHE] Set for ${cacheKey}`);
 
       return response;
     } catch (error) {
-      console.error("Error fetching instructors:", error);
+      console.error("[ERROR] Fetching instructors failed:", error);
       if (error instanceof TRPCError) throw error;
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
@@ -131,19 +137,25 @@ export const instructorRouter = router({
     }
   }),
 
+  // Get a single instructor by ID.
   getById: procedure
-    .input(z.object({ id: z.string() }))
+    .input(
+      z.object({
+        id: z
+          .string()
+          .refine(isValidObjectId, { message: "Invalid instructor ID" }),
+      })
+    )
     .query(async ({ input }) => {
       const { id: instructorId } = input;
-
       const cacheKey = `instructor-${instructorId}`;
 
       const cachedData = CACHE.get<IInstructorSummary>(cacheKey);
       if (cachedData) {
-        console.log("Cache hit for:", cacheKey);
+        console.log(`[CACHE] Hit for ${cacheKey}`);
         return cachedData;
       }
-      console.log("Cache miss for:", cacheKey);
+      console.log(`[CACHE] Miss for ${cacheKey}`);
 
       try {
         const instructor = await instructorModel
@@ -170,12 +182,11 @@ export const instructorRouter = router({
         }
 
         CACHE.set(cacheKey, instructor);
-        console.log("Cache set for: ", cacheKey);
+        console.log(`[CACHE] Set for ${cacheKey}`);
 
         return instructor;
       } catch (error) {
-        console.log("Error while fetching instructor with id", error);
-
+        console.error("[ERROR] Fetching instructor failed:", error);
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -184,34 +195,60 @@ export const instructorRouter = router({
       }
     }),
 
+  // Update an instructor's information.
   update: protectedProcedure
-    .input(InstructorEditableSchema)
+    .input(InstructorUpdateSchema)
     .mutation(async ({ ctx, input }) => {
-      const { id: instructorId } = ctx.user;
+      const { role, id: currentUserId } = ctx.user;
+      const { data, id: instructorId } = input;
 
       try {
+        // Check if the instructor exists.
         const instructorExists = await instructorModel.exists({
           _id: instructorId,
         });
-
         if (!instructorExists) {
           throw new TRPCError({
             code: "NOT_FOUND",
-            message: `instructor with id ${instructorId} does not exist`,
+            message: `Instructor with id ${instructorId} does not exist`,
           });
         }
 
-        await instructorModel.findByIdAndUpdate(instructorId, input, {
-          runValidators: true,
-        });
+        const filterQuery: FilterQuery<IInstructor> = {
+          $and: [
+            { _id: instructorId },
+            ...(role !== "admin" ? [{ _id: currentUserId }] : []),
+          ],
+        };
 
+        const updatedInstructor = await instructorModel.findOneAndUpdate(
+          filterQuery,
+          data,
+          {
+            new: true,
+            runValidators: true,
+            upsert: true,
+          }
+        );
+
+        if (!updatedInstructor) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You are not authorized to update this instructor",
+          });
+        }
+
+        // Invalidate related cache entries.
         CACHE.del(`instructor-${instructorId}`);
         wildcardDeleteCache("instructors-");
+
+        return updatedInstructor;
       } catch (err) {
-        console.error("Error updating instructor: ", err);
+        console.error("[ERROR] Updating instructor failed:", err);
         if (err instanceof TRPCError) throw err;
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occurred",
         });
       }
     }),
