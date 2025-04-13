@@ -6,7 +6,7 @@ import { studentRouter } from "./studentRouter.js";
 import { instructorRouter } from "./instructorRouter.js";
 import { adminRouter } from "./adminRouter.js";
 import { assignmentRouter } from "./assignmentRouter.js";
-import { courseRouter } from "./courseRouter.js";
+import { courseRouter } from "./cRouter.js";
 
 export const appRouter = router({
   notification: notificationRouter,
