@@ -33,18 +33,21 @@ function Hero() {
 
     const interval = setInterval(() => {
       setCounts((prev) => {
-        const newCounts = Object.keys(prev).reduce((acc, key) => {
-          const typedKey = key as keyof typeof prev;
-          acc[typedKey] = Math.min(
-            prev[typedKey] + incrementValues[typedKey],
-            targetCounts[typedKey]
-          );
-          return acc;
-        }, {} as typeof prev);
+        const newCounts = Object.keys(prev).reduce(
+          (acc, key) => {
+            const typedKey = key as keyof typeof prev;
+            acc[typedKey] = Math.min(
+              prev[typedKey] + incrementValues[typedKey],
+              targetCounts[typedKey],
+            );
+            return acc;
+          },
+          {} as typeof prev,
+        );
 
         if (
           Object.entries(newCounts).every(
-            ([key, value]) => value === targetCounts[key as keyof typeof prev]
+            ([key, value]) => value === targetCounts[key as keyof typeof prev],
           )
         ) {
           clearInterval(interval);
@@ -58,66 +61,66 @@ function Hero() {
   }, []);
 
   return (
-    <div className="relative flex flex-col md:flex-row items-center justify-between px-4 md:px-12 pt-5 pb-36 bg-white dark:bg-gray-900 text-gray-800 dark:text-white w-full">
+    <div className="relative flex w-full flex-col items-center justify-between bg-white px-4 pt-5 pb-36 text-gray-800 md:flex-row md:px-12 dark:bg-gray-900 dark:text-white">
       {/* Background Blur Effect */}
-      <div className="absolute top-16 -left-10 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="pointer-events-none absolute top-16 -left-10 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl"></div>
 
       {/* Left Section - Hero Content */}
-      <div className="w-full md:w-1/2 text-center md:text-left space-y-5">
-        <h1 className="font-bold text-[1.7rem] mt-5 md:text-5xl leading-tight md:leading-snug">
+      <div className="w-full space-y-5 text-center md:w-1/2 md:text-left">
+        <h1 className="mt-5 text-[1.7rem] leading-tight font-bold md:text-5xl md:leading-snug">
           Empower your future with courses tailored to{" "}
-          <span className="text-blue-600 flex flex-col items-center md:items-start mt-2">
+          <span className="mt-2 flex flex-col items-center text-blue-600 md:items-start">
             <p>your aspirations.</p>
             <img
               src={sktech}
               alt="Decorative Sketch"
-              className="w-44 md:w-56 -mt-3"
+              className="-mt-3 w-44 md:w-56"
             />
           </span>
         </h1>
 
-        <p className="text-md font-light md:text-xl leading-tighter">
+        <p className="text-md leading-tighter font-light md:text-xl">
           Learn from world-class instructors, engage with interactive content,
           and become part of a thriving educational community.
         </p>
 
         <Button
-          className="text-white font-semibold px-5 py-5 rounded-md btn w-fit inline-flex items-center"
-          onClick={() => navigate("/signup")}
+          className="btn inline-flex h-fit w-fit items-center rounded-md font-semibold text-white"
+          onClick={() => navigate("/login")}
         >
-          Start Your Learning Journey <FaArrowRight />
+          Join us Today <FaArrowRight />
         </Button>
       </div>
 
       {/* Right Section - Student Illustration */}
-      <div className="w-full md:w-1/2 flex justify-center mt-10 md:mt-0 md:ml-10">
+      <div className="mt-10 flex w-full justify-center md:mt-0 md:ml-10 md:w-1/2">
         <StudentHero />
       </div>
 
       {/* Animated Circle Design */}
-      <div className="absolute md:top-24 hidden left-12 top-2/4 right-14 animate-spin-slow pointer-events-none">
+      <div className="animate-spin-slow pointer-events-none absolute top-2/4 right-14 left-12 hidden md:top-24">
         <img
           src={circle2}
           alt="Spinning Design"
-          className="w-24 h-24 md:w-28 md:h-28 md:mt-5 -mt-5"
+          className="-mt-5 h-24 w-24 md:mt-5 md:h-28 md:w-28"
         />
       </div>
 
       {/* Stats Section */}
-      <div className="absolute left-0 md:bottom-2 bottom-4 text-center w-full md:px-6 px-2">
-        <div className="flex justify-center text-center bg-gray-50 dark:bg-gray-800 rounded-lg md:px-6 px-1 py-1 shadow-md">
+      <div className="absolute bottom-4 left-0 w-full px-2 text-center md:bottom-2 md:px-6">
+        <div className="flex justify-center rounded-lg bg-gray-50 px-1 py-1 text-center shadow-md md:px-6 dark:bg-gray-800">
           {[
             { label: "Courses", value: counts.courses, suffix: "+" },
             { label: "Students", value: counts.students, suffix: "+" },
             { label: "Case Studies", value: counts.caseStudies, suffix: "+" },
             { label: "Instructors", value: counts.instructors, suffix: "+" },
           ].map((item, index) => (
-            <div key={index} className="w-1/2 md:w-1/4 py-4">
-              <h3 className="md:text-2xl text-md font-bold dark:text-blue-100 text-gray-700">
+            <div key={index} className="w-1/2 py-4 md:w-1/4">
+              <h3 className="text-md font-bold text-gray-700 md:text-2xl dark:text-blue-100">
                 {item.value}
                 {item.suffix}
               </h3>
-              <p className="text-gray-800 dark:text-gray-100 md:text-xl text-sm">
+              <p className="text-sm text-gray-800 md:text-xl dark:text-gray-100">
                 {item.label}
               </p>
             </div>

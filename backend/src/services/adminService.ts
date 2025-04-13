@@ -1,12 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// src/services/adminService.ts
-import Admin from "../models/adminModel.js";
-import jwt from "jsonwebtoken";
-import { envConfig } from "../config/envValidator.js";
+
+import Admin, { IAdmin } from "../models/adminModel.js";
+import bcrypt from "bcrypt";
+import { SALT_ROUNDS } from "../constants/auth.js";
+import { generateToken } from "../utils/generateToken.js";
 
 class AdminService {
   async createAdmin(adminData: any) {
-    return Admin.create(adminData);
+    const password = adminData?.password
+      ? await bcrypt.hash(adminData.password, SALT_ROUNDS)
+      : undefined;
+    return Admin.create({
+      ...adminData,
+      password,
+    });
   }
 
   async findAdminByEmail(email: string) {
@@ -17,7 +24,7 @@ class AdminService {
     return Admin.findById(id);
   }
 
-  async updateAdmin(id: string, updateData: any) {
+  async updateAdmin(id: string, updateData: Partial<IAdmin>) {
     return Admin.findByIdAndUpdate(id, updateData, { new: true });
   }
 
@@ -25,24 +32,50 @@ class AdminService {
     return Admin.findByIdAndDelete(id);
   }
 
-  generateTokens(adminId: string, role: string) {
-    const accessToken = jwt.sign(
-      { id: adminId, role },
-      envConfig.accessToken, // Using ACCESS_SECRET_TOKEN from env
-      { expiresIn: "15m" } // You can make this configurable if needed
-    );
+  async createInstructor(data: any) {
+    const password = data?.password
+      ? await bcrypt.hash(data.password, SALT_ROUNDS)
+      : undefined;
 
-    const refreshToken = jwt.sign(
-      { id: adminId, role },
-      envConfig.refreshToken, // Using REFRESH_TOKEN_SECRET from env
-      { expiresIn: "7d" } // You can make this configurable if needed
-    );
-
-    return { accessToken, refreshToken };
+    return Admin.create({
+      ...data,
+      password,
+    });
   }
 
   async updateRefreshToken(adminId: string, refreshToken: string) {
-    return Admin.findByIdAndUpdate(adminId, { refreshToken }, { new: true });
+    return Admin.findByIdAndUpdate(
+      adminId,
+      { refreshToken },
+      { runValidators: true, new: true }
+    );
+  }
+
+  async clearRefreshToken(adminId: string) {
+    return Admin.findByIdAndUpdate(
+      adminId,
+      { $unset: { refreshToken: "" } },
+      { runValidators: true }
+    );
+  }
+
+  async validatePassword(password: string, hashedPassword: string) {
+    return bcrypt.compare(password, hashedPassword);
+  }
+
+  generateAuthTokens(adminId: string) {
+    return {
+      accessToken: generateToken({
+        id: adminId,
+        type: "accessToken",
+        role: "admin",
+      }),
+      refreshToken: generateToken({
+        id: adminId,
+        type: "refreshToken",
+        role: "admin",
+      }),
+    };
   }
 
   async grantPermissions(adminId: string, permissions: string[]) {

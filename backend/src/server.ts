@@ -9,6 +9,7 @@ import studentRoutes from "./routes/studentRoutes.js";
 import instructorRoutes from "./routes/instructorRoutes.js";
 import verifyEmailRoutes from "./routes/emailVerifyRoutes.js";
 import sessionRoute from "./routes/sessionRoute.js";
+import adminRoutes from "./routes/adminRoutes.js";
 
 // Configs & Middlewares
 import { errorHandler } from "./middlewares/errorHandler.js";
@@ -37,6 +38,8 @@ app.use(cookieParser());
 const ROUTE_PREFIX = "/api/v1";
 app.use(`${ROUTE_PREFIX}/student`, studentRoutes);
 app.use(`${ROUTE_PREFIX}/instructor`, instructorRoutes);
+app.use(`${ROUTE_PREFIX}/admin`, adminRoutes);
+
 // app.use(`${ROUTE_PREFIX}/course`, courseRoutes); MIGRATED TO TRPC
 app.use(`${ROUTE_PREFIX}`, verifyEmailRoutes);
 app.use(`${ROUTE_PREFIX}/refresh`, refresh);

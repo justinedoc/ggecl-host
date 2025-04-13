@@ -1,4 +1,4 @@
-import { Schema } from "mongoose";
+import { model, Schema, Types } from "mongoose";
 import { z } from "zod";
 
 export const AssignmentZodSchema = z.object({
@@ -16,11 +16,10 @@ export const AssignmentZodSchema = z.object({
   submissionFileType: z.string().optional(),
 });
 
-export type IStudentAssignment = z.infer<typeof AssignmentZodSchema>;
+export type IStudentAssignment = z.infer<typeof AssignmentZodSchema> & {
+  _id: Types.ObjectId;
+};
 
-/**
- * Mongoose schema for the Assignment model.
- */
 export const AssignmentSchema = new Schema<IStudentAssignment>(
   {
     title: { type: String, required: true },
@@ -43,3 +42,10 @@ export const AssignmentSchema = new Schema<IStudentAssignment>(
     timestamps: true,
   }
 );
+
+const AssignmentModel = model<IStudentAssignment>(
+  "assignment",
+  AssignmentSchema
+);
+
+export default AssignmentModel;

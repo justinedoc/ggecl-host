@@ -18,6 +18,7 @@ function InstructorLayout() {
   });
 
   if (!isInstructor(user)) {
+    console.log(user);
     return user && "Login as an instructor to view your dashboard";
   }
 

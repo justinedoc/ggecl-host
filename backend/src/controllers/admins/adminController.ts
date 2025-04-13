@@ -8,7 +8,10 @@ import {
 import {
   createErrorResponse,
   createSuccessResponse,
+  handleZodError,
 } from "../../utils/responseUtils.js";
+import { setRefreshTokenCookie } from "../../utils/cookieUtils.js";
+import { z } from "zod";
 
 export const registerAdmin = async (req: Request, res: Response) => {
   try {
@@ -18,42 +21,37 @@ export const registerAdmin = async (req: Request, res: Response) => {
     const existingAdmin = await adminService.findAdminByEmail(
       validatedData.email
     );
-    
+
     if (existingAdmin) {
       return createErrorResponse(res, 400, "Admin already exists");
     }
 
-    // Create new admin
     const admin = await adminService.createAdmin(validatedData);
 
     // Generate tokens
-    const { accessToken, refreshToken } = adminService.generateTokens(
-      admin._id.toString(),
-      admin.role
+    const { accessToken, refreshToken } = adminService.generateAuthTokens(
+      admin._id.toString()
     );
 
     // Update refresh token in DB
     await adminService.updateRefreshToken(admin._id.toString(), refreshToken);
 
-    // Set refresh token in cookie
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
+    setRefreshTokenCookie(res, refreshToken);
 
     // Return success response
     createSuccessResponse(res, 201, "Admin created successfully", {
       admin: {
-        id: admin._id,
+        adminId: admin._id,
         email: admin.email,
         fullName: admin.fullName,
-        role: admin.role,
-        permissions: admin.permissions,
       },
       accessToken,
     });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      handleZodError(res, error);
+      return;
+    }
     console.error("Admin registration error:", error);
     createErrorResponse(res, 500, "Failed to register admin");
   }
@@ -63,47 +61,47 @@ export const loginAdmin = async (req: Request, res: Response) => {
   try {
     const { email, password } = AdminLoginSchema.parse(req.body);
 
-    // Find admin by email
     const admin = await adminService.findAdminByEmail(email);
+
     if (!admin) {
       return createErrorResponse(res, 401, "Invalid credentials");
     }
 
-    // Compare passwords
-    const isMatch = await admin.comparePassword(password);
+    const isMatch = await adminService.validatePassword(
+      password,
+      admin.password
+    );
+
     if (!isMatch) {
+      console.log(password);
       return createErrorResponse(res, 401, "Invalid credentials");
     }
 
     // Generate tokens
-    const { accessToken, refreshToken } = adminService.generateTokens(
-      admin._id.toString(),
-      admin.role
+    const { accessToken, refreshToken } = adminService.generateAuthTokens(
+      admin._id.toString()
     );
 
     // Update refresh token in DB
     await adminService.updateRefreshToken(admin._id.toString(), refreshToken);
 
-    // Set refresh token in cookie
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    setRefreshTokenCookie(res, refreshToken);
 
     // Return success response
     createSuccessResponse(res, 200, "Login successful", {
       admin: {
-        id: admin._id,
+        adminId: admin._id,
         email: admin.email,
         fullName: admin.fullName,
-        role: admin.role,
-        permissions: admin.permissions,
       },
       accessToken,
     });
   } catch (error) {
     console.error("Admin login error:", error);
+    if (error instanceof z.ZodError) {
+      handleZodError(res, error);
+      return;
+    }
     createErrorResponse(res, 500, "Failed to login admin");
   }
 };
@@ -117,7 +115,7 @@ export const getAdminProfile = async (req: Request, res: Response) => {
 
     createSuccessResponse(res, 200, "Admin profile retrieved", {
       admin: {
-        id: admin._id,
+        adminId: admin._id,
         email: admin.email,
         fullName: admin.fullName,
         role: admin.role,
@@ -141,7 +139,7 @@ export const updateAdmin = async (req: Request, res: Response) => {
 
     createSuccessResponse(res, 200, "Admin updated successfully", {
       admin: {
-        id: admin._id,
+        adminId: admin._id,
         email: admin.email,
         fullName: admin.fullName,
         role: admin.role,

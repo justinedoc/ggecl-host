@@ -82,6 +82,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     const student = await studentAuthService.findStudentByEmail(
       validatedData.email
     );
+    
     if (!student) {
       createErrorResponse(res, 401, "Incorrect email or password");
       return;

@@ -6,20 +6,65 @@ import { cloudinary } from "../cloudinary.js";
 import { envConfig } from "../config/envValidator.js";
 import { protectedProcedure, router } from "../trpc.js";
 import studentModel from "../models/studentModel.js";
-import { IStudentAssignment } from "../models/assignmentSchema.js";
+import AssignmentModel, {
+  IStudentAssignment,
+} from "../models/assignmentModel.js";
+import { CACHE } from "../utils/nodeCache.js";
 
-type SubmissionData = Omit<IStudentAssignment, "title" | "lesson" | "dueDate">;
-
-function isErrorWithCode(error: unknown): error is { code: string } {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    typeof error.code === "string"
-  );
-}
+type TSubmissionData = Partial<
+  Omit<IStudentAssignment, "title" | "lesson" | "dueDate">
+>;
+const SubmissionCompleteZodSchema = z.object({
+  assignmentId: z.string(),
+  publicId: z.string(),
+  fileName: z.string(),
+  fileSize: z.number(),
+  fileType: z.string(),
+  fileUrl: z.string().url(),
+});
 
 export const assignmentRouter = router({
+  getAllForStudent: protectedProcedure.query(async ({ ctx }) => {
+    const { id: studentId } = ctx.user;
+
+    const cacheKey = `assignments-${studentId}`;
+
+    const cachedAssignments = CACHE.get<IStudentAssignment[]>(cacheKey);
+    if (cachedAssignments) {
+      console.log(`[CACHE] Hit for ${cacheKey}`);
+      return cachedAssignments;
+    }
+
+    console.log(`[CACHE] Miss for ${cacheKey}`);
+
+    try {
+      const student = await studentModel
+        .findById(studentId)
+        .populate<{ assignments: IStudentAssignment[] }>("assignments")
+        .lean();
+
+      if (!student) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Student was not found",
+        });
+      }
+
+      CACHE.set(cacheKey, student.assignments);
+      console.log(`[CACHE] Set for ${cacheKey}`);
+
+      return student.assignments;
+    } catch (error) {
+      console.error("An error occured while getting all assignments: ", error);
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "An unexpected error occured",
+        cause: error,
+      });
+    }
+  }),
+
   createCloudinarySignature: protectedProcedure
     .input(
       z.object({
@@ -40,10 +85,9 @@ export const assignmentRouter = router({
       const public_id = `${folder}/${baseFileName}-${uniqueSuffix}`;
 
       const paramsToSign = {
-        timestamp,
         folder,
         public_id,
-        resource_type: "raw",
+        timestamp,
       };
 
       try {
@@ -70,49 +114,44 @@ export const assignmentRouter = router({
     }),
 
   markSubmissionComplete: protectedProcedure
-    .input(
-      z.object({
-        assignmentId: z.string(),
-        publicId: z.string(),
-        version: z.number().or(z.string()),
-        signature: z.string(),
-        fileName: z.string(),
-        fileSize: z.number(),
-        fileType: z.string(),
-        fileUrl: z.string().url(),
-      })
-    )
+    .input(SubmissionCompleteZodSchema)
     .mutation(async ({ ctx, input }) => {
-      const {
-        assignmentId,
-        publicId,
-        version,
-        signature,
-        fileName,
-        fileSize,
-        fileType,
-        fileUrl,
-      } = input;
+      const { assignmentId, publicId, fileName, fileSize, fileType, fileUrl } =
+        input;
+
       const userId = ctx.user.id;
 
-      const expectedSignature = cloudinary.utils.api_sign_request(
-        { public_id: publicId, version: version },
-        envConfig.CLOUDINARY_API_SECRET!
-      );
-
-      if (expectedSignature !== signature) {
-        console.warn("Cloudinary notification signature mismatch.", {
-          expectedSignature,
-          signature,
-        });
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Invalid upload notification signature.",
-        });
-      }
-
       try {
-        const submissionData: SubmissionData = {
+        const student = await studentModel
+          .findOne({
+            _id: userId,
+            assignments: assignmentId,
+          })
+          .lean();
+
+        if (!student) {
+          console.error(
+            `Assignment ${assignmentId} not associated with student ${userId}. Attempting rollback.`
+          );
+          try {
+            await cloudinary.uploader.destroy(publicId, {
+              resource_type: "raw",
+            });
+            console.log(`Orphaned Cloudinary file ${publicId} deleted.`);
+          } catch (destroyError) {
+            console.error(
+              `Failed to delete orphaned Cloudinary file ${publicId}:`,
+              destroyError
+            );
+          }
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You are not assigned to this assignment.",
+          });
+        }
+
+        // 2. Prepare submission data for update
+        const submissionData: TSubmissionData = {
           status: "submitted",
           submissionDate: new Date(),
           submissionFileUrl: fileUrl,
@@ -122,54 +161,46 @@ export const assignmentRouter = router({
           submissionFileType: fileType,
         };
 
-        const updatePayload: Record<string, string | number | Date> = {};
-        for (const key of Object.keys(submissionData) as Array<
-          keyof SubmissionData
-        >) {
-          const value = submissionData[key];
-          if (value !== undefined) {
-            updatePayload[`assignments.$.${key}`] = value;
-          }
-        }
-
-        const updatedAssignment = await studentModel.findOneAndUpdate(
-          { _id: userId, "assignments.title": assignmentId }, //FIXME: using title for now change to id
-          { $set: updatePayload },
+        // 3. Update the Assignment document
+        const updatedAssignment = await AssignmentModel.findOneAndUpdate(
+          { _id: assignmentId },
+          { $set: submissionData },
           { new: true, runValidators: true }
         );
 
         if (!updatedAssignment) {
-          console.error(`Assignment not found for update: ${assignmentId}`);
-          await cloudinary.uploader.destroy(publicId, {
-            resource_type: "raw",
-          });
+          console.error(
+            `Assignment not found for update: ${assignmentId}. Attempting rollback.`
+          );
+          try {
+            await cloudinary.uploader.destroy(publicId, {
+              resource_type: "raw",
+            });
+            console.log(
+              `Cloudinary file ${publicId} deleted due to failed DB update.`
+            );
+          } catch (destroyError) {
+            console.error(
+              `Failed to delete Cloudinary file ${publicId} after DB error:`,
+              destroyError
+            );
+          }
           throw new TRPCError({
             code: "NOT_FOUND",
-            message: "Assignment not found.",
+            message: "Assignment could not be updated.",
           });
         }
 
         return { success: true, assignment: updatedAssignment };
       } catch (error) {
         console.error("Error marking submission complete:", error);
-        if (isErrorWithCode(error) && error.code !== "NOT_FOUND") {
-          try {
-            await cloudinary.uploader.destroy(publicId, {
-              resource_type: "raw",
-            });
-          } catch (destroyError) {
-            console.error(
-              "Failed to delete Cloudinary file after DB error:",
-              destroyError
-            );
-          }
-        }
 
         if (error instanceof TRPCError) throw error;
 
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to update assignment submission.",
+          cause: error,
         });
       }
     }),

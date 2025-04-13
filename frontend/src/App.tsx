@@ -11,21 +11,15 @@ import Home from "@/components/landing/pages/Home";
 
 const Cart = lazy(() => import("@/components/landing/pages/Cart"));
 const Login = lazy(() => import("@/components/auth/pages/Login"));
-const Signup = lazy(() => import("@/components/auth/pages/Signup"));
 const Instructor = lazy(() => import("@/components/landing/pages/Instructor"));
 const Courses = lazy(() => import("@/components/landing/pages/Courses"));
 const CoursePage = lazy(() => import("@/components/landing/pages/CoursePage"));
-const InstructorSignup = lazy(
-  () => import("@/components/auth/pages/InstructorSignup"),
-);
 
 // === Lazy Loaded Auth Components (Less Frequently Visited) ===
 const InstructorLogin = lazy(
   () => import("@/components/auth/pages/InstructorLogin.tsx"),
 );
-const Adminlogin = lazy(
-  () => import("@/components/dashboard/admin/pages/Adminlogin.tsx"),
-);
+const Adminlogin = lazy(() => import("@/components/auth/pages/Adminlogin.tsx"));
 
 const VerifyEmail = lazy(() => import("@/components/utils/VerifyEmail"));
 
@@ -205,14 +199,7 @@ function App() {
               </Suspense>
             }
           />
-          <Route
-            path="signup"
-            element={
-              <Suspense fallback={<AuthPageLoading />}>
-                <Signup />
-              </Suspense>
-            }
-          />
+
           <Route
             path="instructor"
             element={
@@ -280,14 +267,7 @@ function App() {
               </Suspense>
             }
           />
-          <Route
-            path="instructor/signup"
-            element={
-              <Suspense fallback={<AuthPageLoading />}>
-                <InstructorSignup />
-              </Suspense>
-            }
-          />
+
           <Route
             path="support"
             element={

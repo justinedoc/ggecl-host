@@ -70,7 +70,7 @@ function CourseBox({ course }: { course: ICourseSummary }) {
           {course.title}
         </CardTitle>
         <CardDescription className="text-sm text-gray-600 dark:text-gray-400">
-          By {instructor.fullName}
+          By {instructor?.fullName}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-grow px-3">

@@ -153,7 +153,6 @@ body {
 
 .btn {
   background: #123354;
-  transition: 0.2s linear;
 }
 
 .btn:hover {

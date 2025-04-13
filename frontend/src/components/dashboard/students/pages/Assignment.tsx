@@ -7,12 +7,12 @@ import { TableActionName } from "../utils/tableActions";
 import { useMutation } from "@tanstack/react-query";
 import { trpc } from "@/utils/trpc";
 import { toast } from "sonner";
-import axiosInstance from "@/api/client";
-import { AxiosError } from "axios";
+import axios, { AxiosError } from "axios";
 
-type AssignmentStatus = "Pending" | "Completed" | "Progress";
+type AssignmentStatus = "Pending" | "Completed" | "Progress" | "Submitted";
 
 export type Assignment = {
+  _id: string;
   id: number;
   title: string;
   course: string;
@@ -22,10 +22,19 @@ export type Assignment = {
 
 const assignmentsData: Assignment[] = [
   {
+    _id: "60d5ec49a8d7f9a7d8f5e8b1", // Example MongoDB ObjectId string
     id: 1,
     title: "Math Homework",
     course: "Algebra",
     dueDate: "2025-03-05",
+    status: "Pending",
+  },
+  {
+    _id: "60d5ec49a8d7f9a7d8f5e8b2", // Example MongoDB ObjectId string
+    id: 2,
+    title: "History Essay",
+    course: "World History",
+    dueDate: "2025-04-10",
     status: "Pending",
   },
 ];
@@ -34,16 +43,21 @@ const ROWS_PER_PAGE_OPTIONS = [3, 5, 10];
 const STATUS_OPTIONS: ["All", ...AssignmentStatus[]] = [
   "All",
   "Pending",
-  "Completed",
-  "Progress",
+  "Submitted",
 ];
 
 function validateFile(file: File): { valid: boolean; error?: string } {
   const maxSize = 22 * 1024 * 1024; // 22MB
-  if (file.type !== "application/pdf") {
+  const allowedTypes = [
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ];
+
+  if (!allowedTypes.includes(file.type)) {
     return {
       valid: false,
-      error: "Invalid file format. Please select a PDF file.",
+      error: "Invalid file format. Please select a PDF or DOCX file.",
     };
   }
   if (file.size > maxSize) {
@@ -63,24 +77,43 @@ function UploadOverlay({
   showSuccess: boolean;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/50">
-      <div className="w-11/12 max-w-md rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="w-11/12 max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800">
         {showSuccess ? (
-          <h2 className="mb-4 text-center text-xl font-semibold text-green-600">
-            Upload Successful!
-          </h2>
+          <div className="text-center">
+            <svg
+              className="mx-auto h-12 w-12 text-green-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M5 13l4 4L19 7"
+              ></path>
+            </svg>
+            <h2 className="mt-4 text-xl font-semibold text-green-600">
+              Upload Successful!
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Your assignment is being processed.
+            </p>
+          </div>
         ) : (
           <>
-            <h2 className="mb-2 text-center text-xl font-semibold">
+            <h2 className="mb-4 text-center text-xl font-semibold">
               Uploading Assignment
             </h2>
-            <div className="w-full rounded-full bg-gray-200 dark:bg-gray-700">
+            <div className="mb-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
               <div
-                className="h-4 rounded-full bg-blue-600 transition-all duration-300"
+                className="h-4 rounded-full bg-blue-600 transition-all duration-300 ease-linear"
                 style={{ width: `${progress}%` }}
               ></div>
             </div>
-            <p className="mt-2 text-center text-sm">{progress}%</p>
+            <p className="text-center text-sm font-medium">{progress}%</p>
           </>
         )}
       </div>
@@ -114,8 +147,17 @@ export default function AssignmentList() {
       onSuccess: (data) => {
         if (data.success) {
           toast.success("Assignment submitted for marking");
+          handleModalClose();
           // Invalidate queries ...
         }
+      },
+
+      onSettled: () => {
+        setTimeout(() => {
+          setIsSubmitting(false);
+          setUploadProgress(0);
+          setAssignmentToSubmitFor(null);
+        }, 1500);
       },
     }),
   );
@@ -127,25 +169,27 @@ export default function AssignmentList() {
 
     if (!assignmentToSubmitFor) {
       console.error("Upload triggered without an assignment context.");
-      e.target.value = "";
-      setAssignmentToSubmitFor(null);
+      toast.error("Cannot submit assignment. Please select one first.");
+      e.target.value = ""; // Reset file input
+      setAssignmentToSubmitFor(null); // Clear context
       return;
     }
 
-    const { valid, error } = validateFile(file);
+    const { valid, error: validationError } = validateFile(file);
+
     if (!valid) {
-      toast.error(error);
-    } else {
-      handleSubmitAssignment(assignmentToSubmitFor, file);
+      toast.error(validationError);
+      return;
     }
 
+    handleSubmitAssignment(assignmentToSubmitFor, file);
     e.target.value = "";
   };
 
   const handleSubmitAssignment = useCallback(
     async (assignment: Assignment, selectedFile: File) => {
       if (!selectedFile) {
-        toast.error("Please select a PDF file to upload.");
+        toast.error("Please select a PDF or DOCX file to upload.");
         return;
       }
       setIsSubmitting(true);
@@ -153,7 +197,7 @@ export default function AssignmentList() {
 
       try {
         const signatureData = await createSignatureCloudinary({
-          assignmentId: assignment.title,
+          assignmentId: assignment._id,
           originalFileName: selectedFile.name,
         });
 
@@ -164,26 +208,26 @@ export default function AssignmentList() {
         formData.append("file", selectedFile);
         formData.append("api_key", apiKey);
         formData.append("timestamp", String(timestamp));
-        formData.append("signature", signature);
         formData.append("folder", folder);
         formData.append("public_id", publicId);
+        formData.append("signature", signature);
+        formData.append("resource_type", "raw");
 
         const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`;
 
-        const cloudinaryResponse = await axiosInstance.post(
-          cloudinaryUrl,
-          formData,
-          {
-            headers: { "Content-Type": "multipart/form-data" },
-            onUploadProgress: (progressEvent) => {
+        const cloudinaryResponse = await axios.post(cloudinaryUrl, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
               const percentCompleted = Math.round(
-                (progressEvent.loaded * 100) /
-                  (progressEvent.total ?? selectedFile.size),
+                (progressEvent.loaded * 100) / progressEvent.total,
               );
               setUploadProgress(percentCompleted);
-            },
+            } else {
+              setUploadProgress(5);
+            }
           },
-        );
+        });
 
         if (
           cloudinaryResponse.status < 200 ||
@@ -196,10 +240,8 @@ export default function AssignmentList() {
         }
 
         await markSubmissionComplete({
-          assignmentId: assignment.title,
+          assignmentId: assignment._id,
           publicId: cloudinaryResponse.data.public_id,
-          version: cloudinaryResponse.data.version,
-          signature: cloudinaryResponse.data.signature,
           fileName: selectedFile.name,
           fileSize: cloudinaryResponse.data.bytes,
           fileType:
@@ -212,7 +254,7 @@ export default function AssignmentList() {
         console.log("Cloudinary Upload Result:", cloudinaryResponse.data);
       } catch (err) {
         console.error("Submission Process Error:", err);
-        let message = "An unexpected error occurred.";
+        let message = "An unexpected error occurred during submission.";
         if (err instanceof AxiosError && err.response?.data?.error?.message) {
           message = `Upload failed: ${err.response.data.error.message}`;
         } else if (err instanceof Error) {
@@ -220,9 +262,10 @@ export default function AssignmentList() {
         } else if (typeof err === "string") {
           message = err;
         }
-        toast.error(`Submission failed: ${message}`);
+
+        toast.error(message);
+        console.error(message);
       } finally {
-        // Briefly show success state before hiding the overlay.
         setTimeout(() => {
           setIsSubmitting(false);
           setUploadProgress(0);
@@ -268,9 +311,14 @@ export default function AssignmentList() {
           handleViewAssignment(assignment);
           break;
         case "Upload":
+          if (assignment.status === "Submitted") {
+            toast.info("This assignment has already been submitted.");
+            return;
+          }
           handleUploadAction(assignment);
           break;
         default:
+          console.warn("Unhandled table action:", actionName);
           break;
       }
     },
@@ -318,17 +366,18 @@ export default function AssignmentList() {
       {/* Hidden file input for PDF uploads */}
       <input
         type="file"
-        accept="application/pdf"
+        accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         ref={fileInputRef}
         onChange={onFileChange}
         className="hidden"
+        disabled={isSubmitting}
       />
 
       {/* Upload overlay modal */}
       {isSubmitting && (
         <UploadOverlay
           progress={uploadProgress}
-          showSuccess={uploadProgress === 100}
+          showSuccess={uploadProgress === 100 && !isSubmitting}
         />
       )}
 

@@ -49,13 +49,13 @@ const Navbar = ({ showNav }: { showNav?: boolean }) => {
           {/* Actions */}
           <div className="flex items-center space-x-4">
             <Link to="/login">
-              <Button className="hidden rounded-md border border-cyan-900 bg-transparent font-bold text-gray-700 transition duration-300 hover:bg-[#123354] hover:text-white md:block dark:text-gray-300">
-                Login
+              <Button className="hidden h-fit rounded-md border border-[#123354] bg-transparent font-bold text-gray-700 transition duration-300 hover:bg-[#123354] hover:text-white md:block dark:text-gray-300">
+                Login Student
               </Button>
             </Link>
-            <Link to="/signup">
+            <Link to="/instructor/login">
               <Button className="btn hidden rounded-md font-bold text-white md:block">
-                Get Started
+                Login Instructor
               </Button>
             </Link>
 

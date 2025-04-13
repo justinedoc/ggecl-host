@@ -2,11 +2,16 @@ import mongoose from "mongoose";
 import { envConfig } from "./config/envValidator.js";
 import app, { init } from "./server.js";
 import { redis } from "./config/redisConfig.js";
+import { initSuperAdmin } from "./controllers/admins/index.js";
 
 const PORT = Number(envConfig.port) || 3000;
 
 async function startServer(): Promise<void> {
   await init();
+  await initSuperAdmin().catch((error) => {
+    console.error("Unhandled error in superadmin initialization:", error);
+    process.exit(1);
+  });
   const server = app.listen(PORT, () => {
     console.log(`🚀 Server started on http://localhost:${PORT}`);
   });

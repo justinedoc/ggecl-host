@@ -32,7 +32,6 @@ import { FormHead } from "@/components/ui/FormHead.tsx";
 import { Link } from "react-router";
 import AuthDivider from "@/components/ui/AuthDivider.tsx";
 import GoogleSigninBtn from "@/components/ui/GoogleSigninBtn.tsx";
-import { CustomLink } from "@/components/ui/CustomLink.tsx";
 import LoginPopup from "@/components/ui/LoginPopup.tsx";
 
 const loginSchema = z.object({
@@ -174,21 +173,6 @@ const InstructorLogin = () => {
           {/* Google Login */}
           <div className="w-full">
             <GoogleSigninBtn>Continue with Google</GoogleSigninBtn>
-          </div>
-
-          {/* Signup Link */}
-          <div className="space-y-3 text-center">
-            <p className="text-sm">
-              Don't have an account?{" "}
-              <CustomLink to="/instructor/signup">register</CustomLink>
-            </p>
-
-            <p className="text-center text-xs">
-              By creating an account, you agree to GGECL's{" "}
-              <CustomLink to="https://ggecl.com/terms.html">
-                Terms of Service
-              </CustomLink>
-            </p>
           </div>
         </div>
       </div>

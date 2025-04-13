@@ -9,7 +9,7 @@ import { ICart } from "../models/cartModel.js";
 
 const cache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
 
-const CACHE_PREFIX = "cartItems"; // Prefix for cache keys
+export const CACHE_PREFIX = "cartItems"; 
 
 const getCachedCartItems = (userId: string): ICart[] | undefined => {
   return cache.get<ICart[]>(`${CACHE_PREFIX}:${userId}`);

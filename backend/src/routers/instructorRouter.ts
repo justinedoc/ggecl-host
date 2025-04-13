@@ -4,6 +4,7 @@ import { CACHE, wildcardDeleteCache } from "../utils/nodeCache.js";
 import instructorModel, { IInstructor } from "../models/instructorModel.js";
 import { TRPCError } from "@trpc/server";
 import { FilterQuery, isValidObjectId } from "mongoose";
+import { CACHE_PREFIX as CartItemsCachePrefix } from "./cartRouter.js";
 
 // Define the instructor summary type by omitting sensitive fields.
 type IInstructorSummary = Omit<
@@ -241,6 +242,7 @@ export const instructorRouter = router({
         // Invalidate related cache entries.
         CACHE.del(`instructor-${instructorId}`);
         wildcardDeleteCache("instructors-");
+        wildcardDeleteCache(`${CartItemsCachePrefix}:`);
 
         return updatedInstructor;
       } catch (err) {

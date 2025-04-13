@@ -7,17 +7,17 @@ import { useCustomNavigate } from "@/hooks/useCustomNavigate";
 function JoinAs() {
   const { navigate } = useCustomNavigate();
   return (
-    <section className="w-full p-5 md:p-12 bg-white dark:bg-gray-900 text-gray-800 dark:text-white space-y-8">
-      <div className="flex flex-col md:flex-row justify-center items-center md:gap-16 gap-5">
+    <section className="w-full space-y-8 bg-white p-5 text-gray-800 md:p-12 dark:bg-gray-900 dark:text-white">
+      <div className="flex flex-col items-center justify-center gap-5 md:flex-row md:gap-16">
         <div className="w-[20rem]">
           <img
             src={teacherImg}
             alt="Become an Instructor"
-            className="w-full h-auto object-cover rounded-lg"
+            className="h-auto w-full rounded-lg object-cover"
           />
         </div>
 
-        <div className="w-full md:max-w-[35rem] flex flex-col gap-4">
+        <div className="flex w-full flex-col gap-4 md:max-w-[35rem]">
           <h2 className="text-2xl font-bold text-gray-700 dark:text-gray-100">
             Become an Instructor
           </h2>
@@ -27,23 +27,23 @@ function JoinAs() {
             teaching experience.
           </p>
           <Button
-            className="text-white font-semibold px-5 py-4 rounded-md btn w-fit inline-flex items-center"
+            className="btn inline-flex w-fit items-center rounded-md px-5 py-4 font-semibold text-white"
             onClick={() => navigate("/instructor/login")}
           >
             Embark on Your Instructor Journey <FaArrowRight />
           </Button>
         </div>
       </div>
-      <div className="flex flex-col md:flex-row-reverse justify-center items-center gap-5 md:gap-16">
+      <div className="flex flex-col items-center justify-center gap-5 md:flex-row-reverse md:gap-16">
         <div className="w-[20rem]">
           <img
             src={studentImg}
             alt="Enroll as a Student"
-            className="w-full h-auto object-cover rounded-lg"
+            className="h-auto w-full rounded-lg object-cover"
           />
         </div>
 
-        <div className="w-full md:w-1/2 md:pl-12 flex flex-col gap-4">
+        <div className="flex w-full flex-col gap-4 md:w-1/2 md:pl-12">
           <h2 className="text-2xl font-bold text-gray-700 dark:text-gray-100">
             Enroll as a Student
           </h2>
@@ -52,7 +52,10 @@ function JoinAs() {
             content. Begin your journey to mastering essential skills and
             advancing your career.
           </p>
-          <Button className="text-white font-semibold px-5 py-4 rounded-md btn w-fit inline-flex items-center">
+          <Button
+            className="btn inline-flex w-fit items-center rounded-md px-5 py-4 font-semibold text-white"
+            onClick={() => navigate("/login")}
+          >
             Begin Your Learning Journey <FaArrowRight />
           </Button>
         </div>
