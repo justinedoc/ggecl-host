@@ -4,6 +4,9 @@ import { CACHE, wildcardDeleteCache } from "../utils/nodeCache.js";
 import studentModel, { IStudent } from "../models/studentModel.js";
 import { TRPCError } from "@trpc/server";
 import { FilterQuery, isValidObjectId } from "mongoose";
+import adminModel from "../models/adminModel.js";
+import { studentAuthService } from "../services/studentAuth.js";
+import { generatePassword } from "../utils/genPassword.js";
 
 // Define a summary type for students by omitting sensitive fields.
 type IStudentSummary = Omit<
@@ -52,6 +55,19 @@ const GetStudentsZodSchema = z.object({
   sortBy: z.enum(["isVerified", "fullName", "email"]).default("fullName"),
   order: z.enum(["asc", "desc"]).default("asc"),
 });
+
+const StudentRegistrationSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  fullName: z.string().min(2, "Full name must be at least 2 characters"),
+  gender: z
+    .enum(["male", "female", "other"], {
+      errorMap: () => ({ message: "Invalid gender selection" }),
+    })
+    .default("other"),
+  picture: z.string().url("Invalid URL format").optional(),
+  googleSignIn: z.boolean().default(false),
+});
+
 type TGetStudentsInput = z.infer<typeof GetStudentsZodSchema>;
 
 // Helper to build a cache key for student lists.
@@ -61,6 +77,64 @@ const getCacheKey = (input: TGetStudentsInput) => {
 };
 
 export const studentRouter = router({
+  enroll: protectedProcedure
+    .input(StudentRegistrationSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { id: adminId, role } = ctx.user;
+
+      try {
+        const adminExists = await adminModel.exists({ _id: adminId });
+
+        if (!adminExists || role !== "admin") {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Only admins can enroll students",
+          });
+        }
+
+        const studentExists = await studentAuthService.findStudentByEmail(
+          input.email
+        );
+
+        if (studentExists) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: `Student with email ${input.email} has already been registered`,
+          });
+        }
+
+        const studentPassword = generatePassword(8);
+
+        const studentEnrollmentData = { ...input, password: studentPassword };
+
+        const student = await studentAuthService.createStudent(
+          studentEnrollmentData
+        );
+
+        const { refreshToken } = studentAuthService.generateAuthTokens(
+          student._id.toString()
+        );
+
+        await studentAuthService.updateRefreshToken(
+          student._id.toString(),
+          refreshToken
+        );
+
+        wildcardDeleteCache("students-");
+
+        // send mail to student containing password and email
+
+        return { success: true };
+      } catch (error) {
+        console.error("An Error occured while trying to enroll student");
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occured",
+        });
+      }
+    }),
+
   // Get all students (paginated, searchable, and sortable).
   getAll: protectedProcedure
     .input(GetStudentsZodSchema)
