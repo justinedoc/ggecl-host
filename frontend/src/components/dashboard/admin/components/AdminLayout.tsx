@@ -1,9 +1,6 @@
-// Example usage within AdminLayout.jsx
-
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Outlet } from "react-router";
 import AdminNav from "@/components/dashboard/admin/components/AdminNav";
-import AdminNavSkeleton from "@/components/dashboard/admin/components/AdminNavSkeleton"; // Import the skeleton
 import { AdminSidebar } from "@/components/dashboard/admin/components/AdminSidebar";
 import { isAdmin } from "@/utils/isAdmin";
 import { RequireAuth } from "@/components/utils/RequireAuth";
@@ -11,8 +8,9 @@ import { AdminContext } from "@/hooks/useAdmin";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { trpc } from "@/utils/trpc";
-import AuthPageLoading from "@/components/auth/_components/AuthPageLoading"; // For overall loading
 import { toast } from "sonner";
+import NavSkeleton from "../../students/utils/NavSkeleton";
+import AdminDashboardSkeleton from "./AdminDashboardSkeleton";
 
 function AdminLayout() {
   const { userId, isLoading: isAuthLoading } = useAuth();
@@ -47,19 +45,30 @@ function AdminLayout() {
     );
   }
 
+  if (isAdminDataPending) {
+    return (
+      <RequireAuth>
+        <SidebarProvider>
+          <AdminSidebar />
+          <main className="w-full overflow-x-hidden">
+            <NavSkeleton />
+            <AdminDashboardSkeleton />
+          </main>
+        </SidebarProvider>
+      </RequireAuth>
+    );
+  }
+
   const admin = user;
 
   return (
     <RequireAuth>
-      <AdminContext.Provider
-        value={{ admin: isAdminDataPending ? undefined : admin }}
-      >
+      <AdminContext.Provider value={{ admin }}>
         <SidebarProvider>
           <AdminSidebar />
           <main className="w-full overflow-x-hidden">
-            {isAdminDataPending ? <AdminNavSkeleton /> : <AdminNav />}
-
-            {isAdminDataPending ? <AuthPageLoading /> : <Outlet />}
+            <AdminNav />
+            <Outlet />
           </main>
         </SidebarProvider>
       </AdminContext.Provider>

@@ -8,24 +8,65 @@ import { useQuery } from "@tanstack/react-query";
 import { trpc } from "@/utils/trpc";
 import { InstructorContext } from "@/hooks/useInstructor";
 import { isInstructor } from "@/utils/isInstructor";
+import { toast } from "sonner";
+import NavSkeleton from "../../students/utils/NavSkeleton";
+import InstructorHomeSkeleton from "./InstructorDashboardSkeleton";
 
 function InstructorLayout() {
   const { userId, isLoading } = useAuth();
 
-  const { data: user, isPending } = useQuery({
+  const {
+    data: user,
+    isPending: isInstructorDataPending,
+    isError,
+    error,
+  } = useQuery({
     ...trpc.instructor.getById.queryOptions({ id: userId || "" }),
     enabled: !!userId && !isLoading,
+    retry: 3,
   });
 
-  if (!isInstructor(user)) {
-    console.log(user);
-    return user && "Login as an instructor to view your dashboard";
+  if (isError) {
+    console.error("Failed to fetch instructor data:", error);
+    toast.error(error.message);
+    return (
+      <RequireAuth>
+        <div>Error loading instructor information. Please try again later.</div>
+      </RequireAuth>
+    );
+  }
+
+  if (!isInstructorDataPending && user && !isInstructor(user)) {
+    toast.error(
+      "You do not have permission to access the instructor dashboard.",
+    );
+    return (
+      <RequireAuth>
+        <div>
+          You do not have permission to access the instructor dashboard.
+        </div>
+      </RequireAuth>
+    );
+  }
+
+  if (isInstructorDataPending) {
+    return (
+      <RequireAuth>
+        <SidebarProvider>
+          <InstructorSide />
+          <main className="w-full overflow-x-hidden">
+            <NavSkeleton />
+            <InstructorHomeSkeleton />
+          </main>
+        </SidebarProvider>
+      </RequireAuth>
+    );
   }
 
   const instructor = user;
 
   return (
-    <RequireAuth isPending={isPending}>
+    <RequireAuth>
       <InstructorContext.Provider value={{ instructor }}>
         <SidebarProvider>
           <InstructorSide />

@@ -19,7 +19,7 @@ const CoursePage = lazy(() => import("@/components/landing/pages/CoursePage"));
 const InstructorLogin = lazy(
   () => import("@/components/auth/pages/InstructorLogin.tsx"),
 );
-const Adminlogin = lazy(() => import("@/components/auth/pages/Adminlogin.tsx"));
+const Adminlogin = lazy(() => import("@/components/auth/pages/AdminLogin"));
 
 const VerifyEmail = lazy(() => import("@/components/utils/VerifyEmail"));
 

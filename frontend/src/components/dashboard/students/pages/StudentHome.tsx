@@ -6,7 +6,6 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
 import { parseISO, format, isValid } from "date-fns";
 import { useStudent } from "@/hooks/useStudent";
 
@@ -26,17 +25,6 @@ interface UpcomingLesson {
   time: string;
   date: string;
   duration: string;
-}
-
-interface MetricItemProps {
-  label: string;
-  value: string;
-  trend: "up" | "down" | "neutral";
-}
-
-interface AchievementItemProps {
-  title: string;
-  date: string;
 }
 
 interface TaskItemProps {
@@ -191,27 +179,6 @@ const StudentHome = () => {
         </CardHeader>
         <CardContent className="grid gap-6 md:grid-cols-3">
           <div className="space-y-2">
-            <h3 className="font-medium">Performance Metrics</h3>
-            <div className="space-y-4">
-              <MetricItem label="Average Grade" value="A-" trend="up" />
-              <MetricItem
-                label="Completed Courses"
-                value="4/8"
-                trend="neutral"
-              />
-              <MetricItem label="Study Hours" value="56h" trend="up" />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <h3 className="font-medium">Recent Achievements</h3>
-            <div className="space-y-2">
-              <AchievementItem title="UX Mastery" date="Mar 2024" />
-              <AchievementItem title="Design Prodigy" date="Feb 2024" />
-            </div>
-          </div>
-
-          <div className="space-y-2">
             <h3 className="font-medium">Priority Tasks</h3>
             <div className="space-y-2">
               <TaskItem title="Submit Final Project" dueDate="2024-04-15" />
@@ -223,42 +190,6 @@ const StudentHome = () => {
     </div>
   );
 };
-
-const MetricItem = ({ label, value, trend }: MetricItemProps) => (
-  <div className="bg-muted flex items-center justify-between rounded p-3">
-    <span>{label}</span>
-    <div className="flex items-center gap-2">
-      <span className="font-medium">{value}</span>
-      <span
-        className={cn(
-          "text-sm",
-          trend === "up" && "text-green-400",
-          trend === "down" && "text-red-400",
-          trend === "neutral" && "text-muted-foreground",
-        )}
-      >
-        {trend === "up" ? "↑" : trend === "down" ? "↓" : "-"}
-      </span>
-    </div>
-  </div>
-);
-
-const AchievementItem = ({ title, date }: AchievementItemProps) => (
-  <div className="bg-muted flex items-center gap-3 rounded p-2">
-    <div
-      className={cn(
-        "flex h-8 w-8 items-center justify-center rounded-full",
-        "bg-primary/10 text-primary/80",
-      )}
-    >
-      🏆
-    </div>
-    <div>
-      <p className="font-medium">{title}</p>
-      <p className="text-muted-foreground text-sm">{date}</p>
-    </div>
-  </div>
-);
 
 const TaskItem = ({ title, dueDate }: TaskItemProps) => {
   const parsedDueDate = parseISO(dueDate);

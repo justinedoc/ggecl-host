@@ -6,6 +6,7 @@ import { studentAuthService } from "../services/studentAuth.js";
 import { instructorAuthService } from "../services/instructorAuth.js";
 import { clearRefreshTokenCookie } from "../utils/cookieUtils.js";
 import { createErrorResponse } from "../utils/responseUtils.js";
+import { adminService } from "../services/adminService.js";
 
 export const logout = expressAsyncHandler(
   async (req: Request, res: Response) => {
@@ -21,7 +22,7 @@ export const logout = expressAsyncHandler(
       const userModel = combinedUserModel(role);
       const user = await userModel.findOne({ refreshToken });
       if (user) {
-        await clearRefreshTokenSwitch(role, user._id as string);
+        await clearRefreshTokenSwitch(role, user._id.toString());
       }
 
       clearRefreshTokenCookie(res);
@@ -40,6 +41,9 @@ async function clearRefreshTokenSwitch(role: UserRole, userId: string) {
       break;
     case "instructor":
       await instructorAuthService.clearRefreshToken(userId);
+      break;
+    case "admin":
+      await adminService.clearRefreshToken(userId);
       break;
     default:
       console.error("Invalid role");
