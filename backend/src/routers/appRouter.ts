@@ -3,10 +3,10 @@ import { notificationRouter } from "./notificationRouter.js";
 import { forgotPasswordRouter } from "./forgotPasswordRouter.js";
 import { cartRouter } from "./cartRouter.js";
 import { studentRouter } from "./studentRouter.js";
-import { courseRouter } from "./CourseRouter.js";
 import { instructorRouter } from "./instructorRouter.js";
 import { adminRouter } from "./adminRouter.js";
 import { assignmentRouter } from "./assignmentRouter.js";
+import { courseRouter } from "./courseRouter.js";
 
 export const appRouter = router({
   notification: notificationRouter,
