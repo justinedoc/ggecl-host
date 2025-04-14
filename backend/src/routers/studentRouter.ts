@@ -65,7 +65,7 @@ const GetStudentsZodSchema = z.object({
   order: z.enum(["asc", "desc"]).default("asc"),
 });
 
-const StudentEnrollSchema = z.object({
+export const StudentEnrollSchema = z.object({
   email: z.string().email("Enter a valud email for student"),
   fullName: z.string({ message: "Student's fullname is required" }),
   gender: z.enum(["male", "female", "other"]).default("other"),
@@ -187,7 +187,11 @@ export const studentRouter = router({
         const studentPassword = generatePassword(8);
         console.log(studentPassword);
 
-        const studentEnrollmentData = { ...input, password: studentPassword };
+        const studentEnrollmentData = {
+          ...input,
+          googleSignIn: false,
+          password: studentPassword,
+        };
 
         const student = await studentAuthService.createStudent(
           studentEnrollmentData
