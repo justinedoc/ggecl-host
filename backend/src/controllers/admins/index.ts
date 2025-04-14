@@ -10,7 +10,6 @@ export async function initSuperAdmin() {
       role: "admin",
       permissions: ["all"],
       isVerified: true,
-      emailVerified: true,
     };
 
     const existingSuperadmin = await adminService.findAdminByEmail(
@@ -50,4 +49,3 @@ export async function initSuperAdmin() {
     process.exit(1);
   }
 }
-

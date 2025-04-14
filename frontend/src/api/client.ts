@@ -19,8 +19,6 @@ if (!API_URL) {
 const PUBLIC_URLS = [
   "/student/login",
   "/instructor/login",
-  "/student/register",
-  "/instructor/register",
   "/logout",
   "/",
 ];

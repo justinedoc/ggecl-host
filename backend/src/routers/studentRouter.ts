@@ -68,7 +68,11 @@ const GetStudentsZodSchema = z.object({
 export const StudentEnrollSchema = z.object({
   email: z.string().email("Enter a valud email for student"),
   fullName: z.string({ message: "Student's fullname is required" }),
-  gender: z.enum(["male", "female", "other"]).default("other"),
+  gender: z
+    .enum(["male", "female", "other"], {
+      errorMap: () => ({ message: "Invalid gender selection" }),
+    })
+    .default("other"),
   picture: z.string().url("Invaild image link").optional(),
 });
 

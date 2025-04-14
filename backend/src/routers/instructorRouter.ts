@@ -77,7 +77,6 @@ const InstructorRegistrationSchema = z.object({
     })
     .default("other"),
   picture: z.string().url("Invalid URL format").optional(),
-  googleSignIn: z.boolean().default(false),
 });
 
 const GetInstructorByIdZodSchema = z.object({
@@ -123,6 +122,7 @@ export const instructorRouter = router({
 
         const instructorEnrollmentData = {
           ...input,
+          googleSignIn: false,
           password: instructorPassword,
         };
 

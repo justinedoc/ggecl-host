@@ -9,6 +9,7 @@ export interface IAdmin extends Document {
   password: string;
   fullName: string;
   picture: string;
+  isVerified: boolean;
   role: "admin";
   permissions: string[];
   notifications: INotification[];
@@ -29,6 +30,7 @@ const AdminSchema = new Schema<IAdmin>(
       trim: true,
       lowercase: true,
     },
+    isVerified: { type: Boolean, default: false },
     picture: {
       type: String,
       default:

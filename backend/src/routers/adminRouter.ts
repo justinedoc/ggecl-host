@@ -35,8 +35,7 @@ const GetAdminByIdZodSchema = z.object({
 const AdminEnrollmentSchema = z.object({
   email: z.string().email("Invalid email format"),
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
-  role: z.enum(["admin", "superadmin"]).default("admin"),
-  permissions: z.array(z.string()).optional().default([]),
+  picture: z.string().url("Invalid URL format").optional(),
 });
 
 export const adminRouter = router({
@@ -71,6 +70,7 @@ export const adminRouter = router({
 
         const adminEnrollmentData = {
           ...input,
+          isVerified: true,
           password: adminPassword,
         };
 

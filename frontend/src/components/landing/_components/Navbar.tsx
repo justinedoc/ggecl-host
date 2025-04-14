@@ -105,20 +105,25 @@ const Navbar = ({ showNav }: { showNav?: boolean }) => {
           <Link
             onClick={() => setMenuOpen(false)}
             to={"/cart"}
-            className="font-bold text-gray-700 hover:text-blue-500 dark:text-gray-300"
+            className={cn(
+              "font-bold text-gray-700 hover:text-blue-500 dark:text-gray-300",
+              { "md:hidden": !userId },
+            )}
           >
             Cart
           </Link>
-          <Link to="/login" onClick={() => setMenuOpen(false)}>
-            <Button className="w-full rounded-md border-blue-300/20 bg-transparent font-bold text-gray-700 ring transition duration-300 hover:bg-[#123354] dark:text-gray-300">
-              Login
-            </Button>
-          </Link>
-          <Link to="/signup" onClick={() => setMenuOpen(false)}>
-            <Button className="w-full rounded-md bg-gray-900 font-bold text-white hover:text-gray-600">
-              Get Started
-            </Button>
-          </Link>
+          <div className="mx-auto flex flex-col items-center gap-y-4">
+            <Link to="/login">
+              <Button className="h-fit rounded-md border border-[#123354] bg-transparent font-bold text-gray-700 transition duration-300 hover:bg-[#123354] hover:text-white dark:text-gray-300">
+                Login Student
+              </Button>
+            </Link>
+            <Link to="/instructor/login">
+              <Button className="btn rounded-md font-bold text-white md:block">
+                Login Instructor
+              </Button>
+            </Link>
+          </div>
         </div>
       )}
     </nav>
