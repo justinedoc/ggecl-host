@@ -5,6 +5,9 @@ import instructorModel, { IInstructor } from "../models/instructorModel.js";
 import { TRPCError } from "@trpc/server";
 import { FilterQuery, isValidObjectId } from "mongoose";
 import { CACHE_PREFIX as CartItemsCachePrefix } from "./cartRouter.js";
+import { instructorAuthService } from "../services/instructorAuth.js";
+import adminModel from "../models/adminModel.js";
+import { generatePassword } from "../utils/genPassword.js";
 
 // Define the instructor summary type by omitting sensitive fields.
 type IInstructorSummary = Omit<
@@ -57,6 +60,19 @@ const GetInstructorsZodSchema = z.object({
     .default("isVerified"),
   order: z.enum(["asc", "desc"]).default("asc"),
 });
+
+const InstructorRegistrationSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  fullName: z.string().min(2, "Full name must be at least 2 characters"),
+  gender: z
+    .enum(["male", "female", "other"], {
+      errorMap: () => ({ message: "Invalid gender selection" }),
+    })
+    .default("other"),
+  picture: z.string().url("Invalid URL format").optional(),
+  googleSignIn: z.boolean().default(false),
+});
+
 type TGetInstructorsInput = z.infer<typeof GetInstructorsZodSchema>;
 
 // Helper to generate cache key for instructor list.
@@ -66,6 +82,58 @@ const getCacheKey = (input: TGetInstructorsInput) => {
 };
 
 export const instructorRouter = router({
+  enroll: protectedProcedure
+    .input(InstructorRegistrationSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { id: adminId, role } = ctx.user;
+
+      try {
+        const adminExists = await adminModel.exists({ _id: adminId });
+
+        if (!adminExists || role !== "admin") {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Only admins can enroll instructors",
+          });
+        }
+
+        const instructorExists =
+          await instructorAuthService.findInstructorByEmail(input.email);
+
+        if (instructorExists) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: `Instructor with email ${input.email} has already been registered`,
+          });
+        }
+
+        const instructorPassword = generatePassword(8);
+        console.log(instructorPassword);
+
+        const instructorEnrollmentData = {
+          ...input,
+          password: instructorPassword,
+        };
+
+        const instructor = await instructorAuthService.createInstructor(
+          instructorEnrollmentData
+        );
+
+        wildcardDeleteCache("instructors-");
+
+        // send mail to instructor containing password and email
+
+        return { success: true, instructor };
+      } catch (error) {
+        console.error("An Error occured while trying to enroll instructor");
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occured",
+        });
+      }
+    }),
+
   // Get a paginated list of instructors with optional search and sorting.
   getAll: procedure.input(GetInstructorsZodSchema).query(async ({ input }) => {
     const cacheKey = getCacheKey(input);

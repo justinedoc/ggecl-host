@@ -7,6 +7,8 @@ import { FilterQuery, isValidObjectId } from "mongoose";
 import adminModel from "../models/adminModel.js";
 import { studentAuthService } from "../services/studentAuth.js";
 import { generatePassword } from "../utils/genPassword.js";
+import coursesModel from "../models/coursesModel.js";
+import instructorModel from "../models/instructorModel.js";
 
 // Define a summary type for students by omitting sensitive fields.
 type IStudentSummary = Omit<
@@ -68,6 +70,15 @@ const StudentRegistrationSchema = z.object({
   googleSignIn: z.boolean().default(false),
 });
 
+const EnrollStudentToCourseZodSchema = z.object({
+  studentId: z.string().refine(isValidObjectId, {
+    message: "Student id must be a valid id",
+  }),
+  courseId: z.string().refine(isValidObjectId, {
+    message: "course id must be a valid id",
+  }),
+});
+
 type TGetStudentsInput = z.infer<typeof GetStudentsZodSchema>;
 
 // Helper to build a cache key for student lists.
@@ -77,6 +88,74 @@ const getCacheKey = (input: TGetStudentsInput) => {
 };
 
 export const studentRouter = router({
+  enrollToCourse: protectedProcedure
+    .input(EnrollStudentToCourseZodSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { id: adminId, role } = ctx.user;
+      const { courseId, studentId } = input;
+
+      try {
+        const adminExists = await adminModel.exists({ _id: adminId });
+
+        if (!adminExists || role !== "admin") {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Only admins can enroll students on a course",
+          });
+        }
+
+        if (
+          await studentModel.exists({
+            _id: studentId,
+            enrolledCourses: courseId,
+          })
+        ) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Student has already been enrolled to course",
+          });
+        }
+
+        const course = await coursesModel.findById(courseId);
+
+        if (!course) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: `Course with id ${courseId} was not found`,
+          });
+        }
+
+        const student = await studentModel.findById(studentId, {
+          $push: { enrolledCourses: courseId },
+        });
+
+        if (!student) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: `Student with id ${studentId} was not found`,
+          });
+        }
+
+        await instructorModel.findByIdAndUpdate(
+          course.instructor,
+          { $push: { students: studentId } },
+          { runvalidators: true }
+        );
+
+        return { success: true, student };
+      } catch (error) {
+        console.error(
+          "An error occured while trying to enroll student on a course: ",
+          error
+        );
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occured",
+        });
+      }
+    }),
+
   enroll: protectedProcedure
     .input(StudentRegistrationSchema)
     .mutation(async ({ ctx, input }) => {
@@ -104,6 +183,7 @@ export const studentRouter = router({
         }
 
         const studentPassword = generatePassword(8);
+        console.log(studentPassword);
 
         const studentEnrollmentData = { ...input, password: studentPassword };
 
@@ -111,20 +191,11 @@ export const studentRouter = router({
           studentEnrollmentData
         );
 
-        const { refreshToken } = studentAuthService.generateAuthTokens(
-          student._id.toString()
-        );
-
-        await studentAuthService.updateRefreshToken(
-          student._id.toString(),
-          refreshToken
-        );
-
         wildcardDeleteCache("students-");
 
         // send mail to student containing password and email
 
-        return { success: true };
+        return { success: true, student };
       } catch (error) {
         console.error("An Error occured while trying to enroll student");
         if (error instanceof TRPCError) throw error;

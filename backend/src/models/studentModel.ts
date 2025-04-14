@@ -23,6 +23,7 @@ export interface IStudent extends Document {
   passwordUpdateTokenExpiry?: Date;
   cartItems: ICart[];
   assignments: Types.ObjectId;
+  enrolledCourses: Types.ObjectId[];
 }
 
 // Main Student Schema
@@ -52,6 +53,13 @@ export const StudentSchema = new Schema<IStudent>(
       {
         type: Schema.Types.ObjectId,
         ref: "assignment",
+        default: [],
+      },
+    ],
+    enrolledCourses: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "course",
         default: [],
       },
     ],

@@ -1,7 +1,7 @@
 import { procedure, router, protectedProcedure } from "../trpc.js";
 import { z } from "zod";
 import Course, { ICourse } from "../models/coursesModel.js";
-import { FilterQuery } from "mongoose";
+import { FilterQuery, isValidObjectId } from "mongoose";
 import { TRPCError } from "@trpc/server";
 import Instructor from "../models/instructorModel.js";
 import { Review } from "../models/reviewSchema.js";
@@ -39,8 +39,17 @@ const CourseInputSchema = z.object({
   totalStar: z.number().min(0).default(0),
 });
 
+const CourseCreateInputSchema = z.object({
+  instructorId: z
+    .string()
+    .refine(isValidObjectId, { message: "Invalid course id" }),
+  courseData: CourseInputSchema,
+});
+
 const CourseUpdateInputSchema = z.object({
-  courseId: z.string().min(1, "Course Id is required"),
+  courseId: z
+    .string()
+    .refine(isValidObjectId, { message: "Invalid course id" }),
   courseData: CourseInputSchema.partial(),
 });
 
@@ -179,20 +188,23 @@ export const courseRouter = router({
     }),
 
   create: protectedProcedure
-    .input(CourseInputSchema)
+    .input(CourseCreateInputSchema)
     .mutation(async ({ input, ctx }) => {
-      const { id: instructorId, role } = ctx.user;
-      if (role !== "instructor") {
+      const { role } = ctx.user;
+      const { instructorId, courseData } = input;
+
+      if (role !== "instructor" && role !== "admin") {
         throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Only instructors can create courses.",
+          code: "UNAUTHORIZED",
+          message: "You are not authorized to create courses.",
         });
       }
 
       const duplicateCourse = await Course.findOne({
-        title: input.title,
+        title: courseData.title,
         instructor: instructorId,
       });
+
       if (duplicateCourse) {
         throw new TRPCError({
           code: "CONFLICT",
@@ -201,7 +213,7 @@ export const courseRouter = router({
       }
 
       const newCourse = new Course({
-        ...input,
+        ...input.courseData,
         instructor: instructorId,
       });
 

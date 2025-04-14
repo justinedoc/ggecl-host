@@ -1,4 +1,3 @@
-// src/models/adminModel.ts
 import { Document, Schema, model } from "mongoose";
 import bcrypt from "bcrypt";
 import { INotification, NotificationSchema } from "./NotificationSchema.js";
