@@ -8,6 +8,13 @@ import { CACHE_PREFIX as CartItemsCachePrefix } from "./cartRouter.js";
 import { instructorAuthService } from "../services/instructorAuth.js";
 import adminModel from "../models/adminModel.js";
 import { generatePassword } from "../utils/genPassword.js";
+import { frontEndLoginLink } from "../utils/feLoginLink.js";
+import { sendMailToEmail } from "../services/sendMailToEmail.js";
+import { enrollMail } from "../constants/emrollmentMailTemplate.js";
+import {
+  ENROLL_EMAIL_SUBJECT,
+  ENROLL_EMAIL_TEXT,
+} from "../constants/messages.js";
 
 // Define the instructor summary type by omitting sensitive fields.
 type IInstructorSummary = Omit<
@@ -119,9 +126,28 @@ export const instructorRouter = router({
           instructorEnrollmentData
         );
 
+        const instructorEmail = instructor.email;
+        const instructorLoginLink = frontEndLoginLink("instructor");
+
+        wildcardDeleteCache("students-");
         wildcardDeleteCache("instructors-");
 
-        // send mail to instructor containing password and email
+        await sendMailToEmail({
+          toEmail: instructorEmail,
+          html: enrollMail({
+            email: instructorEmail,
+            link: instructorLoginLink,
+            password: instructorPassword,
+            role: "instructor",
+            username: instructor.fullName,
+          }),
+          message: ENROLL_EMAIL_TEXT(
+            instructorLoginLink,
+            instructorEmail,
+            instructorPassword
+          ),
+          subject: ENROLL_EMAIL_SUBJECT,
+        });
 
         return { success: true, instructor };
       } catch (error) {

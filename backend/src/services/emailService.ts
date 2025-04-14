@@ -1,4 +1,4 @@
-import { sendVerificationToEmail } from "./sendVerificationToEmail.js";
+import {  sendMailToEmail } from "./sendMailToEmail.js";
 import { z } from "zod";
 import { combinedUserModel, UserRole } from "../utils/roleMappings.js";
 import {
@@ -47,10 +47,8 @@ export const emailService = (role: UserRole) => {
 
       const verificationLink = constructVerificationLink(token);
 
-      const result = await sendVerificationToEmail({
-        username: user.fullName,
+      const result = await sendMailToEmail({
         toEmail: email,
-        verificationLink,
         html: verifyEmailHtml(user.fullName, verificationLink),
         message: VERIFY_EMAIL_TEXT(verificationLink),
         subject: VERIFY_EMAIL_SUBJECT,

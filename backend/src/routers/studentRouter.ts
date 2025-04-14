@@ -9,6 +9,13 @@ import { studentAuthService } from "../services/studentAuth.js";
 import { generatePassword } from "../utils/genPassword.js";
 import coursesModel from "../models/coursesModel.js";
 import instructorModel from "../models/instructorModel.js";
+import { sendMailToEmail } from "../services/sendMailToEmail.js";
+import { enrollMail } from "../constants/emrollmentMailTemplate.js";
+import { frontEndLoginLink } from "../utils/feLoginLink.js";
+import {
+  ENROLL_EMAIL_SUBJECT,
+  ENROLL_EMAIL_TEXT,
+} from "../constants/messages.js";
 
 // Define a summary type for students by omitting sensitive fields.
 type IStudentSummary = Omit<
@@ -58,16 +65,11 @@ const GetStudentsZodSchema = z.object({
   order: z.enum(["asc", "desc"]).default("asc"),
 });
 
-const StudentRegistrationSchema = z.object({
-  email: z.string().email("Invalid email format"),
-  fullName: z.string().min(2, "Full name must be at least 2 characters"),
-  gender: z
-    .enum(["male", "female", "other"], {
-      errorMap: () => ({ message: "Invalid gender selection" }),
-    })
-    .default("other"),
-  picture: z.string().url("Invalid URL format").optional(),
-  googleSignIn: z.boolean().default(false),
+const StudentEnrollSchema = z.object({
+  email: z.string().email("Enter a valud email for student"),
+  fullName: z.string({ message: "Student's fullname is required" }),
+  gender: z.enum(["male", "female", "other"]).default("other"),
+  picture: z.string().url("Invaild image link").optional(),
 });
 
 const EnrollStudentToCourseZodSchema = z.object({
@@ -157,7 +159,7 @@ export const studentRouter = router({
     }),
 
   enroll: protectedProcedure
-    .input(StudentRegistrationSchema)
+    .input(StudentEnrollSchema)
     .mutation(async ({ ctx, input }) => {
       const { id: adminId, role } = ctx.user;
 
@@ -191,9 +193,30 @@ export const studentRouter = router({
           studentEnrollmentData
         );
 
+        const studentEmail = student.email;
+        const studentLoginLink = frontEndLoginLink("student");
+
         wildcardDeleteCache("students-");
+        wildcardDeleteCache("instructors-");
 
         // send mail to student containing password and email
+
+        await sendMailToEmail({
+          toEmail: studentEmail,
+          html: enrollMail({
+            email: studentEmail,
+            link: studentLoginLink,
+            password: studentPassword,
+            role: "student",
+            username: student.fullName,
+          }),
+          message: ENROLL_EMAIL_TEXT(
+            studentLoginLink,
+            studentEmail,
+            studentPassword
+          ),
+          subject: ENROLL_EMAIL_SUBJECT,
+        });
 
         return { success: true, student };
       } catch (error) {

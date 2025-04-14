@@ -4,7 +4,7 @@ import {
   FORGOT_PASSWORD_SUBJECT,
 } from "../constants/messages.js";
 import { combinedUserModel, UserRole } from "../utils/roleMappings.js";
-import { sendVerificationToEmail } from "./sendVerificationToEmail.js";
+import { sendMailToEmail } from "./sendMailToEmail.js";
 import {
   constructVerificationLink,
   generateVerificationToken,
@@ -26,10 +26,8 @@ export const passwordServices = (role: UserRole) => {
 
       const verificationLink = constructVerificationLink(token);
 
-      const result = await sendVerificationToEmail({
-        username: user.fullName,
+      const result = await sendMailToEmail({
         toEmail: user.email,
-        verificationLink,
         html: forgotPasswordHtml(user.fullName, verificationLink),
         message: FORGOT_PASSWORD_EMAIL_TEXT(verificationLink),
         subject: FORGOT_PASSWORD_SUBJECT,

@@ -15,4 +15,4 @@ export const generateVerificationToken = (): VerificationTokenPayload => ({
 });
 
 export const constructVerificationLink = (token: string): string =>
-  `${envConfig.verifyEmailBaseUrl}?token=${token}`;
+  `${envConfig.FRONTEND_BASE_URL}/verify-email?token=${token}`;

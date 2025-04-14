@@ -6,6 +6,13 @@ import adminModel, { IAdmin } from "../models/adminModel.js";
 import { CACHE } from "../utils/nodeCache.js";
 import { generatePassword } from "../utils/genPassword.js";
 import { adminService } from "../services/adminService.js";
+import { frontEndLoginLink } from "../utils/feLoginLink.js";
+import { sendMailToEmail } from "../services/sendMailToEmail.js";
+import { enrollMail } from "../constants/emrollmentMailTemplate.js";
+import {
+  ENROLL_EMAIL_SUBJECT,
+  ENROLL_EMAIL_TEXT,
+} from "../constants/messages.js";
 
 // Types
 type IAdminSummary = Omit<
@@ -69,7 +76,21 @@ export const adminRouter = router({
 
         const admin = await adminService.createAdmin(adminEnrollmentData);
 
-        // send mail to admin containing password and email
+        const adminEmail = admin.email;
+        const adminLoginLink = frontEndLoginLink("admin");
+
+        await sendMailToEmail({
+          toEmail: adminEmail,
+          html: enrollMail({
+            email: adminEmail,
+            link: adminLoginLink,
+            password: adminPassword,
+            role: "admin",
+            username: admin.fullName,
+          }),
+          message: ENROLL_EMAIL_TEXT(adminLoginLink, adminEmail, adminPassword),
+          subject: ENROLL_EMAIL_SUBJECT,
+        });
 
         return { success: true, admin };
       } catch (error) {
