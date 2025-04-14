@@ -102,6 +102,7 @@ export const adminRouter = router({
         });
       }
     }),
+
   getById: protectedProcedure
     .input(GetAdminByIdZodSchema)
     .query(async ({ ctx, input }) => {

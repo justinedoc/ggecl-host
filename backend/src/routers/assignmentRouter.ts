@@ -9,7 +9,8 @@ import studentModel from "../models/studentModel.js";
 import AssignmentModel, {
   IStudentAssignment,
 } from "../models/assignmentModel.js";
-import { CACHE } from "../utils/nodeCache.js";
+import { CACHE, wildcardDeleteCache } from "../utils/nodeCache.js";
+import { isValidObjectId } from "mongoose";
 
 type TSubmissionData = Partial<
   Omit<IStudentAssignment, "title" | "lesson" | "dueDate">
@@ -21,6 +22,16 @@ const SubmissionCompleteZodSchema = z.object({
   fileSize: z.number(),
   fileType: z.string(),
   fileUrl: z.string().url(),
+});
+
+const MarkAssignmentZodSchema = z.object({
+  assignmentId: z
+    .string()
+    .refine(isValidObjectId, { message: "Invalid assignment id" }),
+
+  score: z
+    .number()
+    .min(0, { message: "Assignment score cannot be less than zero" }),
 });
 
 export const assignmentRouter = router({
@@ -201,6 +212,50 @@ export const assignmentRouter = router({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to update assignment submission.",
           cause: error,
+        });
+      }
+    }),
+
+  mark: protectedProcedure
+    .input(MarkAssignmentZodSchema)
+    .mutation(async ({ input, ctx }) => {
+      const { role } = ctx.user;
+      const { assignmentId, score } = input;
+
+      if (role !== "admin" && role !== "instructor") {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Only instructors and admins can mark assignments",
+        });
+      }
+
+      try {
+        const assignment = await AssignmentModel.findByIdAndUpdate(
+          assignmentId,
+          { score },
+          { runValidators: true, new: true }
+        );
+
+        if (!assignment) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: `Assignment with id ${assignmentId} was not found`,
+          });
+        }
+
+        wildcardDeleteCache("assignments-");
+
+        return { success: true, assignment };
+      } catch (err) {
+        console.error(
+          "An error occured while trying to mark assignment: ",
+          err
+        );
+        if (err instanceof TRPCError) throw err;
+
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occured",
         });
       }
     }),

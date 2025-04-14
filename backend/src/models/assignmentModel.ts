@@ -6,9 +6,8 @@ export const AssignmentZodSchema = z.object({
   lesson: z.string({ required_error: "Lesson is required" }),
   dueDate: z.date({ required_error: "Due date is required" }),
   status: z.enum(["pending", "submitted", "graded"]).default("pending"),
-
   submissionDate: z.date().optional(),
-
+  score: z.number().min(0, { message: "Score cannot be less than zero" }),
   submissionPublicId: z.string().optional(),
   submissionFileUrl: z.string().url().optional(),
   submissionFileName: z.string().optional(),
@@ -27,10 +26,11 @@ export const AssignmentSchema = new Schema<IStudentAssignment>(
     dueDate: { type: Date, required: true },
     status: {
       type: String,
-      enum: ["pending", "completed", "graded"],
+      enum: ["submitted", "graded"],
       default: "pending",
       required: true,
     },
+    score: Number,
     submissionDate: Date,
     submissionFileUrl: String,
     submissionPublicId: String,

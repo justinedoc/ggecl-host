@@ -80,6 +80,10 @@ const InstructorRegistrationSchema = z.object({
   googleSignIn: z.boolean().default(false),
 });
 
+const GetInstructorByIdZodSchema = z.object({
+  id: z.string().refine(isValidObjectId, { message: "Invalid instructor ID" }),
+});
+
 type TGetInstructorsInput = z.infer<typeof GetInstructorsZodSchema>;
 
 // Helper to generate cache key for instructor list.
@@ -234,13 +238,7 @@ export const instructorRouter = router({
 
   // Get a single instructor by ID.
   getById: procedure
-    .input(
-      z.object({
-        id: z
-          .string()
-          .refine(isValidObjectId, { message: "Invalid instructor ID" }),
-      })
-    )
+    .input(GetInstructorByIdZodSchema)
     .query(async ({ input }) => {
       const { id: instructorId } = input;
       const cacheKey = `instructor-${instructorId}`;
