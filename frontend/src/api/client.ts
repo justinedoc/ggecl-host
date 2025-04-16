@@ -17,8 +17,9 @@ if (!API_URL) {
 }
 
 const PUBLIC_URLS = [
-  "/student/login",
+  "/login",
   "/instructor/login",
+  "/admin/login",
   "/logout",
   "/",
 ];
@@ -76,14 +77,13 @@ export const createAxiosInstance = (): AxiosInstance => {
       Accept: "application/json",
     },
     withCredentials: true,
-    timeout: 20000,
+    timeout: 40000,
   });
 
   // Request interceptor: attach token for non‑public endpoints.
   instance.interceptors.request.use((config) => {
     const token = getAccessToken();
     const isPublic = PUBLIC_URLS.some((url) => config.url === url);
-    console.log(config.url);
     if (token && config.headers && !isPublic) {
       config.headers.Authorization = `Bearer ${token}`;
     }
