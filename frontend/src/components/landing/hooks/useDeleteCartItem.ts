@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 export function useDeleteCartItem() {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
   const { mutate: deleteItem, isPending: isDeleting } = useMutation(
     trpc.cart.deleteItem.mutationOptions({
       onSuccess() {

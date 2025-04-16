@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 export function useAddCartItem(courseTitle: string) {
-    const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   const { mutate: addItemMutate, isPending: isAdding } = useMutation(
     trpc.cart.addItem.mutationOptions({
       onSuccess: () => {
