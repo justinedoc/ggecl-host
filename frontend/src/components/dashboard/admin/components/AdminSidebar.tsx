@@ -70,6 +70,11 @@ import {
       icon: Users,
     },
     {
+      title: "Admin Management",
+      url: `${urlPrefix}/admins`,
+      icon: Users,
+    },
+    {
       title: "Settings",
       url: `${urlPrefix}/settings`,
       icon: Settings,

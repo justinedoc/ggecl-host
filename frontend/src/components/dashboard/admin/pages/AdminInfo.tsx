@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 type StatusType = "Pending" | "Active" | "Completed" | "Inactive" | "Withdrawn";
 
-interface Student {
+interface Admin {
   name: string;
   email: string;
   phone: string;
@@ -23,7 +23,7 @@ const statusClasses: Record<StatusType, string> = {
   Withdrawn: "bg-pink-100 text-pink-800 dark:bg-pink-600/20 dark:text-pink-400",
 };
 
-const data: Student[] = [
+const data: Admin[] = [
   {
     name: "Ada Johnson",
     email: "ada@email.com",
@@ -40,10 +40,10 @@ const data: Student[] = [
     progress: "0%",
     status: "Pending",
   },
-  // ...other Students
+  // ...other Admins
 ];
 
-const StudentRegistrationSchema = z.object({
+const AdminRegistrationSchema = z.object({
   email: z.string().email("Invalid email format"),
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
   gender: z
@@ -54,9 +54,9 @@ const StudentRegistrationSchema = z.object({
   picture: z.string().url("Invalid URL format").optional(),
 });
 
-type StudentRegistrationForm = z.infer<typeof StudentRegistrationSchema>;
+type AdminRegistrationForm = z.infer<typeof AdminRegistrationSchema>;
 
-const StudentInfo: React.FC = () => {
+const AdminInfo: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [rowsPerPage, setRowsPerPage] = useState<number>(5);
@@ -66,16 +66,16 @@ const StudentInfo: React.FC = () => {
     handleSubmit,
     formState: { errors },
     reset,
-  } = useForm<StudentRegistrationForm>({
-    resolver: zodResolver(StudentRegistrationSchema),
+  } = useForm<AdminRegistrationForm>({
+    resolver: zodResolver(AdminRegistrationSchema),
   });
 
-  const onSubmit = (data: StudentRegistrationForm) => {
-    console.log("New Student Data:", data);
+  const onSubmit = (data: AdminRegistrationForm) => {
+    console.log("New Admin Data:", data);
     reset();
   };
 
-  const filteredData: Student[] = data.filter((item) =>
+  const filteredData: Admin[] = data.filter((item) =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -100,9 +100,9 @@ const StudentInfo: React.FC = () => {
   return (
     <div className="p-4 bg-white dark:bg-gray-900 min-h-screen">
       <div className="grid grid-cols-1 gap-6">
-        {/* Add Student Section */}
+        {/* Add Admin Section */}
         <div className="bg-gray-100 dark:bg-gray-900 border border-gray-700 p-4 rounded-lg shadow">
-          <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4">Add Student</h2>
+          <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4">Add Admin</h2>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 grid grid-cols-4 gap-4">
             <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Full Name</label>
@@ -138,14 +138,14 @@ const StudentInfo: React.FC = () => {
               type="submit"
               className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition col-span-1"
             >
-              Add Student
+              Add Admin
             </button>
           </form>
         </div>
 
-        {/* Student Display Section */}
+        {/* Admin Display Section */}
         <div>
-          <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4">Student List</h2>
+          <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4">Admin List</h2>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
             <input
               type="text"
@@ -163,7 +163,7 @@ const StudentInfo: React.FC = () => {
                     <input type="checkbox" />
                   </th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">
-                    Student Name
+                    Admin Name
                   </th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Email</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">
@@ -178,21 +178,21 @@ const StudentInfo: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-gray-700">
-                {paginatedData.map((student) => (
-                  <tr key={student.email} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                {paginatedData.map((admin) => (
+                  <tr key={admin.email} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition">
                     <td className="px-4 py-3">
                       <input type="checkbox" />
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{student.name}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{student.email}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{student.phone}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{student.date}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{student.progress}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{admin.name}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{admin.email}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{admin.phone}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{admin.date}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{admin.progress}</td>
                     <td className="px-4 py-3 text-sm">
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${statusClasses[student.status]}`}
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${statusClasses[admin.status]}`}
                       >
-                        {student.status}
+                        {admin.status}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right text-gray-500 dark:text-gray-400">...</td>
@@ -244,4 +244,4 @@ const StudentInfo: React.FC = () => {
   );
 };
 
-export default StudentInfo;
+export default AdminInfo;
