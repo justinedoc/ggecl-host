@@ -151,6 +151,9 @@ const InstructorInfo = lazy(
 const StudentInfo = lazy(
   () => import("@/components/dashboard/admin/pages/StudentInfo.tsx"),
 );
+const AdminInfo = lazy(
+  () => import("@/components/dashboard/admin/pages/AdminInfo.tsx"),
+);
 const Schedule = lazy(
   () => import("@/components/dashboard/admin/pages/Shedule.tsx"),
 );
@@ -560,6 +563,14 @@ function App() {
             element={
               <Suspense fallback={<AuthPageLoading />}>
                 <StudentInfo />
+              </Suspense>
+            }
+          />
+          <Route
+            path="admins"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <AdminInfo />
               </Suspense>
             }
           />
