@@ -102,9 +102,7 @@ const IsCalendar = lazy(
 const AssignmentCheck = lazy(
   () => import("@/components/dashboard/instructor/pages/AssignmentCheck.tsx"),
 );
-const AddCourse = lazy(
-  () => import("@/components/dashboard/instructor/pages/AddCourse.tsx"),
-);
+
 const InstructorForgot = lazy(
   () => import("@/components/dashboard/instructor/pages/InstructorForgot.tsx"),
 );
@@ -135,9 +133,6 @@ const AdminSettings = lazy(
 );
 const AdminChat = lazy(
   () => import("@/components/dashboard/admin/pages/AdminChat.tsx"),
-);
-const Payments = lazy(
-  () => import("@/components/dashboard/admin/pages/Payments.tsx"),
 );
 const CourseManagement = lazy(
   () => import("@/components/dashboard/admin/pages/CourseManagement.tsx"),
@@ -393,14 +388,6 @@ function App() {
               </Suspense>
             }
           />
-          <Route
-            path="add-course"
-            element={
-              <Suspense fallback={<AuthPageLoading />}>
-                <AddCourse />
-              </Suspense>
-            }
-          />
 
           <Route
             path="grading"
@@ -579,14 +566,6 @@ function App() {
             element={
               <Suspense fallback={<AuthPageLoading />}>
                 <InstructorInfo />
-              </Suspense>
-            }
-          />
-          <Route
-            path="payments"
-            element={
-              <Suspense fallback={<AuthPageLoading />}>
-                <Payments />
               </Suspense>
             }
           />
