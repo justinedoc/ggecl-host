@@ -16,7 +16,6 @@ function isAxiosError(error: unknown): error is AxiosError {
 }
 
 export function formatAxiosError(error: unknown): { response: ErrorResponse } {
-  console.log("Error here: ", error);
   if (isAxiosError(error)) {
     const data = error.response?.data as ErrorResponse | undefined;
     return {

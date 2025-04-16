@@ -78,7 +78,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         });
       } catch (error: unknown) {
         if (!signal?.aborted) {
-          console.error("Auth initialization failed:", error);
+          console.error(
+            "Auth initialization failed:",
+            error instanceof Error ? error.message : "",
+          );
           authProvider.setAccessToken(null);
           setState({
             isAuthenticated: false,
@@ -117,7 +120,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             await refreshToken();
             console.log("Token refreshed");
           } catch (error) {
-            console.error("error in init auth useEffect: ", error);
+            console.error(
+              "error in init auth useEffect: ",
+              error instanceof Error ? error.message : "",
+            );
           }
         }
       },
