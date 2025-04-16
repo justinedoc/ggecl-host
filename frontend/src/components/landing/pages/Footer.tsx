@@ -8,13 +8,14 @@ function Footer() {
       <main className="flex flex-col md:min-h-[15rem] col-span-1">
         <img
           src={lightImg}
-          alt="logo"
+          alt="GGECL LMS Logo"
           loading="lazy"
           width={55}
         />
         <p className="font-light mb-5 my-3">
-          Lorem ipsum, dolor sit amet consectetur adipisicing elit. In,
-          reiciendis? Lorem ipsum dolor, sit amet consectetur adipisicing
+          GGECL is a smart learning platform designed to empower students, educators,
+          and organizations with cutting-edge tools, seamless collaboration, and an engaging
+          educational experience.
         </p>
 
         <div className="flex gap-5 items-center mt-auto">
@@ -22,7 +23,7 @@ function Footer() {
             <a
               key={link.name}
               href={link.url}
-              className={`text-[#808080] transition-all hover:text-blue-300/20`}
+              className="text-[#808080] transition-all hover:text-blue-300/20"
             >
               {link.icon}
             </a>
@@ -36,7 +37,7 @@ function Footer() {
             <table key={i}>
               <tbody>
                 <tr>
-                  <th className={`text-white font-semibold text-left pb-5`}>
+                  <th className="text-white font-semibold text-left pb-5">
                     {group[0]?.category}
                   </th>
                 </tr>

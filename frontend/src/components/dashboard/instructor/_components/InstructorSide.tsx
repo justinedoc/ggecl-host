@@ -48,19 +48,9 @@ import {
       icon: BookOpen,
     },
     {
-      title: "Add New Course",
-      url: `${urlPrefix}/add-course`,
-      icon: FileText,
-    },
-    {
       title: "Assignments",
       url: `${urlPrefix}/check-assignments`,
       icon: ClipboardPaste,
-    },
-    {
-      title: "Grading",
-      url: `${urlPrefix}/grading`,
-      icon: Book,
     },
     {
       title: "Today's Date",

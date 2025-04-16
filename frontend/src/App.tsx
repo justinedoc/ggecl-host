@@ -114,9 +114,7 @@ const Support = lazy(
   () => import("@/components/dashboard/instructor/pages/Support.tsx"),
 );
 
-const Grading = lazy(
-  () => import("@/components/dashboard/instructor/pages/Grading.tsx"),
-);
+
 const VideoCall = lazy(
   () => import("@/components/dashboard/instructor/pages/VideoCall.tsx"),
 );
@@ -385,15 +383,6 @@ function App() {
             element={
               <Suspense fallback={<AuthPageLoading />}>
                 <Support />
-              </Suspense>
-            }
-          />
-
-          <Route
-            path="grading"
-            element={
-              <Suspense fallback={<AuthPageLoading />}>
-                <Grading />
               </Suspense>
             }
           />

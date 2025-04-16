@@ -1,30 +1,6 @@
 import { useState } from "react";
 
-import { useAddCourse } from '../hooks/useAddCourse';  // Assuming a custom hook for handling API
-
 const AddCourseAd = () => {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [thumbnail, setThumbnail] = useState<File | null>(null);
-  const [video, setVideo] = useState<File | null>(null);
-  const [category, setCategory] = useState('');
-  const [price, setPrice] = useState('');
-  
-  const { mutate } = useAddCourse();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const formData = new FormData();
-    formData.append('title', title);
-    formData.append('description', description);
-    formData.append('category', category);
-    formData.append('price', price);
-    if (thumbnail) formData.append('thumbnail', thumbnail);
-    if (video) formData.append('video', video);
-
-    await mutate(formData);  // Call the API mutation to add the course
-  };
-
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
 
