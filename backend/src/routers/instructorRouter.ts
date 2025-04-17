@@ -215,10 +215,9 @@ export const instructorRouter = router({
           .select(
             "-password -refreshToken -emailVerificationExpires -emailVerificationToken -passwordUpdateToken -passwordUpdateTokenExpiry"
           )
-          .populate<{ courses: { title: string; image: string }[] }>(
-            "courses",
-            "title image"
-          )
+          .populate<{
+            courses: { _id: string; title: string; image: string }[];
+          }>("courses", "title image")
           .populate<{ students: { name: string; email: string }[] }>(
             "students",
             "name email"
@@ -384,7 +383,7 @@ export const instructorRouter = router({
 
         const isPasswordMatch = await bcrypt.compare(
           currentPassword,
-          instructor.password
+          instructor.password!
         );
 
         if (!isPasswordMatch) {

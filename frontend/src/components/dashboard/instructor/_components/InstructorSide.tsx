@@ -17,12 +17,9 @@ import {
   import {
     Calendar,
     ClipboardPaste,
-    // GraduationCap,
     MessagesSquare,
     Settings,
     Users,
-    Book,
-    FileText,
     BarChart,
     BookOpen,
   } from "lucide-react";
@@ -53,7 +50,7 @@ import {
       icon: ClipboardPaste,
     },
     {
-      title: "Today's Date",
+      title: "Events",
       url: `${urlPrefix}/calendar`,
       icon: Calendar,
     },
@@ -63,7 +60,7 @@ import {
       icon: MessagesSquare,
     },
     {
-      title: "Student Management",
+      title: "Manage Students",
       url: `${urlPrefix}/students`,
       icon: Users,
     },

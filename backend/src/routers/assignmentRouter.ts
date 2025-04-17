@@ -13,15 +13,19 @@ import { CACHE, wildcardDeleteCache } from "../utils/nodeCache.js";
 import { isValidObjectId } from "mongoose";
 import { ICourse } from "../models/coursesModel.js";
 
+type TSubmissionData = Partial<
+  Omit<IStudentAssignment, "title" | "lesson" | "dueDate" | "question">
+>;
+
 // -- Validation Schemas --------------------------------------------------
-const SubmissionCompleteSchema = z.object({
+const SubmissionCompleteZodSchema = z.object({
   assignmentId: z
     .string()
     .refine(isValidObjectId, { message: "Invalid assignment ID" }),
-  publicId: z.string().min(1),
-  fileName: z.string().min(1),
-  fileSize: z.number().positive(),
-  fileType: z.string().min(1),
+  publicId: z.string(),
+  fileName: z.string(),
+  fileSize: z.number(),
+  fileType: z.string(),
   fileUrl: z.string().url(),
 });
 
@@ -119,97 +123,142 @@ export const assignmentRouter = router({
     });
   }),
 
-  // Generate Cloudinary upload signature
   createCloudinarySignature: protectedProcedure
     .input(
       z.object({
-        assignmentId: z.string().refine(isValidObjectId),
+        assignmentId: z.string(),
         originalFileName: z.string().optional(),
       })
     )
     .mutation(({ ctx, input }) => {
       const { assignmentId, originalFileName } = input;
       const userId = ctx.user.id;
-      const timestamp = Math.floor(Date.now() / 1000);
+      const timestamp = Math.round(new Date().getTime() / 1000);
+
       const folder = `assignments/${assignmentId}/${userId}`;
-      const suffix = randomUUID();
-      const name = originalFileName?.replace(/\.[^.]+$/, "") || "submission";
-      const publicId = `${folder}/${name}-${suffix}`;
+      const uniqueSuffix = randomUUID();
+      const baseFileName = originalFileName
+        ? originalFileName.split(".").slice(0, -1).join(".")
+        : "submission";
+      const public_id = `${folder}/${baseFileName}-${uniqueSuffix}`;
+
+      const paramsToSign = {
+        folder,
+        public_id,
+        timestamp,
+      };
 
       try {
         const signature = cloudinary.utils.api_sign_request(
-          { folder, public_id: publicId, timestamp },
+          paramsToSign,
           envConfig.CLOUDINARY_API_SECRET!
         );
+
         return {
+          signature,
+          timestamp,
           apiKey: envConfig.CLOUDINARY_API_KEY!,
           cloudName: envConfig.CLOUDINARY_CLOUD_NAME!,
-          timestamp,
-          signature,
-          publicId,
+          folder,
+          publicId: public_id,
         };
-      } catch (err) {
-        console.error("Cloudinary signature error:", err);
+      } catch (error) {
+        console.error("Error signing Cloudinary request:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to generate upload signature",
+          message: "Failed to create upload signature.",
         });
       }
     }),
 
-  // Submit assignment
   markSubmissionComplete: protectedProcedure
-    .input(SubmissionCompleteSchema)
+    .input(SubmissionCompleteZodSchema)
     .mutation(async ({ ctx, input }) => {
       const { assignmentId, publicId, fileName, fileSize, fileType, fileUrl } =
         input;
+
       const userId = ctx.user.id;
 
-      const student = await studentModel.exists({
-        _id: userId,
-        assignments: assignmentId,
-      });
-
-      if (!student) {
-        await cloudinary.uploader
-          .destroy(publicId, { resource_type: "raw" })
-          .catch(console.error);
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Not authorized for this assignment",
-        });
-      }
-
       try {
-        const updated = await AssignmentModel.findByIdAndUpdate(
-          assignmentId,
-          {
-            status: "submitted",
-            submissionDate: new Date(),
-            submissionFileUrl: fileUrl,
-            submissionPublicId: publicId,
-            submissionFileName: fileName,
-            submissionFileSize: fileSize,
-            submissionFileType: fileType,
-          },
+        const student = await studentModel
+          .findOne({
+            _id: userId,
+            assignments: assignmentId,
+          })
+          .lean();
+
+        if (!student) {
+          console.error(
+            `Assignment ${assignmentId} not associated with student ${userId}. Attempting rollback.`
+          );
+          try {
+            await cloudinary.uploader.destroy(publicId, {
+              resource_type: "raw",
+            });
+            console.log(`Orphaned Cloudinary file ${publicId} deleted.`);
+          } catch (destroyError) {
+            console.error(
+              `Failed to delete orphaned Cloudinary file ${publicId}:`,
+              destroyError
+            );
+          }
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You are not assigned to this assignment.",
+          });
+        }
+
+        // 2. Prepare submission data for update
+        const submissionData: TSubmissionData = {
+          status: "submitted",
+          submissionDate: new Date(),
+          submissionFileUrl: fileUrl,
+          submissionPublicId: publicId,
+          submissionFileName: fileName,
+          submissionFileSize: fileSize,
+          submissionFileType: fileType,
+        };
+
+        // 3. Update the Assignment document
+        const updatedAssignment = await AssignmentModel.findOneAndUpdate(
+          { _id: assignmentId },
+          { $set: submissionData },
           { new: true, runValidators: true }
         );
-        if (!updated) throw new Error("DB update failed");
 
-        wildcardDeleteCache(`assignments-student-`);
-        wildcardDeleteCache(`assignments-instructor-`);
+        if (!updatedAssignment) {
+          console.error(
+            `Assignment not found for update: ${assignmentId}. Attempting rollback.`
+          );
+          try {
+            await cloudinary.uploader.destroy(publicId, {
+              resource_type: "raw",
+            });
+            console.log(
+              `Cloudinary file ${publicId} deleted due to failed DB update.`
+            );
+          } catch (destroyError) {
+            console.error(
+              `Failed to delete Cloudinary file ${publicId} after DB error:`,
+              destroyError
+            );
+          }
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Assignment could not be updated.",
+          });
+        }
 
-        return updated;
-      } catch (err) {
-        // Rollback on error
-        await cloudinary.uploader
-          .destroy(publicId, { resource_type: "raw" })
-          .catch(console.error);
-        console.error("Submission update error:", err);
+        return { success: true, assignment: updatedAssignment };
+      } catch (error) {
+        console.error("Error marking submission complete:", error);
+
+        if (error instanceof TRPCError) throw error;
+
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to submit assignment",
-          cause: err,
+          message: "Failed to update assignment submission.",
+          cause: error,
         });
       }
     }),
