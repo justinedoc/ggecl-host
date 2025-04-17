@@ -6,6 +6,7 @@ export interface ICourse {
   title: string;
   instructor: Types.ObjectId;
   description: string;
+  videoUrl: string;
   certification: string;
   syllabus: string[];
   reviews: Review[];
@@ -26,9 +27,13 @@ export const CourseSchema = new Schema<ICourse>({
     ref: "instructor",
     required: true,
   },
+  videoUrl: {
+    type: String,
+    required: true,
+  },
   description: { type: String, required: true },
   certification: { type: String, defualt: "Normal" },
-  syllabus: { type: [String], default: [], required: true },
+  syllabus: { type: [String], default: [] },
   reviews: { type: [ReviewSchema], default: [] },
   totalRating: { type: Number },
   totalStar: { type: Number },
@@ -37,7 +42,7 @@ export const CourseSchema = new Schema<ICourse>({
   level: { type: String, required: true },
   price: { type: Number, required: true },
   img: { type: String, required: true },
-  badge: { type: String },
+  badge: String,
 });
 
 export default model<ICourse>("course", CourseSchema);

@@ -21,12 +21,12 @@ const AdminForm: React.FC = () => {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<AdminFormValues>({
     resolver: zodResolver(AdminRegistrationSchema),
   });
 
-  const { enrollAdmin } = useEnrollAdmin();
+  const { enrollAdmin, isEnrolling } = useEnrollAdmin();
 
   const onSubmit = async (data: AdminFormValues) => {
     enrollAdmin(data, {
@@ -79,10 +79,10 @@ const AdminForm: React.FC = () => {
 
         <button
           type="submit"
-          disabled={isSubmitting}
-          className="w-fit px-6 rounded-md bg-blue-600 py-2 font-medium text-white transition hover:bg-blue-700 disabled:opacity-50 md:col-span-3"
+          disabled={isEnrolling}
+          className="w-fit rounded-md bg-blue-600 px-6 py-2 font-medium text-white transition hover:bg-blue-700 disabled:opacity-50 md:col-span-3"
         >
-          {isSubmitting ? "Enrolling..." : "Add Admin"}
+          {isEnrolling ? "Enrolling..." : "Add Admin"}
         </button>
       </form>
     </div>
@@ -191,7 +191,7 @@ const AdminList: React.FC = () => {
                   Loading...
                 </td>
               </tr>
-            ) : paginated.length ? (
+            ) : paginated.length !== 0 ? (
               paginated.map((admin) => (
                 <tr
                   key={admin.email}
