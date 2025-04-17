@@ -1,5 +1,6 @@
 import { procedure, protectedProcedure, router } from "../trpc.js";
 import { z } from "zod";
+import bcrypt from "bcrypt";
 import { CACHE, wildcardDeleteCache } from "../utils/nodeCache.js";
 import instructorModel, { IInstructor } from "../models/instructorModel.js";
 import { TRPCError } from "@trpc/server";
@@ -15,6 +16,7 @@ import {
   ENROLL_EMAIL_SUBJECT,
   ENROLL_EMAIL_TEXT,
 } from "../constants/messages.js";
+import { SALT_ROUNDS } from "../constants/auth.js";
 
 // Define the instructor summary type by omitting sensitive fields.
 type IInstructorSummary = Omit<
@@ -79,6 +81,19 @@ const InstructorRegistrationSchema = z.object({
   picture: z.string().url("Invalid URL format").optional(),
 });
 
+const PasswordUpdateZodSchema = z
+  .object({
+    currentPassword: z
+      .string()
+      .min(1, { message: "Current password is required." }),
+    newPassword: z
+      .string()
+      .min(6, { message: "Password must be at least 8 characters long." }),
+  })
+  .refine((data) => data.currentPassword !== data.newPassword, {
+    message: "Old password cannot be same as new password",
+  });
+
 const GetInstructorByIdZodSchema = z.object({
   id: z.string().refine(isValidObjectId, { message: "Invalid instructor ID" }),
 });
@@ -95,10 +110,10 @@ export const instructorRouter = router({
   enroll: protectedProcedure
     .input(InstructorRegistrationSchema)
     .mutation(async ({ ctx, input }) => {
-      const { id: adminId, role } = ctx.user;
+      const { id: instructorId, role } = ctx.user;
 
       try {
-        const adminExists = await adminModel.exists({ _id: adminId });
+        const adminExists = await adminModel.exists({ _id: instructorId });
 
         if (!adminExists || role !== "admin") {
           throw new TRPCError({
@@ -256,10 +271,9 @@ export const instructorRouter = router({
           .select(
             "-password -refreshToken -emailVerificationExpires -emailVerificationToken -passwordUpdateToken -passwordUpdateTokenExpiry"
           )
-          .populate<{ courses: { title: string; image: string }[] }>(
-            "courses",
-            "title image"
-          )
+          .populate<{
+            courses: { _id: string; title: string; image: string }[];
+          }>("courses", "title image")
           .populate<{ students: { name: string; email: string }[] }>(
             "students",
             "name email"
@@ -296,7 +310,6 @@ export const instructorRouter = router({
       const { data, id: instructorId } = input;
 
       try {
-        // Check if the instructor exists.
         const instructorExists = await instructorModel.exists({
           _id: instructorId,
         });
@@ -343,6 +356,62 @@ export const instructorRouter = router({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "An unexpected error occurred",
+        });
+      }
+    }),
+
+  updatePasswordWithOld: protectedProcedure
+    .input(PasswordUpdateZodSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { id: instructorId, role } = ctx.user;
+      const { currentPassword, newPassword } = input;
+
+      if (role !== "instructor") {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Insufficent permission",
+        });
+      }
+
+      try {
+        const instructor = await instructorModel.findById(instructorId);
+        if (!instructor) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Instructor user not found",
+          });
+        }
+
+        const isPasswordMatch = await bcrypt.compare(
+          currentPassword,
+          instructor.password
+        );
+
+        if (!isPasswordMatch) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Incorrect credentials",
+          });
+        }
+
+        const newHashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+        instructor.password = newHashedPassword;
+
+        await instructor.save();
+
+        return { success: true };
+      } catch (error) {
+        console.error(
+          "An error occured while trying to update admin password: ",
+          error instanceof Error ? error.message : error
+        );
+
+        if (error instanceof TRPCError) throw error;
+
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Could not update password",
         });
       }
     }),

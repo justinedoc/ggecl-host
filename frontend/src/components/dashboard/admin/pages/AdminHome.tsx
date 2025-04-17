@@ -8,6 +8,7 @@ import {
   LucideUserRoundPlus,
   LucideShieldPlus,
 } from "lucide-react";
+import { Link } from "react-router";
 import { JSX } from "react";
 
 // Data & Types
@@ -16,7 +17,6 @@ interface StatCardProps {
   value: string | number;
   icon: JSX.Element;
 }
-
 
 const stats: StatCardProps[] = [
   {
@@ -50,21 +50,24 @@ const ctaBanners: CtaBannerProps[] = [
     description: "Easily onboard new learners to your platform.",
     link: "/admin/dashboard/students",
     icon: <LucideUserPlus className="h-6 w-6 text-blue-400" />,
-    colorClass: "border border-blue-300 dark:border-blue-900 text-blue-700 dark:text-blue-300",
+    colorClass:
+      "border border-blue-300 dark:border-blue-900 text-blue-700 dark:text-blue-300",
   },
   {
     title: "Invite Instructor",
     description: "Grow your teaching team with skilled professionals.",
     link: "/admin/dashboard/instructors",
     icon: <LucideUserRoundPlus className="h-6 w-6 text-blue-500" />,
-    colorClass: "border border-blue-100 dark:border-blue-900 text-blue-700 dark:text-blue-300",
+    colorClass:
+      "border border-blue-100 dark:border-blue-900 text-blue-700 dark:text-blue-300",
   },
   {
     title: "Add Administrator",
     description: "Grant access to manage the platform effectively.",
     link: "/admin/dashboard/admins",
     icon: <LucideShieldPlus className="h-6 w-6 text-red-500" />,
-    colorClass: "border border-red-100 dark:border-red-900 text-red-700 dark:text-red-300",
+    colorClass:
+      "border border-red-100 dark:border-red-900 text-red-700 dark:text-red-300",
   },
 ];
 
@@ -108,20 +111,19 @@ const Dashboard: React.FC = () => {
             className={`rounded-lg p-6 shadow-md ${banner.colorClass} dark:border dark:border-gray-700`}
             whileHover={{ scale: 1.02 }}
           >
-            <div className="flex items-center mb-4">
+            <div className="mb-4 flex items-center">
               {banner.icon}
               <h3 className="ml-2 text-lg font-semibold">{banner.title}</h3>
             </div>
-            <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+            <p className="mb-3 text-sm text-gray-700 dark:text-gray-300">
               {banner.description}
             </p>
-            <motion.a
-              href={banner.link}
-              className="inline-block rounded-md bg-gray-800 px-4 py-2 text-sm font-medium text-gray-50 shadow-sm hover:bg-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-600"
-              whileTap={{ scale: 0.95 }}
+            <Link
+              to={banner.link}
+              className="active:scale-105 inline-block rounded-md bg-gray-800 px-4 py-2 text-sm font-medium text-gray-50 shadow-sm hover:bg-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-600"
             >
               Go to {banner.title}
-            </motion.a>
+            </Link>
           </motion.div>
         ))}
       </div>

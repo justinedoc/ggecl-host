@@ -1,24 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useStudents } from "../hooks/useStudents";
-import { useEnrollStudent } from "../hooks/useEnrollStudent";
-
-// Define the registration schema with Zod validation
-const StudentRegistrationSchema = z.object({
-  email: z.string().email("Invalid email format"),
-  fullName: z.string().min(2, "Full name must be at least 2 characters"),
-  gender: z
-    .enum(["male", "female", "other"], {
-      errorMap: () => ({ message: "Invalid gender selection" }),
-    })
-    .default("other"),
-  picture: z.string().url("Invalid URL format").optional(),
-});
-
-type StudentRegistrationForm = z.infer<typeof StudentRegistrationSchema>;
 
 const Studentlist: React.FC = () => {
   // Local state for search, pagination, and rows per page
@@ -29,35 +11,14 @@ const Studentlist: React.FC = () => {
   // Extract student data and loading state
   const { loadingStudents, students } = useStudents({});
 
-  const { enrollStudent, isEnrolling } = useEnrollStudent();
-
-  // Set up form with react-hook-form and zod schema resolver
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-  } = useForm<StudentRegistrationForm>({
-    resolver: zodResolver(StudentRegistrationSchema),
-  });
-
   // Reset page to first when search term changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  // Handler for adding a student
-  const onSubmit = (data: StudentRegistrationForm) => {
-    console.log("New Student Data:", data);
-    enrollStudent(data);
-    setTimeout(() => {
-      reset();
-    }, 2000);
-  };
-
   // Filter students by the search term (case-insensitive)
   const filteredStudents = students.filter((student) =>
-    student.fullName.toLowerCase().includes(searchTerm.toLowerCase())
+    student.fullName.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   // Calculate pagination details
@@ -65,7 +26,7 @@ const Studentlist: React.FC = () => {
   const currentDataStart = (currentPage - 1) * rowsPerPage;
   const paginatedStudents = filteredStudents.slice(
     currentDataStart,
-    currentDataStart + rowsPerPage
+    currentDataStart + rowsPerPage,
   );
 
   // Handlers for pagination and rows changes
@@ -85,76 +46,6 @@ const Studentlist: React.FC = () => {
   return (
     <div className="min-h-screen bg-white p-4 dark:bg-gray-900">
       <div className="grid grid-cols-1 gap-6">
-        {/* Add Student Section */}
-        <div className="rounded-lg border  p-4 shadow dark:bg-gray-900">
-          <h2 className="mb-4 text-lg font-semibold text-gray-700 dark:text-gray-200">
-            Add Student
-          </h2>
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="grid grid-cols-4 gap-4"
-          >
-            {/* Full Name Field */}
-            <div className="col-span-2">
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Full Name
-              </label>
-              <input
-                type="text"
-                {...register("fullName")}
-                className="w-full rounded-md border px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-              />
-              {errors.fullName && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.fullName.message}
-                </p>
-              )}
-            </div>
-            {/* Email Field */}
-            <div className="col-span-2">
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Email
-              </label>
-              <input
-                type="email"
-                {...register("email")}
-                className="w-full rounded-md border px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-              />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.email.message}
-                </p>
-              )}
-            </div>
-            {/* Gender Field */}
-            <div className="col-span-4">
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Gender
-              </label>
-              <select
-                {...register("gender")}
-                className="w-full rounded-md border px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-              >
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
-              </select>
-              {errors.gender && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.gender.message}
-                </p>
-              )}
-            </div>
-            <button
-              disabled={isEnrolling}
-              type="submit"
-              className="col-span-1 w-full rounded-md bg-blue-600 py-2 text-white transition hover:bg-blue-700"
-            >
-              {isEnrolling ? "Enrolling" : " Add Student"}
-            </button>
-          </form>
-        </div>
-
         {/* Student List Section */}
         <div>
           <h2 className="mb-4 text-lg font-semibold text-gray-700 dark:text-gray-200">

@@ -1,6 +1,6 @@
 import profileImg from "@/assets/images/Frame 427319048.png";
 import { FaPlayCircle, FaUserCircle } from "react-icons/fa";
-import {Link} from "react-router-dom"
+import { Link } from "react-router";
 
 const features = [
   {
@@ -33,15 +33,11 @@ const features = [
 import { motion } from "framer-motion";
 
 import {
-  LucideGraduationCap,
-  LucideUsers,
-  LucideBarChart3,
   LucideUserPlus,
   LucideUserRoundPlus,
   LucideShieldPlus,
 } from "lucide-react";
 import { JSX } from "react";
-
 
 interface CtaBannerProps {
   title: string;
@@ -57,24 +53,26 @@ const ctaBanners: CtaBannerProps[] = [
     description: "Easily onboard new learners to your platform.",
     link: "/instructor/dashboard/check-assignments",
     icon: <LucideUserPlus className="h-6 w-6 text-blue-400" />,
-    colorClass: "border border-blue-300 dark:border-blue-900 text-blue-700 dark:text-blue-300",
+    colorClass:
+      "border border-blue-300 dark:border-blue-900 text-blue-700 dark:text-blue-300",
   },
   {
     title: "View My Courses",
     description: "Grow your teaching team with skilled professionals.",
     link: "/instructor/dashboard/courses",
     icon: <LucideUserRoundPlus className="h-6 w-6 text-blue-500" />,
-    colorClass: "border border-blue-100 dark:border-blue-900 text-blue-700 dark:text-blue-300",
+    colorClass:
+      "border border-blue-100 dark:border-blue-900 text-blue-700 dark:text-blue-300",
   },
   {
     title: "View list of Students",
     description: "Grant access to manage the platform effectively.",
     link: "/instructor/dashboard/students",
     icon: <LucideShieldPlus className="h-6 w-6 text-red-500" />,
-    colorClass: "border border-red-100 dark:border-red-900 text-red-700 dark:text-red-300",
+    colorClass:
+      "border border-red-100 dark:border-red-900 text-red-700 dark:text-red-300",
   },
 ];
-
 
 const InstructorHome = () => {
   return (
@@ -128,37 +126,38 @@ const InstructorHome = () => {
           </div>
         </div>
 
-        <Link to="/instructor/dashboard/settings" className="btn rounded-md px-4 py-2 text-white">
+        <Link
+          to="/instructor/dashboard/settings"
+          className="btn rounded-md px-4 py-2 text-white"
+        >
           Edit Bio
         </Link>
       </div>
 
-
       {/* CTA Banners */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 mt-5">
-              {ctaBanners.map((banner, index) => (
-                <motion.div
-                  key={index}
-                  className={`rounded-lg p-6 shadow-md ${banner.colorClass} dark:border dark:border-gray-700`}
-                  whileHover={{ scale: 1.02 }}
-                >
-                  <div className="flex items-center mb-4">
-                    {banner.icon}
-                    <h3 className="ml-2 text-lg font-semibold">{banner.title}</h3>
-                  </div>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
-                    {banner.description}
-                  </p>
-                  <motion.a
-                    href={banner.link}
-                    className="inline-block rounded-md bg-gray-800 px-4 py-2 text-sm font-medium text-gray-50 shadow-sm hover:bg-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-600"
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    Go to {banner.title}
-                  </motion.a>
-                </motion.div>
-              ))}
+      <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
+        {ctaBanners.map((banner, index) => (
+          <motion.div
+            key={index}
+            className={`rounded-lg p-6 shadow-md ${banner.colorClass} dark:border dark:border-gray-700`}
+            whileHover={{ scale: 1.02 }}
+          >
+            <div className="mb-4 flex items-center">
+              {banner.icon}
+              <h3 className="ml-2 text-lg font-semibold">{banner.title}</h3>
             </div>
+            <p className="mb-3 text-sm text-gray-700 dark:text-gray-300">
+              {banner.description}
+            </p>
+            <Link
+              to={banner.link}
+              className="inline-block rounded-md bg-gray-800 px-4 py-2 text-sm font-medium text-gray-50 shadow-sm hover:bg-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-600"
+            >
+              Go to {banner.title}
+            </Link>
+          </motion.div>
+        ))}
+      </div>
     </div>
   );
 };

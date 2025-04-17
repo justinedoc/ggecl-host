@@ -11,252 +11,240 @@ import AssignmentModel, {
 } from "../models/assignmentModel.js";
 import { CACHE, wildcardDeleteCache } from "../utils/nodeCache.js";
 import { isValidObjectId } from "mongoose";
+import { ICourse } from "../models/coursesModel.js";
 
-type TSubmissionData = Partial<
-  Omit<IStudentAssignment, "title" | "lesson" | "dueDate">
->;
-const SubmissionCompleteZodSchema = z.object({
-  assignmentId: z.string(),
-  publicId: z.string(),
-  fileName: z.string(),
-  fileSize: z.number(),
-  fileType: z.string(),
+// -- Validation Schemas --------------------------------------------------
+const SubmissionCompleteSchema = z.object({
+  assignmentId: z
+    .string()
+    .refine(isValidObjectId, { message: "Invalid assignment ID" }),
+  publicId: z.string().min(1),
+  fileName: z.string().min(1),
+  fileSize: z.number().positive(),
+  fileType: z.string().min(1),
   fileUrl: z.string().url(),
 });
 
-const MarkAssignmentZodSchema = z.object({
+const MarkAssignmentSchema = z.object({
   assignmentId: z
     .string()
-    .refine(isValidObjectId, { message: "Invalid assignment id" }),
-
-  score: z
-    .number()
-    .min(0, { message: "Assignment score cannot be less than zero" }),
+    .refine(isValidObjectId, { message: "Invalid assignment ID" }),
+  grade: z.enum(["A", "B", "C", "D", "E", "F"]),
+  remark: z.string().optional(),
 });
 
+const CreateAssignmentSchema = z.object({
+  title: z.string().min(2, { message: "Title must be at least 2 characters" }),
+  course: z.string().refine(isValidObjectId, { message: "Invalid course ID" }),
+  question: z.string(),
+  dueDate: z.date(),
+});
+
+async function getCacheOrFetch<T>(
+  key: string,
+  fetcher: () => Promise<T>
+): Promise<T> {
+  const cached = CACHE.get<T>(key);
+  if (cached) {
+    console.debug(`[CACHE] hit ${key}`);
+    return cached;
+  }
+  console.debug(`[CACHE] miss ${key}`);
+  const data = await fetcher();
+  CACHE.set(key, data);
+  console.debug(`[CACHE] set ${key}`);
+  return data;
+}
+
 export const assignmentRouter = router({
+  create: protectedProcedure
+    .input(CreateAssignmentSchema)
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const assignment = await AssignmentModel.create({
+          ...input,
+          instructorId: ctx.user.id,
+        });
+        // Invalidate instructor cache
+        wildcardDeleteCache(`assignments-instructor-${ctx.user.id}`);
+        return assignment;
+      } catch (err) {
+        console.error("Failed to create assignment:", err);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Could not create assignment",
+          cause: err,
+        });
+      }
+    }),
+
+  // Get all assignments for a student
   getAllForStudent: protectedProcedure.query(async ({ ctx }) => {
-    const { id: studentId } = ctx.user;
+    const studentId = ctx.user.id;
+    const cacheKey = `assignments-student-${studentId}`;
 
-    const cacheKey = `assignments-${studentId}`;
-
-    const cachedAssignments = CACHE.get<IStudentAssignment[]>(cacheKey);
-    if (cachedAssignments) {
-      console.log(`[CACHE] Hit for ${cacheKey}`);
-      return cachedAssignments;
-    }
-
-    console.log(`[CACHE] Miss for ${cacheKey}`);
-
-    try {
+    return getCacheOrFetch(cacheKey, async () => {
       const student = await studentModel
         .findById(studentId)
         .populate<{ assignments: IStudentAssignment[] }>("assignments")
         .lean();
-
       if (!student) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Student was not found",
+          message: "Student not found",
+        });
+      }
+      return student.assignments;
+    });
+  }),
+
+  // Get all assignments for an instructor
+  getAllForInstructor: protectedProcedure.query(async ({ ctx }) => {
+    const instructorId = ctx.user.id;
+    const cacheKey = `assignments-instructor-${instructorId}`;
+
+    return getCacheOrFetch(cacheKey, async () => {
+      const assignments = await AssignmentModel.find({ instructorId })
+        .populate<{ course: ICourse }>("course")
+        .lean();
+
+      if (!assignments) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No assignments found",
         });
       }
 
-      CACHE.set(cacheKey, student.assignments);
-      console.log(`[CACHE] Set for ${cacheKey}`);
-
-      return student.assignments;
-    } catch (error) {
-      console.error("An error occured while getting all assignments: ", error);
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "An unexpected error occured",
-        cause: error,
-      });
-    }
+      return assignments;
+    });
   }),
 
+  // Generate Cloudinary upload signature
   createCloudinarySignature: protectedProcedure
     .input(
       z.object({
-        assignmentId: z.string(),
+        assignmentId: z.string().refine(isValidObjectId),
         originalFileName: z.string().optional(),
       })
     )
     .mutation(({ ctx, input }) => {
       const { assignmentId, originalFileName } = input;
       const userId = ctx.user.id;
-      const timestamp = Math.round(new Date().getTime() / 1000);
-
+      const timestamp = Math.floor(Date.now() / 1000);
       const folder = `assignments/${assignmentId}/${userId}`;
-      const uniqueSuffix = randomUUID();
-      const baseFileName = originalFileName
-        ? originalFileName.split(".").slice(0, -1).join(".")
-        : "submission";
-      const public_id = `${folder}/${baseFileName}-${uniqueSuffix}`;
-
-      const paramsToSign = {
-        folder,
-        public_id,
-        timestamp,
-      };
+      const suffix = randomUUID();
+      const name = originalFileName?.replace(/\.[^.]+$/, "") || "submission";
+      const publicId = `${folder}/${name}-${suffix}`;
 
       try {
         const signature = cloudinary.utils.api_sign_request(
-          paramsToSign,
+          { folder, public_id: publicId, timestamp },
           envConfig.CLOUDINARY_API_SECRET!
         );
-
         return {
-          signature,
-          timestamp,
           apiKey: envConfig.CLOUDINARY_API_KEY!,
           cloudName: envConfig.CLOUDINARY_CLOUD_NAME!,
-          folder,
-          publicId: public_id,
+          timestamp,
+          signature,
+          publicId,
         };
-      } catch (error) {
-        console.error("Error signing Cloudinary request:", error);
+      } catch (err) {
+        console.error("Cloudinary signature error:", err);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to create upload signature.",
+          message: "Failed to generate upload signature",
         });
       }
     }),
 
+  // Submit assignment
   markSubmissionComplete: protectedProcedure
-    .input(SubmissionCompleteZodSchema)
+    .input(SubmissionCompleteSchema)
     .mutation(async ({ ctx, input }) => {
       const { assignmentId, publicId, fileName, fileSize, fileType, fileUrl } =
         input;
-
       const userId = ctx.user.id;
 
+      const student = await studentModel.exists({
+        _id: userId,
+        assignments: assignmentId,
+      });
+
+      if (!student) {
+        await cloudinary.uploader
+          .destroy(publicId, { resource_type: "raw" })
+          .catch(console.error);
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Not authorized for this assignment",
+        });
+      }
+
       try {
-        const student = await studentModel
-          .findOne({
-            _id: userId,
-            assignments: assignmentId,
-          })
-          .lean();
-
-        if (!student) {
-          console.error(
-            `Assignment ${assignmentId} not associated with student ${userId}. Attempting rollback.`
-          );
-          try {
-            await cloudinary.uploader.destroy(publicId, {
-              resource_type: "raw",
-            });
-            console.log(`Orphaned Cloudinary file ${publicId} deleted.`);
-          } catch (destroyError) {
-            console.error(
-              `Failed to delete orphaned Cloudinary file ${publicId}:`,
-              destroyError
-            );
-          }
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "You are not assigned to this assignment.",
-          });
-        }
-
-        // 2. Prepare submission data for update
-        const submissionData: TSubmissionData = {
-          status: "submitted",
-          submissionDate: new Date(),
-          submissionFileUrl: fileUrl,
-          submissionPublicId: publicId,
-          submissionFileName: fileName,
-          submissionFileSize: fileSize,
-          submissionFileType: fileType,
-        };
-
-        // 3. Update the Assignment document
-        const updatedAssignment = await AssignmentModel.findOneAndUpdate(
-          { _id: assignmentId },
-          { $set: submissionData },
+        const updated = await AssignmentModel.findByIdAndUpdate(
+          assignmentId,
+          {
+            status: "submitted",
+            submissionDate: new Date(),
+            submissionFileUrl: fileUrl,
+            submissionPublicId: publicId,
+            submissionFileName: fileName,
+            submissionFileSize: fileSize,
+            submissionFileType: fileType,
+          },
           { new: true, runValidators: true }
         );
+        if (!updated) throw new Error("DB update failed");
 
-        if (!updatedAssignment) {
-          console.error(
-            `Assignment not found for update: ${assignmentId}. Attempting rollback.`
-          );
-          try {
-            await cloudinary.uploader.destroy(publicId, {
-              resource_type: "raw",
-            });
-            console.log(
-              `Cloudinary file ${publicId} deleted due to failed DB update.`
-            );
-          } catch (destroyError) {
-            console.error(
-              `Failed to delete Cloudinary file ${publicId} after DB error:`,
-              destroyError
-            );
-          }
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Assignment could not be updated.",
-          });
-        }
+        wildcardDeleteCache(`assignments-student-`);
+        wildcardDeleteCache(`assignments-instructor-`);
 
-        return { success: true, assignment: updatedAssignment };
-      } catch (error) {
-        console.error("Error marking submission complete:", error);
-
-        if (error instanceof TRPCError) throw error;
-
+        return updated;
+      } catch (err) {
+        // Rollback on error
+        await cloudinary.uploader
+          .destroy(publicId, { resource_type: "raw" })
+          .catch(console.error);
+        console.error("Submission update error:", err);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to update assignment submission.",
-          cause: error,
+          message: "Failed to submit assignment",
+          cause: err,
         });
       }
     }),
 
+  // Grade assignment
   mark: protectedProcedure
-    .input(MarkAssignmentZodSchema)
-    .mutation(async ({ input, ctx }) => {
+    .input(MarkAssignmentSchema)
+    .mutation(async ({ ctx, input }) => {
       const { role } = ctx.user;
-      const { assignmentId, score } = input;
-
-      if (role !== "admin" && role !== "instructor") {
+      if (!["admin", "instructor"].includes(role)) {
         throw new TRPCError({
           code: "UNAUTHORIZED",
-          message: "Only instructors and admins can mark assignments",
+          message: "Insufficient permissions",
         });
       }
 
       try {
-        const assignment = await AssignmentModel.findByIdAndUpdate(
-          assignmentId,
-          { score },
-          { runValidators: true, new: true }
+        const updated = await AssignmentModel.findByIdAndUpdate(
+          input.assignmentId,
+          { grade: input.grade, status: "graded", remark: input.remark },
+          { new: true, runValidators: true }
         );
 
-        if (!assignment) {
+        if (!updated) {
           throw new TRPCError({
             code: "NOT_FOUND",
-            message: `Assignment with id ${assignmentId} was not found`,
+            message: "Assignment not found",
           });
         }
 
-        wildcardDeleteCache("assignments-");
-
-        return { success: true, assignment };
+        wildcardDeleteCache(`assignments-`);
+        return updated;
       } catch (err) {
-        console.error(
-          "An error occured while trying to mark assignment: ",
-          err
-        );
+        console.error("Grading error:", err);
         if (err instanceof TRPCError) throw err;
-
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "An unexpected error occured",
-        });
       }
     }),
 });

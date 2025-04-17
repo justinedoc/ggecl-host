@@ -1,16 +1,34 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import React, { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
-import { Assignment } from "@/components/dashboard/admin/pages/AssignmentAd"; // Import the Assignment interface
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { format } from "date-fns";
+import { toast } from "sonner";
+import { Assignment } from "@/utils/trpc";
 
 // Define the Grade type
-type Grade = "A" | "B" | "C" | "D" | null;
+export type Grade = "A" | "B" | "C" | "D" | "E" | "F" | null;
 
 interface MarkAssignmentModalProps {
-  assignment: Assignment | null; // Now TypeScript knows what 'Assignment' is
+  assignment: Assignment | null;
   isOpen: boolean;
   onClose: () => void;
-  onGradeSubmitted: (assignmentId: string, grade: Grade) => void;
+  onGradeSubmitted: (id: string, grade: Grade, remark: string) => void;
+  isGrading: boolean;
 }
 
 const MarkAssignmentModal: React.FC<MarkAssignmentModalProps> = ({
@@ -18,54 +36,70 @@ const MarkAssignmentModal: React.FC<MarkAssignmentModalProps> = ({
   isOpen,
   onClose,
   onGradeSubmitted,
+  isGrading,
 }) => {
   const [grade, setGrade] = useState<Grade>(null);
+  const [remark, setRemark] = useState<string>("");
 
-  if (!assignment) {
-    return null;
-  }
-
-  const handleGradeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setGrade(event.target.value as Grade);
-  };
-
-  const handleSubmitGrade = () => {
-    if (assignment._id && grade) {
-      onGradeSubmitted(assignment._id, grade);
-      onClose(); // Close the modal after submitting the grade
-    } else {
-      alert("Please select a grade before submitting.");
+  // Reset fields when opening
+  useEffect(() => {
+    if (isOpen) {
+      setGrade(null);
+      setRemark("");
     }
+  }, [isOpen]);
+
+  if (!assignment) return null;
+
+  const handleSubmit = () => {
+    if (!grade) {
+      toast.info("Please select a grade");
+      return;
+    }
+    onGradeSubmitted(assignment._id.toString(), grade, remark);
+    onClose();
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[525px]">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Mark Assignment</DialogTitle>
         </DialogHeader>
 
-        <div className="grid gap-4 py-4">
-          {/* View Section */}
+        <div className="space-y-6">
+          {/* Details */}
           <div className="border-b pb-4">
-            <h3 className="text-lg font-semibold mb-2">Assignment Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <h3 className="mb-3 text-lg font-semibold">Assignment Details</h3>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Title:</p>
-                <p className="font-semibold">{assignment.title}</p>
+                <p className="text-sm text-gray-500">Title</p>
+                <p className="font-medium">{assignment.title}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Course:</p>
-                <p className="font-semibold">{assignment.course}</p>
+                <p className="text-sm text-gray-500">Course</p>
+                <p className="font-medium">{assignment.course.title}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Due Date:</p>
-                <p className="font-semibold">{assignment.dueDate}</p>
+                <p className="text-sm text-gray-500">Question</p>
+                <p className="font-medium">{assignment.question}</p>
               </div>
-              {assignment.pdfUrl && (
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Submission:</p>
-                  <Button size="sm" onClick={() => window.open(assignment.pdfUrl, "_blank")}>
+              <div>
+                <p className="text-sm text-gray-500">Due Date</p>
+                <p className="font-medium">
+                  {format(new Date(assignment.dueDate), "dd-MM-yyyy")}
+                </p>
+              </div>
+              {assignment.submissionFileUrl && (
+                <div className="md:col-span-2">
+                  <p className="text-sm text-gray-500">Submission</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      window.open(assignment.submissionFileUrl, "_blank")
+                    }
+                  >
                     View File
                   </Button>
                 </div>
@@ -73,35 +107,48 @@ const MarkAssignmentModal: React.FC<MarkAssignmentModalProps> = ({
             </div>
           </div>
 
-          {/* Grade Section */}
-          <div className="pt-4">
-            <h3 className="text-lg font-semibold mb-2">Grade Assignment</h3>
-            <div className="grid grid-cols-1 gap-2">
-              <label htmlFor="grade" className="text-sm text-gray-500 dark:text-gray-400">
-                Select Grade:
-              </label>
-              <select
-                id="grade"
-                value={grade || ""}
-                onChange={handleGradeChange}
-                className="rounded border bg-transparent py-2 px-3 text-sm"
-              >
-                <option value="">-- Select Grade --</option>
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="C">C</option>
-                <option value="D">D</option>
-              </select>
+          {/* Grading */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Grade Assignment</h3>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="flex flex-col space-y-1">
+                <Label htmlFor="grade-select">Grade</Label>
+                <Select
+                  value={grade || ""}
+                  onValueChange={(val) => setGrade(val as Grade)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select grade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(["A", "B", "C", "D", "E", "F"] as Grade[]).map((g) => (
+                      <SelectItem key={g} value={g!}>
+                        {g}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col space-y-1 md:col-span-2">
+                <Label htmlFor="remark">Remark (optional)</Label>
+                <Textarea
+                  id="remark"
+                  value={remark}
+                  onChange={(e) => setRemark(e.target.value)}
+                  placeholder="Type any feedback or comments"
+                  rows={4}
+                />
+              </div>
             </div>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="secondary" onClick={onClose}>
-            Close
+          <Button variant="secondary" onClick={onClose} disabled={isGrading}>
+            Cancel
           </Button>
-          <Button onClick={handleSubmitGrade} disabled={!grade}>
-            Submit Grade
+          <Button onClick={handleSubmit} disabled={isGrading}>
+            {isGrading ? "Grading..." : "Submit Grade"}
           </Button>
         </DialogFooter>
       </DialogContent>

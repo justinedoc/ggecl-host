@@ -1,341 +1,281 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Eye, EyeOff } from "lucide-react";
-import userImg from "@/assets/images/user.png";
-import {
-  FaFacebook,
-  FaInternetExplorer,
-  FaInstagram,
-  FaLinkedin,
-  FaYoutube,
-  FaWhatsapp,
-  FaTwitter,
-} from "react-icons/fa";
 
-const InstructorSettings = () => {
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage, // Import FormMessage to display errors
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { useInstructor } from "@/hooks/useInstructor";
+import { useUpdateInstructorPassword } from "../hooks/useUpdateInstructorPassword";
+import { useUpdateInstructor } from "../hooks/useUpdateInstructor";
+
+// --- Zod Schemas ---
+
+// Schema for Account Information
+const accountFormSchema = z.object({
+  fullName: z.string().min(1, { message: "Full Name is required." }),
+  email: z.string().email({ message: "Invalid email address." }),
+});
+
+// Schema for Password Change
+const passwordFormSchema = z
+  .object({
+    currentPassword: z
+      .string()
+      .min(1, { message: "Current password is required." }),
+    newPassword: z
+      .string()
+      .min(8, { message: "Password must be at least 8 characters long." }),
+    confirmPassword: z
+      .string()
+      .min(1, { message: "Please confirm your new password." }),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"],
+  });
+
+// --- Types from Zod Schemas ---
+type AccountFormValues = z.infer<typeof accountFormSchema>;
+type PasswordFormValues = z.infer<typeof passwordFormSchema>;
+
+const InstructorSettings: React.FC = () => {
+  const { instructor } = useInstructor();
   const [showPassword, setShowPassword] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [base64Image, setBase64Image] = useState<string | null>(null);
 
-  const togglePasswordVisibility = () => setShowPassword(!showPassword);
+  const { isUpdatingInstructor, updateInstructor } = useUpdateInstructor();
+  const { isUpdatingInstructorPassword, updateInstructorPassword } =
+    useUpdateInstructorPassword();
+
+  const accountForm = useForm<AccountFormValues>({
+    resolver: zodResolver(accountFormSchema),
+    defaultValues: {
+      fullName: instructor.fullName || "",
+      email: instructor.email || "",
+    },
+  });
+
+  const passwordForm = useForm<PasswordFormValues>({
+    resolver: zodResolver(passwordFormSchema),
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
+  });
+
+  const togglePasswordVisibility = () => setShowPassword((prev) => !prev);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error("Image size should be under 2MB.");
+        return;
+      }
+
       const imageUrl = URL.createObjectURL(file);
       setSelectedImage(imageUrl);
+      console.log("Selected file:", file);
+
+      // Convert the file to base64
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setBase64Image(base64String);
+        console.log("Base64 Image:", base64String);
+      };
+      reader.onerror = () => {
+        toast.error("Failed to convert image to base64.");
+        console.error("Error reading file:", reader.error);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
+  const onSubmitAccount = async (values: AccountFormValues) => {
+    const updateData = {
+      ...(instructor.email !== values.email && { email: values.email }),
+      ...(instructor.fullName !== values.fullName && {
+        fullName: values.fullName,
+      }),
+      ...(base64Image && { picture: base64Image }),
+    };
+
+    if (Object.keys(updateData).length === 0) {
+      toast.info("No changes detected.");
+      return;
+    }
+
+    console.log("Account details:", updateData);
+    updateInstructor({
+      data: updateData,
+      id: instructor._id.toString(),
+    });
+  };
+
+  const onSubmitPassword = async (values: PasswordFormValues) => {
+    const { currentPassword, newPassword } = values;
+    console.log(currentPassword, newPassword);
+    if (currentPassword === newPassword) {
+      toast.info("New password cannot be the same as your old password");
+      return;
+    }
+    updateInstructorPassword({ currentPassword, newPassword });
+  };
+
   return (
-    <div className="p-6 md:p-8 text-gray-800 dark:text-gray-200">
-      <p className="text-3xl md:text-4xl font-bold">Account Settings</p>
+    <div className="p-6 text-gray-800 md:p-8 dark:text-gray-200">
+      <h1 className="text-3xl font-bold md:text-4xl">Account Settings</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-10 mt-10 md:gap-6 w-full items-start">
-        <form className="p-4 flex flex-col gap-6 w-full rounded-lg col-span-7">
-          <div className="flex flex-col gap-4">
-            <label className="text-gray-600 dark:text-gray-300" htmlFor="name">
-              Full Name
-            </label>
-            <div className="flex flex-col md:flex-row gap-4">
-              <input
-                placeholder="First Name"
-                className="input-field"
-                type="text"
-                id="name"
-              />
-              <input
-                placeholder="Last Name"
-                className="input-field"
-                type="text"
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <label
-              className="text-gray-600 dark:text-gray-300"
-              htmlFor="username"
+      <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-10">
+        {/* Account Info Form */}
+        <div className="col-span-10 rounded-lg border p-4 md:col-span-7 dark:border-gray-700">
+          <h2 className="mb-6 text-2xl font-semibold">Profile Information</h2>
+          <Form {...accountForm}>
+            <form
+              onSubmit={accountForm.handleSubmit(onSubmitAccount)}
+              className="flex flex-col gap-6"
             >
-              Username
-            </label>
-            <input
-              placeholder="Username"
-              className="input-field"
-              type="text"
-              id="username"
-            />
-          </div>
+              <FormField
+                control={accountForm.control}
+                name="fullName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Enter your full name" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <div className="flex flex-col gap-4">
-            <label className="text-gray-600 dark:text-gray-300" htmlFor="phone">
-              Phone number
-            </label>
-            <input
-              placeholder="Phone number"
-              className="input-field"
-              type="tel"
-              id="phone"
-            />
-          </div>
+              <FormField
+                control={accountForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="Enter your email"
+                        type="email"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <div className="flex flex-col gap-4">
-            <label className="text-gray-600 dark:text-gray-300" htmlFor="title">
-              Title
-            </label>
-            <input
-              placeholder="Profile Title"
-              className="input-field"
-              type="text"
-              id="title"
-            />
-          </div>
-          <div className="flex flex-col gap-4">
-            <label className="text-gray-600 dark:text-gray-300" htmlFor="bio">
-              Biography
-            </label>
-            <textarea
-              placeholder="Profile Title"
-              className="input-field min-h-32"
-              id="bio"
-            ></textarea>
-          </div>
+              <Button
+                type="submit"
+                disabled={isUpdatingInstructor}
+                className="mt-2 self-start"
+              >
+                {isUpdatingInstructor ? "Saving..." : "Save Changes"}
+              </Button>
+            </form>
+          </Form>
+        </div>
 
-          <div className="w-full justify-start">
-            <button className="btn-primary btn">Save Changes</button>
-          </div>
-        </form>
-        <div className="border border-gray-300 dark:border-gray-700 p-4 flex flex-col gap-4 justify-center items-center rounded-lg w-full md:w-max col-span-3 h-max md:mb-0 mt-[3.5rem]">
+        {/* Image Upload Section */}
+        <div className="col-span-10 flex flex-col items-center justify-start gap-4 rounded-lg border p-4 md:col-span-3 dark:border-gray-700">
+          <h3 className="mb-4 text-lg font-semibold">Profile Picture</h3>
           <div className="relative">
             <img
-              src={selectedImage || userImg}
-              alt="User"
-              className="w-36 h-36 md:w-60 md:h-60 object-cover border border-gray-300 dark:border-gray-700 rounded-md"
+              src={selectedImage || instructor.picture}
+              alt="User Profile"
+              className="h-36 w-36 rounded-full border border-gray-300 object-cover dark:border-gray-700"
             />
             <label
               htmlFor="imageUpload"
-              className="absolute bottom-0 bg-black/50 w-full text-center text-white py-2 cursor-pointer rounded-b-md"
+              className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-black/40 text-sm text-white opacity-0 transition-opacity hover:opacity-100"
             >
               Click to Upload
             </label>
             <input
-              type="file"
               id="imageUpload"
-              accept="image/*"
+              type="file"
+              accept="image/png, image/jpeg, image/webp"
               className="hidden"
               onChange={handleImageUpload}
             />
           </div>
-          <p className="text-sm text-center w-40">
-            Image size should be under 1MB and ratio 1:1.
+          <p className="w-40 text-center text-xs text-gray-500 dark:text-gray-400">
+            PNG, JPG, WEBP up to 2MB. <br /> Recommended 1:1 ratio.
           </p>
         </div>
       </div>
 
-      <div className="social">
-        <p className="text-2xl text-gray-800 dark:text-gray-200 font-bold mt-10">Social Profile</p>
-        <div className="mt-10">
-          <div className="flex flex-col gap-10">
-            <div className="flex flex-col gap-4">
-              <label
-                className="text-gray-600 dark:text-gray-300"
-                htmlFor="portfolio"
-              >
-                Personal Portfolio
-              </label>
-              <div className="flex flex-col md:flex-row gap-4 relative">
-                <input
-                  placeholder="Personal website or portfolio"
-                  className="input-field2 ml-8"
-                 type="url"
-                  id="portfolio"
-                />
-                <div className="absolute left-0 rounded-l-md grid place-items-center bottom-0 top-0 w-10 height-full bg-gray-100 height-full text-blue-600 dark:bg-gray-800 border">
-                  <FaInternetExplorer className="" />
-                </div>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 w-full md:grid-cols-3 md:gap-4">
-              <div className="flex flex-col gap-4 w-full">
-                <label
-                  className="text-gray-600 dark:text-gray-300"
-                  htmlFor="facebook"
-                >
-                  FaceBook
-                </label>
-                <div className="flex flex-col md:flex-row gap-4 relative">
-                  <input
-                    placeholder="Facebook Url"
-                    className="input-field2 ml-8"
-                    type="url"
-                    id="facebook"
-                  />
-                  <div className="absolute left-0 rounded-l-md grid place-items-center bottom-0 top-0 w-10 bg-gray-100 height-full text-blue-600 dark:bg-gray-800 border">
-                    <FaFacebook className="" />
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-col gap-4">
-                <label
-                  className="text-gray-600 dark:text-gray-300"
-                  htmlFor="ig"
-                >
-                  Instagram
-                </label>
-                <div className="flex flex-col md:flex-row gap-4 relative">
-                  <input
-                    placeholder="Instagram Url"
-                    className="input-field2 ml-8"
-                    type="url"
-                    id="ig"
-                  />
-                  <div className="absolute left-0 rounded-l-md grid place-items-center bottom-0 top-0 w-10 height-full bg-gray-100 height-full text-blue-600 dark:bg-gray-800 border">
-                    <FaInstagram className="" />
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-col gap-4">
-                <label
-                  className="text-gray-600 dark:text-gray-300"
-                  htmlFor="in"
-                >
-                  LinkedIn
-                </label>
-                <div className="flex flex-col md:flex-row gap-4 relative">
-                  <input
-                    placeholder="LinkedIn Url"
-                    className="input-field2 ml-8"
-                    type="url"
-                    id="in"
-                  />
-                  <div className="absolute left-0 rounded-l-md grid place-items-center bottom-0 top-0 w-10 height-full bg-gray-100 height-full text-blue-600 dark:bg-gray-800 border">
-                    <FaLinkedin className="" />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex flex-col gap-4">
-                <label
-                  className="text-gray-600 dark:text-gray-300"
-                  htmlFor="twitter"
-                >
-                  Twitter
-                </label>
-                <div className="flex flex-col md:flex-row gap-4 relative">
-                  <input
-                    placeholder="Twitter Url"
-                    className="input-field2 ml-8"
-                    type="url"
-                    id="twitter"
-                  />
-                  <div className="absolute left-0 rounded-l-md grid place-items-center bottom-0 top-0 w-10 bg-gray-100 height-full text-blue-600 dark:bg-gray-800 border">
-                    <FaTwitter className="" />
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-col gap-4">
-                <label
-                  className="text-gray-600 dark:text-gray-300"
-                  htmlFor="what"
-                >
-                  Whatsapp
-                </label>
-                <div className="flex flex-col md:flex-row gap-4 relative">
-                  <input
-                    placeholder="Whatsapp Url"
-                    className="input-field2 ml-8"
-                    type="url"
-                    id="what"
-                  />
-                  <div className="absolute left-0 rounded-l-md grid place-items-center bottom-0 top-0 w-10 height-full bg-gray-100 height-full text-blue-600 dark:bg-gray-800 border">
-                    <FaWhatsapp className="" />
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-col gap-4 w-full">
-                <label
-                  className="text-gray-600 dark:text-gray-300"
-                  htmlFor="name"
-                >
-                  Youtube
-                </label>
-                <div className="flex flex-col md:flex-row gap-4 relative w-full">
-                  <input
-                    placeholder="First Name"
-                    className="input-field2 ml-8 w-full"
-                    type="url"
-                    id="you"
-                  />
-                  <div className="absolute left-0 rounded-l-md grid place-items-center bottom-0 top-0 w-10 height-full bg-gray-100 height-full text-blue-600 dark:bg-gray-800 border">
-                    <FaYoutube className="" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-10 items-start mt-10 mb-10 pl-2 pr-2">
-        <div className="col-span-1 md:col-span-2 flex flex-col gap-6 bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md">
-          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-            Notification
-          </p>
-
-          <div className="flex flex-col gap-4">
-            {[...Array(7)].map((_, index) => (
-              <div key={index} className="flex items-center gap-4">
-                <input
-                  type="checkbox"
-                  id={`no${index + 1}`}
-                  className="w-5 h-5 text-blue-600 dark:text-blue-400 bg-gray-800 border-gray-300 dark:border-gray-600 rounded accent-gray-800"
-                />
-                <label
-                  htmlFor={`no${index + 1}`}
-                  className="text-gray-800 dark:text-gray-300 cursor-pointer"
-                >
-                  Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet consectetur.
-                </label>
-              </div>
+      {/* Password Change Form */}
+      <div className="mt-10 max-w-md rounded-lg border p-4 dark:border-gray-700">
+        <h2 className="mb-6 text-2xl font-semibold">Change Password</h2>
+        <Form {...passwordForm}>
+          <form
+            onSubmit={passwordForm.handleSubmit(onSubmitPassword)}
+            className="flex flex-col gap-6"
+          >
+            {(
+              [
+                { name: "currentPassword", label: "Current Password" },
+                { name: "newPassword", label: "New Password" },
+                { name: "confirmPassword", label: "Confirm New Password" },
+              ] as const
+            ).map(({ name, label }) => (
+              <FormField
+                key={name}
+                control={passwordForm.control}
+                name={name}
+                render={({ field }) => (
+                  <FormItem className="relative">
+                    <FormLabel>{label}</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder={`Enter ${label.toLowerCase()}`}
+                        type={showPassword ? "text" : "password"}
+                        className="pr-10"
+                      />
+                    </FormControl>
+                    <button
+                      type="button"
+                      onClick={togglePasswordVisibility}
+                      className="absolute top-2/3 right-3 -translate-y-1/2 transform cursor-pointer text-gray-500 dark:text-gray-400"
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             ))}
-          </div>
 
-          <div className="w-full flex justify-start">
-            <button className="text-white btn px-6 py-3 font-medium rounded-lg shadow-md transition-all">
-              Save Changes
-            </button>
-          </div>
-        </div>
-
-        {/* Password Change Form */}
-        <form className="col-span-1 md:col-span-2 p-4 flex flex-col gap-6 w-full  bg-white dark:bg-gray-900 rounded-lg shadow-md">
-          <p className="text-2xl font-bold">Change Password</p>
-
-          {["Current Password", "New Password", "Confirm Password"].map(
-            (label, index) => (
-              <div key={index} className="flex flex-col gap-4 relative">
-                <label className="text-gray-600 dark:text-gray-300">
-                  {label}
-                </label>
-                <input
-                  placeholder={label}
-                  className="input-field pr-10"
-                  type={showPassword ? "text" : "password"}
-                />
-                <button
-                  type="button"
-                  className="absolute right-3 top-[60%] transform -translate-y-1/2 text-gray-500 dark:text-gray-400 mt-3"
-                  onClick={togglePasswordVisibility}
-                >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-              </div>
-            )
-          )}
-
-          <div className="w-full justify-start">
-            <button className="btn-primary btn">Save Password</button>
-          </div>
-        </form>
+            <Button
+              type="submit"
+              disabled={isUpdatingInstructorPassword}
+              className="mt-2 self-start"
+            >
+              {isUpdatingInstructorPassword ? "Saving..." : "Save Password"}
+            </Button>
+          </form>
+        </Form>
       </div>
     </div>
   );

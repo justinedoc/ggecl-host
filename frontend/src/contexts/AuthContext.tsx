@@ -127,8 +127,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           }
         }
       },
-      14 * 60 * 1000,
-    ); // 14 minutes
+      10 * 60 * 1000,
+    ); // 10 mins
 
     return () => {
       abortController.abort();

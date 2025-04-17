@@ -16,6 +16,10 @@ class AdminService {
     });
   }
 
+  async hashPassword(password: string) {
+    return bcrypt.hash(password, SALT_ROUNDS);
+  }
+
   async findAdminByEmail(email: string) {
     return Admin.findOne({ email });
   }
