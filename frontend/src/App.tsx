@@ -102,9 +102,7 @@ const IsCalendar = lazy(
 const AssignmentCheck = lazy(
   () => import("@/components/dashboard/instructor/pages/AssignmentCheck.tsx"),
 );
-const AddCourse = lazy(
-  () => import("@/components/dashboard/instructor/pages/AddCourse.tsx"),
-);
+
 const InstructorForgot = lazy(
   () => import("@/components/dashboard/instructor/pages/InstructorForgot.tsx"),
 );
@@ -116,9 +114,7 @@ const Support = lazy(
   () => import("@/components/dashboard/instructor/pages/Support.tsx"),
 );
 
-const Grading = lazy(
-  () => import("@/components/dashboard/instructor/pages/Grading.tsx"),
-);
+
 const VideoCall = lazy(
   () => import("@/components/dashboard/instructor/pages/VideoCall.tsx"),
 );
@@ -135,9 +131,6 @@ const AdminSettings = lazy(
 );
 const AdminChat = lazy(
   () => import("@/components/dashboard/admin/pages/AdminChat.tsx"),
-);
-const Payments = lazy(
-  () => import("@/components/dashboard/admin/pages/Payments.tsx"),
 );
 const CourseManagement = lazy(
   () => import("@/components/dashboard/admin/pages/CourseManagement.tsx"),
@@ -394,23 +387,6 @@ function App() {
             }
           />
           <Route
-            path="add-course"
-            element={
-              <Suspense fallback={<AuthPageLoading />}>
-                <AddCourse />
-              </Suspense>
-            }
-          />
-
-          <Route
-            path="grading"
-            element={
-              <Suspense fallback={<AuthPageLoading />}>
-                <Grading />
-              </Suspense>
-            }
-          />
-          <Route
             path="video-call"
             element={
               <Suspense fallback={<AuthPageLoading />}>
@@ -579,14 +555,6 @@ function App() {
             element={
               <Suspense fallback={<AuthPageLoading />}>
                 <InstructorInfo />
-              </Suspense>
-            }
-          />
-          <Route
-            path="payments"
-            element={
-              <Suspense fallback={<AuthPageLoading />}>
-                <Payments />
               </Suspense>
             }
           />

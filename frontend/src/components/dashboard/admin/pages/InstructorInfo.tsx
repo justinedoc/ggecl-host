@@ -1,48 +1,12 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { z } from "zod";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useInstructors } from "../hooks/useInstructors";
+import { useEnrollInstructor } from "../hooks/useEnrollInstructor";
 
-type StatusType = "Pending" | "Active" | "Completed" | "Inactive" | "Withdrawn";
-
-interface Instructor {
-  name: string;
-  email: string;
-  phone: string;
-  date: string;
-  progress: string;
-  status: StatusType;
-}
-
-const statusClasses: Record<StatusType, string> = {
-  Pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-600/20 dark:text-yellow-400",
-  Active: "bg-blue-100 text-blue-800 dark:bg-blue-600/20 dark:text-blue-400",
-  Completed: "bg-green-100 text-green-800 dark:bg-green-600/20 dark:text-green-400",
-  Inactive: "bg-gray-200 text-gray-800 dark:bg-gray-600/30 dark:text-gray-300",
-  Withdrawn: "bg-pink-100 text-pink-800 dark:bg-pink-600/20 dark:text-pink-400",
-};
-
-const data: Instructor[] = [
-  {
-    name: "Ada Johnson",
-    email: "ada@email.com",
-    phone: "+44 7911 123456",
-    date: "01.01.2022",
-    progress: "0%",
-    status: "Pending",
-  },
-  {
-    name: "Ada Johnson",
-    email: "ada@email.com",
-    phone: "+44 7911 123456",
-    date: "01.01.2022",
-    progress: "0%",
-    status: "Pending",
-  },
-  // ...other instructors
-];
-
+// Define the registration schema with Zod validation
 const InstructorRegistrationSchema = z.object({
   email: z.string().email("Invalid email format"),
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
@@ -57,10 +21,17 @@ const InstructorRegistrationSchema = z.object({
 type InstructorRegistrationForm = z.infer<typeof InstructorRegistrationSchema>;
 
 const InstructorInfo: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [rowsPerPage, setRowsPerPage] = useState<number>(5);
+  // Local state for search, pagination, and rows per page
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
 
+  // Extract Instructor data and loading state
+  const { loadingInstructors, instructors } = useInstructors({});
+
+  const { enrollInstructor, isEnrolling } = useEnrollInstructor();
+
+  // Set up form with react-hook-form and zod schema resolver
   const {
     register,
     handleSubmit,
@@ -70,17 +41,34 @@ const InstructorInfo: React.FC = () => {
     resolver: zodResolver(InstructorRegistrationSchema),
   });
 
+  // Reset page to first when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // Handler for adding a Instructor
   const onSubmit = (data: InstructorRegistrationForm) => {
     console.log("New Instructor Data:", data);
-    reset();
+    enrollInstructor(data);
+    setTimeout(() => {
+      reset();
+    }, 2000);
   };
 
-  const filteredData: Instructor[] = data.filter((item) =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase())
+  // Filter Instructors by the search term (case-insensitive)
+  const filteredInstructors = instructors.filter((instructor) =>
+    instructor.fullName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+  // Calculate pagination details
+  const totalPages = Math.ceil(filteredInstructors.length / rowsPerPage);
+  const currentDataStart = (currentPage - 1) * rowsPerPage;
+  const paginatedInstructors = filteredInstructors.slice(
+    currentDataStart,
+    currentDataStart + rowsPerPage
+  );
 
+  // Handlers for pagination and rows changes
   const handlePageChange = (direction: "prev" | "next") => {
     if (direction === "prev" && currentPage > 1) {
       setCurrentPage((prev) => prev - 1);
@@ -91,71 +79,100 @@ const InstructorInfo: React.FC = () => {
 
   const handleRowsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setRowsPerPage(Number(e.target.value));
-    setCurrentPage(1); // Reset to the first page
+    setCurrentPage(1);
   };
 
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const paginatedData = filteredData.slice(startIndex, startIndex + rowsPerPage);
-
   return (
-    <div className="p-4 bg-white dark:bg-gray-900 min-h-screen">
+    <div className="min-h-screen bg-white p-4 dark:bg-gray-900">
       <div className="grid grid-cols-1 gap-6">
         {/* Add Instructor Section */}
-        <div className="bg-gray-100 dark:bg-gray-900 border border-gray-700 p-4 rounded-lg shadow">
-          <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4">Add Instructor</h2>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 grid grid-cols-4 gap-4">
+        <div className="rounded-lg border p-4 shadow dark:bg-gray-900">
+          <h2 className="mb-4 text-lg font-semibold text-gray-700 dark:text-gray-200">
+            Add Instructor
+          </h2>
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="grid grid-cols-4 gap-4"
+          >
+            {/* Full Name Field */}
             <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Full Name</label>
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Full Name
+              </label>
               <input
                 type="text"
                 {...register("fullName")}
-                className="w-full px-3 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                className="w-full rounded-md border px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
               />
-              {errors.fullName && <p className="text-red-500 text-sm">{errors.fullName.message}</p>}
+              {errors.fullName && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.fullName.message}
+                </p>
+              )}
             </div>
+            {/* Email Field */}
             <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Email</label>
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Email
+              </label>
               <input
                 type="email"
                 {...register("email")}
-                className="w-full px-3 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                className="w-full rounded-md border px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
               />
-              {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
+            {/* Gender Field */}
             <div className="col-span-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Gender</label>
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Gender
+              </label>
               <select
                 {...register("gender")}
-                className="w-full px-3 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                className="w-full rounded-md border px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
               >
                 <option value="male">Male</option>
                 <option value="female">Female</option>
                 <option value="other">Other</option>
               </select>
-              {errors.gender && <p className="text-red-500 text-sm">{errors.gender.message}</p>}
+              {errors.gender && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.gender.message}
+                </p>
+              )}
             </div>
             <button
+              disabled={isEnrolling}
               type="submit"
-              className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition col-span-1"
+              className="col-span-1 w-full rounded-md bg-blue-600 py-2 text-white transition hover:bg-blue-700"
             >
-              Add Instructor
+              {isEnrolling ? "Enrolling" : " Add Instructor"}
             </button>
           </form>
         </div>
 
-        {/* Instructor Display Section */}
+        {/* Instructor List Section */}
         <div>
-          <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4">Instructor List</h2>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+          <h2 className="mb-4 text-lg font-semibold text-gray-700 dark:text-gray-200">
+            Instructor List
+          </h2>
+          {/* Search Field */}
+          <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <input
               type="text"
-              placeholder="Search"
-              className="w-full md:w-1/3 px-4 py-2 border border-gray-300 rounded-md dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+              placeholder="Search by full name"
+              className="w-full rounded-md border border-gray-300 px-4 py-2 md:w-1/3 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow">
+
+          {/* Data Table */}
+          <div className="overflow-x-auto rounded-lg bg-white shadow dark:bg-gray-800">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-100 dark:bg-gray-700">
                 <tr>
@@ -165,47 +182,66 @@ const InstructorInfo: React.FC = () => {
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">
                     Instructor Name
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Email</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">
-                    Phone Number
+                    Email
                   </th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">
-                    Enrolment Date
+                    Action
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Progress</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Status</th>
-                  <th className="px-4 py-3"></th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-gray-700">
-                {paginatedData.map((instructor) => (
-                  <tr key={instructor.email} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                    <td className="px-4 py-3">
-                      <input type="checkbox" />
+              <tbody className="divide-y divide-gray-200 bg-white dark:bg-gray-900">
+                {loadingInstructors ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-10 text-center">
+                      Loading instructors...
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{instructor.name}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{instructor.email}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{instructor.phone}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{instructor.date}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{instructor.progress}</td>
-                    <td className="px-4 py-3 text-sm">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${statusClasses[instructor.status]}`}
-                      >
-                        {instructor.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right text-gray-500 dark:text-gray-400">...</td>
                   </tr>
-                ))}
+                ) : paginatedInstructors.length > 0 ? (
+                  paginatedInstructors.map((instructor) => (
+                    <tr
+                      key={instructor.email}
+                      className="transition hover:bg-gray-50 dark:hover:bg-gray-800"
+                    >
+                      <td className="px-4 py-3">
+                        <input type="checkbox" />
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">
+                        {instructor.fullName}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">
+                        {instructor.email}
+                      </td>
+                      <td className="px-4 py-3 text-right text-gray-500 dark:text-gray-400">
+                        <button
+                          // onClick={ (instructor.email)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      className="px-4 py-10 text-center text-xl font-semibold"
+                    >
+                      Enroll instructors to start managing.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
-          <div className="flex justify-between items-center mt-6">
+
+          {/* Pagination Controls */}
+          <div className="mt-6 flex items-center justify-between">
             <div className="text-sm text-gray-600 dark:text-gray-400">
               Show rows:
               <select
-                className="ml-2 border rounded-md px-2 py-1 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                className="ml-2 rounded-md border px-2 py-1 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                 value={rowsPerPage}
                 onChange={handleRowsPerPageChange}
               >
@@ -217,22 +253,24 @@ const InstructorInfo: React.FC = () => {
             <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
               <button
                 onClick={() => handlePageChange("prev")}
-                className={`px-2 py-1 border rounded dark:border-gray-600 ${
-                  currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""
+                className={`rounded border px-2 py-1 dark:border-gray-600 ${
+                  currentPage === 1 ? "cursor-not-allowed opacity-50" : ""
                 }`}
                 disabled={currentPage === 1}
               >
                 <FaChevronLeft />
               </button>
               <span>
-                Page {currentPage} of {totalPages}
+                Page {currentPage} of {totalPages || 1}
               </span>
               <button
                 onClick={() => handlePageChange("next")}
-                className={`px-2 py-1 border rounded dark:border-gray-600 ${
-                  currentPage === totalPages ? "opacity-50 cursor-not-allowed" : ""
+                className={`rounded border px-2 py-1 dark:border-gray-600 ${
+                  currentPage === totalPages || totalPages === 0
+                    ? "cursor-not-allowed opacity-50"
+                    : ""
                 }`}
-                disabled={currentPage === totalPages}
+                disabled={currentPage === totalPages || totalPages === 0}
               >
                 <FaChevronRight />
               </button>

@@ -79,11 +79,6 @@ import {
       url: `${urlPrefix}/settings`,
       icon: Settings,
     },
-    {
-      title: "Earnings & Analytics",
-      url: `${urlPrefix}/payments`,
-      icon: Briefcase,
-    },
   ];
   
   export function AdminSidebar() {
@@ -95,7 +90,7 @@ import {
     return (
       <Sidebar>
         <SidebarHeader className="flex flex-row items-center justify-between px-5 py-5">
-          <Link to={"/"}>
+          <Link to={"/admin/dashboard/"}>
             <img src={logoImg} width={50} alt="Logo" className="-translate-x-3" />
           </Link>
           <SidebarTrigger>

@@ -57,7 +57,7 @@ const StudentInfo: React.FC = () => {
 
   // Filter students by the search term (case-insensitive)
   const filteredStudents = students.filter((student) =>
-    student.fullName.toLowerCase().includes(searchTerm.toLowerCase()),
+    student.fullName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Calculate pagination details
@@ -65,7 +65,7 @@ const StudentInfo: React.FC = () => {
   const currentDataStart = (currentPage - 1) * rowsPerPage;
   const paginatedStudents = filteredStudents.slice(
     currentDataStart,
-    currentDataStart + rowsPerPage,
+    currentDataStart + rowsPerPage
   );
 
   // Handlers for pagination and rows changes
@@ -86,7 +86,7 @@ const StudentInfo: React.FC = () => {
     <div className="min-h-screen bg-white p-4 dark:bg-gray-900">
       <div className="grid grid-cols-1 gap-6">
         {/* Add Student Section */}
-        <div className="rounded-lg border border-gray-700 bg-gray-100 p-4 shadow dark:bg-gray-900">
+        <div className="rounded-lg border  p-4 shadow dark:bg-gray-900">
           <h2 className="mb-4 text-lg font-semibold text-gray-700 dark:text-gray-200">
             Add Student
           </h2>
@@ -186,20 +186,12 @@ const StudentInfo: React.FC = () => {
                     Email
                   </th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">
-                    Enrolment Date
+                    Action
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">
-                    Progress
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">
-                    Status
-                  </th>
-                  <th className="px-4 py-3"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white dark:bg-gray-900">
                 {loadingStudents ? (
-                  // Fallback if data is still loading
                   <tr>
                     <td colSpan={7} className="px-4 py-10 text-center">
                       Loading students...
@@ -220,25 +212,17 @@ const StudentInfo: React.FC = () => {
                       <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">
                         {student.email}
                       </td>
-                      {/* Uncomment and implement additional columns as needed */}
-                      {/* <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">
-                        {student.createdAt}
-                      </td> */}
-                      {/* <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">
-                        {student.progress}
-                      </td> */}
-                      {/* <td className="px-4 py-3 text-sm">
-                        <span className={`rounded-full px-3 py-1 text-xs font-medium ${statusClasses[student.status]}`}>
-                          {student.status}
-                        </span>
-                      </td> */}
                       <td className="px-4 py-3 text-right text-gray-500 dark:text-gray-400">
-                        ...
+                        <button
+                          // onClick={ (student.email)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          Delete
+                        </button>
                       </td>
                     </tr>
                   ))
                 ) : (
-                  // Display if no students are found
                   <tr>
                     <td
                       colSpan={7}
