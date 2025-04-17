@@ -86,7 +86,7 @@ const InstructorInfo: React.FC = () => {
     <div className="min-h-screen bg-white p-4 dark:bg-gray-900">
       <div className="grid grid-cols-1 gap-6">
         {/* Add Instructor Section */}
-        <div className="rounded-lg border border-gray-700 bg-gray-100 p-4 shadow dark:bg-gray-900">
+        <div className="rounded-lg border p-4 shadow dark:bg-gray-900">
           <h2 className="mb-4 text-lg font-semibold text-gray-700 dark:text-gray-200">
             Add Instructor
           </h2>

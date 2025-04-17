@@ -17,13 +17,6 @@ interface StatCardProps {
   icon: JSX.Element;
 }
 
-interface CtaBannerProps {
-  title: string;
-  description: string;
-  link: string;
-  icon: JSX.Element;
-  colorClass: string;
-}
 
 const stats: StatCardProps[] = [
   {
@@ -42,6 +35,14 @@ const stats: StatCardProps[] = [
     icon: <LucideBarChart3 className="h-8 w-8 text-yellow-500" />,
   },
 ];
+
+interface CtaBannerProps {
+  title: string;
+  description: string;
+  link: string;
+  icon: JSX.Element;
+  colorClass: string;
+}
 
 const ctaBanners: CtaBannerProps[] = [
   {
