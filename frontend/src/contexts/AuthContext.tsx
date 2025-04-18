@@ -96,6 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const handleLogin = useCallback(
     async (accessToken: string) => {
+      
       try {
         authProvider.setAccessToken(accessToken);
         await initializeAuth();

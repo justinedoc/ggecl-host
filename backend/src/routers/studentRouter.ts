@@ -16,6 +16,7 @@ import {
   ENROLL_EMAIL_SUBJECT,
   ENROLL_EMAIL_TEXT,
 } from "../constants/messages.js";
+import { uploadImageIfNeeded } from "../utils/imageUploader.js";
 
 // Define a summary type for students by omitting sensitive fields.
 type IStudentSummary = Omit<
@@ -39,20 +40,18 @@ interface IStudentListResponse {
 }
 
 // Schema for editable student fields.
-const StudentEditableSchema = z
-  .object({
-    fullName: z.string().min(2, "Full name must be at least 2 characters"),
-    gender: z.enum(["male", "female", "other"], {
-      errorMap: () => ({ message: "Gender selected is not valid" }),
-    }),
-    email: z.string().email(),
-    username: z.string(),
-    picture: z.string().url(),
-  })
-  .partial();
+const StudentEditableSchema = z.object({
+  fullName: z.string().min(2, "Full name must be at least 2 characters"),
+  gender: z.enum(["male", "female", "other"], {
+    errorMap: () => ({ message: "Gender selected is not valid" }),
+  }),
+  email: z.string().email(),
+  username: z.string(),
+  picture: z.string(),
+});
 
 const StudentUpdateZodSchema = z.object({
-  data: StudentEditableSchema,
+  data: StudentEditableSchema.partial(),
   id: z.string().refine(isValidObjectId, { message: "Invalid Student ID" }),
 });
 
@@ -73,7 +72,6 @@ export const StudentEnrollSchema = z.object({
       errorMap: () => ({ message: "Invalid gender selection" }),
     })
     .default("other"),
-  picture: z.string().url("Invaild image link").optional(),
 });
 
 const EnrollStudentToCourseZodSchema = z.object({
@@ -355,9 +353,13 @@ export const studentRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { id: currentStudentId, role } = ctx.user;
       const { data, id: studentId } = input;
+
+      const imageUrl = await uploadImageIfNeeded(data.picture);
+
       try {
         // Ensure the student exists.
         const studentExists = await studentModel.exists({ _id: studentId });
+
         if (!studentExists) {
           throw new TRPCError({
             code: "NOT_FOUND",
@@ -372,9 +374,14 @@ export const studentRouter = router({
           ],
         };
 
+        const uploadPayload = {
+          ...data,
+          ...(imageUrl && { picture: imageUrl }),
+        };
+
         const updatedStudent = await studentModel.findOneAndUpdate(
           filterQuery,
-          data,
+          uploadPayload,
           {
             new: true,
             runValidators: true,

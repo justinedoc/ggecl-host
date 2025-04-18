@@ -6,6 +6,10 @@ export async function uploadImageIfNeeded(
 ): Promise<string | undefined> {
   if (!picture) return undefined;
 
+  if (picture.startsWith("http")) {
+    return picture;
+  }
+
   try {
     const { secure_url } = await cloudinary.uploader.upload(picture);
     return secure_url;

@@ -17,6 +17,8 @@ import {
   ENROLL_EMAIL_TEXT,
 } from "../constants/messages.js";
 import { SALT_ROUNDS } from "../constants/auth.js";
+import { PasswordUpdateZodSchema } from "../models/passwordUpdateSchema.js";
+import { uploadImageIfNeeded } from "../utils/imageUploader.js";
 
 // Define the instructor summary type by omitting sensitive fields.
 type IInstructorSummary = Omit<
@@ -40,22 +42,18 @@ interface IInstructorListResponse {
 }
 
 // Schema for fields that can be edited.
-const InstructorEditableSchema = z
-  .object({
-    fullName: z.string().min(2, "Full name must be at least 2 characters"),
-    dateOfBirth: z.string().transform((str) => new Date(str)),
-    gender: z.enum(["male", "female", "other"], {
-      errorMap: () => ({ message: "Gender selected is not valid" }),
-    }),
-    picture: z.string().url(),
-    bio: z.string().min(5, "Bio must be at least 5 characters"),
-    topics: z.array(z.string()),
-  })
-  .partial();
+const InstructorEditableSchema = z.object({
+  fullName: z.string().min(2, "Full name must be at least 2 characters"),
+  email: z.string().email("Invalid email format"),
+  username: z.string().min(2, "Username must be at least 2 characters"),
+  picture: z.string(),
+  bio: z.string().min(5, "Bio must be at least 5 characters"),
+  topics: z.array(z.string()),
+});
 
 // Schema for updating an instructor.
 const InstructorUpdateSchema = z.object({
-  data: InstructorEditableSchema,
+  data: InstructorEditableSchema.partial(),
   id: z.string().refine(isValidObjectId, { message: "Invalid instructor ID" }),
 });
 
@@ -80,19 +78,6 @@ const InstructorRegistrationSchema = z.object({
     .default("other"),
   picture: z.string().url("Invalid URL format").optional(),
 });
-
-const PasswordUpdateZodSchema = z
-  .object({
-    currentPassword: z
-      .string()
-      .min(1, { message: "Current password is required." }),
-    newPassword: z
-      .string()
-      .min(6, { message: "Password must be at least 8 characters long." }),
-  })
-  .refine((data) => data.currentPassword !== data.newPassword, {
-    message: "Old password cannot be same as new password",
-  });
 
 const GetInstructorByIdZodSchema = z.object({
   id: z.string().refine(isValidObjectId, { message: "Invalid instructor ID" }),
@@ -308,10 +293,13 @@ export const instructorRouter = router({
       const { role, id: currentUserId } = ctx.user;
       const { data, id: instructorId } = input;
 
+      const imageUrl = await uploadImageIfNeeded(data.picture);
+
       try {
         const instructorExists = await instructorModel.exists({
           _id: instructorId,
         });
+
         if (!instructorExists) {
           throw new TRPCError({
             code: "NOT_FOUND",
@@ -326,13 +314,17 @@ export const instructorRouter = router({
           ],
         };
 
+        const updatePayload = {
+          ...data,
+          ...(imageUrl && { picture: imageUrl }),
+        };
+
         const updatedInstructor = await instructorModel.findOneAndUpdate(
           filterQuery,
-          data,
+          updatePayload,
           {
             new: true,
             runValidators: true,
-            upsert: true,
           }
         );
 
