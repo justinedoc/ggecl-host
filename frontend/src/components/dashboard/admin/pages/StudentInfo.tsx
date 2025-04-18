@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useStudents } from "../hooks/useStudents";
 import { useEnrollStudent } from "../hooks/useEnrollStudent";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useStudents } from "@/hooks/useStudents";
 
 // Define the registration schema with Zod validation
 const StudentRegistrationSchema = z.object({
@@ -24,15 +25,34 @@ const StudentRegistrationSchema = z.object({
 type StudentRegistrationForm = z.infer<typeof StudentRegistrationSchema>;
 
 const StudentInfo: React.FC = () => {
-  // Local state for search, pagination, and rows per page
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
-  // Extract student data and loading state
-  const { loadingStudents, students } = useStudents({});
+  const { debouncedValue } = useDebounce(searchTerm);
 
   const { enrollStudent, isEnrolling } = useEnrollStudent();
+
+  const { students, meta, loading } = useStudents({
+    page: currentPage,
+    limit: rowsPerPage,
+    search: debouncedValue,
+  });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  const totalPages = meta?.totalPages ?? 1;
+
+  const changePage = useCallback(
+    (dir: "prev" | "next") => {
+      setCurrentPage((p) =>
+        dir === "prev" ? Math.max(1, p - 1) : Math.min(totalPages, p + 1),
+      );
+    },
+    [totalPages],
+  );
 
   // Set up form with react-hook-form and zod schema resolver
   const {
@@ -44,11 +64,6 @@ const StudentInfo: React.FC = () => {
     resolver: zodResolver(StudentRegistrationSchema),
   });
 
-  // Reset page to first when search term changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
-
   // Handler for adding a student
   const onSubmit = (data: StudentRegistrationForm) => {
     console.log("New Student Data:", data);
@@ -56,33 +71,6 @@ const StudentInfo: React.FC = () => {
     setTimeout(() => {
       reset();
     }, 2000);
-  };
-
-  // Filter students by the search term (case-insensitive)
-  const filteredStudents = students.filter((student) =>
-    student.fullName.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
-
-  // Calculate pagination details
-  const totalPages = Math.ceil(filteredStudents.length / rowsPerPage);
-  const currentDataStart = (currentPage - 1) * rowsPerPage;
-  const paginatedStudents = filteredStudents.slice(
-    currentDataStart,
-    currentDataStart + rowsPerPage,
-  );
-
-  // Handlers for pagination and rows changes
-  const handlePageChange = (direction: "prev" | "next") => {
-    if (direction === "prev" && currentPage > 1) {
-      setCurrentPage((prev) => prev - 1);
-    } else if (direction === "next" && currentPage < totalPages) {
-      setCurrentPage((prev) => prev + 1);
-    }
-  };
-
-  const handleRowsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setRowsPerPage(Number(e.target.value));
-    setCurrentPage(1);
   };
 
   return (
@@ -190,14 +178,14 @@ const StudentInfo: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white dark:bg-gray-900">
-                {loadingStudents ? (
+                {loading ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center">
-                      Loading students...
+                    <td colSpan={4} className="py-6 text-center">
+                      Loading...
                     </td>
                   </tr>
-                ) : paginatedStudents.length > 0 ? (
-                  paginatedStudents.map((student) => (
+                ) : students.length > 0 ? (
+                  students.map((student) => (
                     <tr
                       key={student.email}
                       className="transition hover:bg-gray-50 dark:hover:bg-gray-800"
@@ -224,10 +212,10 @@ const StudentInfo: React.FC = () => {
                 ) : (
                   <tr>
                     <td
-                      colSpan={7}
-                      className="px-4 py-10 text-center text-xl font-semibold"
+                      colSpan={4}
+                      className="py-10 text-center text-gray-500 italic"
                     >
-                      Enroll students to start managing.
+                      No students found.
                     </td>
                   </tr>
                 )}
@@ -242,7 +230,7 @@ const StudentInfo: React.FC = () => {
               <select
                 className="ml-2 rounded-md border px-2 py-1 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                 value={rowsPerPage}
-                onChange={handleRowsPerPageChange}
+                onChange={(e) => setRowsPerPage(Number(e.target.value))}
               >
                 <option value={5}>5</option>
                 <option value={10}>10</option>
@@ -251,7 +239,7 @@ const StudentInfo: React.FC = () => {
             </div>
             <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
               <button
-                onClick={() => handlePageChange("prev")}
+                onClick={() => changePage("prev")}
                 className={`rounded border px-2 py-1 dark:border-gray-600 ${
                   currentPage === 1 ? "cursor-not-allowed opacity-50" : ""
                 }`}
@@ -263,7 +251,7 @@ const StudentInfo: React.FC = () => {
                 Page {currentPage} of {totalPages || 1}
               </span>
               <button
-                onClick={() => handlePageChange("next")}
+                onClick={() => changePage("next")}
                 className={`rounded border px-2 py-1 dark:border-gray-600 ${
                   currentPage === totalPages || totalPages === 0
                     ? "cursor-not-allowed opacity-50"

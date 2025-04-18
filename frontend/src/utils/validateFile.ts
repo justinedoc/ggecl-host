@@ -36,7 +36,7 @@ const fileTypes: Record<TAllowedFileTypes, string[]> = {
 const maxSizes: Record<TAllowedFileTypes, number> = {
   video: 2000 * TO_BYTE,
   pdf: 22 * TO_BYTE,
-  image: 2 * TO_BYTE,
+  image: 1 * TO_BYTE,
 };
 
 export function getAllowedMimeTypes(type: TAllowedFileTypes): string[] {

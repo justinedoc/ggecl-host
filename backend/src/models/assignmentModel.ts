@@ -35,7 +35,7 @@ export const AssignmentSchema = new Schema<IStudentAssignment>(
     dueDate: { type: Date, required: true },
     status: {
       type: String,
-      enum: ["submitted", "graded"],
+      enum: ["submitted", "graded", "pending"],
       default: "pending",
       required: true,
     },

@@ -394,7 +394,7 @@ export const instructorRouter = router({
         return { success: true };
       } catch (error) {
         console.error(
-          "An error occured while trying to update admin password: ",
+          "An error occured while trying to update instructor password: ",
           error instanceof Error ? error.message : error
         );
 

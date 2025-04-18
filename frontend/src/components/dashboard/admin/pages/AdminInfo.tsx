@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -8,6 +8,7 @@ import { useEnrollAdmin } from "../hooks/useEnrollAdmin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useDebounce } from "@/hooks/useDebounce";
 
 // ---------------- Validation Schema ----------------
 const AdminRegistrationSchema = z.object({
@@ -93,34 +94,19 @@ const AdminList: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
-  const { admins, loadingAdmins } = useAdmins({});
+  const { debouncedValue } = useDebounce(searchTerm);
+
+  const { admins, meta, loading } = useAdmins({
+    page: currentPage,
+    limit: rowsPerPage,
+    search: debouncedValue,
+  });
 
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  const filteredAdmins = useMemo(
-    () =>
-      admins.filter((a) =>
-        a.fullName.toLowerCase().includes(searchTerm.toLowerCase()),
-      ),
-    [admins, searchTerm],
-  );
-
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredAdmins.length / rowsPerPage),
-  );
-
-  const paginated = useMemo(
-    () =>
-      filteredAdmins.slice(
-        (currentPage - 1) * rowsPerPage,
-        currentPage * rowsPerPage,
-      ),
-    [filteredAdmins, currentPage, rowsPerPage],
-  );
-
+  const totalPages = meta?.totalPages ?? 1;
   const changePage = useCallback(
     (dir: "prev" | "next") => {
       setCurrentPage((p) =>
@@ -184,14 +170,14 @@ const AdminList: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900">
-            {loadingAdmins ? (
+            {loading ? (
               <tr>
                 <td colSpan={4} className="py-6 text-center">
                   Loading...
                 </td>
               </tr>
-            ) : paginated.length !== 0 ? (
-              paginated.map((admin) => (
+            ) : admins.length !== 0 ? (
+              admins.map((admin) => (
                 <tr
                   key={admin.email}
                   className="hover:bg-gray-50 dark:hover:bg-gray-800"

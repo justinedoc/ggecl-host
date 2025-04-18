@@ -1,4 +1,5 @@
 import { procedure, protectedProcedure, router } from "../trpc.js";
+import bcrypt from "bcrypt";
 import { z } from "zod";
 import { CACHE, wildcardDeleteCache } from "../utils/nodeCache.js";
 import studentModel, { IStudent } from "../models/studentModel.js";
@@ -17,6 +18,8 @@ import {
   ENROLL_EMAIL_TEXT,
 } from "../constants/messages.js";
 import { uploadImageIfNeeded } from "../utils/imageUploader.js";
+import { PasswordUpdateZodSchema } from "../models/passwordUpdateSchema.js";
+import { SALT_ROUNDS } from "../constants/auth.js";
 
 // Define a summary type for students by omitting sensitive fields.
 type IStudentSummary = Omit<
@@ -406,6 +409,55 @@ export const studentRouter = router({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "An unexpected error occurred",
+        });
+      }
+    }),
+
+  updatePasswordWithOld: protectedProcedure
+    .input(PasswordUpdateZodSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { id: studentId } = ctx.user;
+      const { currentPassword, newPassword } = input;
+
+      try {
+        const student = await studentModel.findById(studentId);
+        if (!student) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Student user not found",
+          });
+        }
+
+        const isPasswordMatch = await bcrypt.compare(
+          currentPassword,
+          student.password!
+        );
+
+        if (!isPasswordMatch) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Incorrect credentials",
+          });
+        }
+
+        const newHashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+        student.password = newHashedPassword;
+
+        await student.save();
+
+        return { success: true };
+      } catch (error) {
+        console.error(
+          "An error occured while trying to update student password: ",
+          error instanceof Error ? error.message : error
+        );
+
+        if (error instanceof TRPCError) throw error;
+
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Could not update password",
         });
       }
     }),

@@ -79,7 +79,7 @@ type TAdminUpdatable = z.infer<typeof AdminEditableSchema>;
 
 const getCacheKey = (input: TGetAdminsInput) => {
   const { page, limit, search, sortBy, order } = input;
-  return `instructors-${page}-${limit}-${search}-${sortBy}-${order}`;
+  return `admins-${page}-${limit}-${search}-${sortBy}-${order}`;
 };
 
 export const adminRouter = router({

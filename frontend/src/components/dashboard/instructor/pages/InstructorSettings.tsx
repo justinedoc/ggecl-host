@@ -18,6 +18,8 @@ import { toast } from "sonner";
 import { useInstructor } from "@/hooks/useInstructor";
 import { useUpdateInstructorPassword } from "../hooks/useUpdateInstructorPassword";
 import { useUpdateInstructor } from "../hooks/useUpdateInstructor";
+import { Textarea } from "@/components/ui/textarea";
+import { toBase64 } from "@/utils/toBase64";
 
 // --- Zod Schemas ---
 
@@ -25,6 +27,7 @@ import { useUpdateInstructor } from "../hooks/useUpdateInstructor";
 const accountFormSchema = z.object({
   fullName: z.string().min(1, { message: "Full Name is required." }),
   email: z.string().email({ message: "Invalid email address." }),
+  bio: z.string().optional(),
 });
 
 // Schema for Password Change
@@ -64,6 +67,7 @@ const InstructorSettings: React.FC = () => {
     defaultValues: {
       fullName: instructor.fullName || "",
       email: instructor.email || "",
+      bio: instructor.bio || "",
     },
   });
 
@@ -81,33 +85,24 @@ const InstructorSettings: React.FC = () => {
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        toast.error("Image size should be under 2MB.");
+      if (file.size > 1 * 1024 * 1024) {
+        toast.error("Image size should be under 1MB.");
         return;
       }
 
       const imageUrl = URL.createObjectURL(file);
       setSelectedImage(imageUrl);
+
       console.log("Selected file:", file);
 
-      // Convert the file to base64
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setBase64Image(base64String);
-        console.log("Base64 Image:", base64String);
-      };
-      reader.onerror = () => {
-        toast.error("Failed to convert image to base64.");
-        console.error("Error reading file:", reader.error);
-      };
-      reader.readAsDataURL(file);
+      toBase64(file, setBase64Image);
     }
   };
 
   const onSubmitAccount = async (values: AccountFormValues) => {
     const updateData = {
       ...(instructor.email !== values.email && { email: values.email }),
+      ...(instructor.bio !== values.bio && { bio: values.bio }),
       ...(instructor.fullName !== values.fullName && {
         fullName: values.fullName,
       }),
@@ -120,6 +115,7 @@ const InstructorSettings: React.FC = () => {
     }
 
     console.log("Account details:", updateData);
+
     updateInstructor({
       data: updateData,
       id: instructor._id.toString(),
@@ -174,6 +170,22 @@ const InstructorSettings: React.FC = () => {
                         {...field}
                         placeholder="Enter your email"
                         type="email"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={accountForm.control}
+                name="bio"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bio</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Let your students know more about you..."
                       />
                     </FormControl>
                     <FormMessage />

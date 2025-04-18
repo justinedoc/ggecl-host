@@ -64,10 +64,7 @@ const CoursePage = () => {
 
             <div className="flex flex-col gap-5">
               <p className="w-full text-sm md:w-[70%] md:text-base">
-                Lorem ipsum dolor sit amet consectetur adipisicing elit. Fugiat
-                exercitationem tempora temporibus quis! Iste, cum. Lorem ipsum
-                dolor sit amet. Lorem ipsum dolor sit amet consectetur
-                adipisicing elit. Iste, asperiores.
+                {course.description}
               </p>
 
               <div className="flex flex-col md:h-[3vh] md:flex-row md:items-center md:space-x-3">

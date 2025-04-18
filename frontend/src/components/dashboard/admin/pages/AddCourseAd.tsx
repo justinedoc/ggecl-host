@@ -3,9 +3,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { UploadCloud, Video, Image as ImageIcon } from "lucide-react"; // Icons for visual cues
+import { UploadCloud, Video, Image as ImageIcon } from "lucide-react";
 
-import { UploadOverlay } from "@/components/ui/UploadOverlay"; // Assuming this is styled
+import { UploadOverlay } from "@/components/ui/UploadOverlay";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,7 +38,7 @@ import { TAllowedFileTypes, validateFile } from "@/utils/validateFile";
 import { AxiosError } from "axios";
 
 import { useAddCourse } from "../hooks/useAddCourse";
-import { useInstructors } from "../hooks/useInstructors";
+import { useInstructors } from "../../../../hooks/useInstructors";
 import { useUploadToCloud } from "@/hooks/useUploadToCloud";
 
 // --- Zod Schema Definition ---
@@ -78,12 +78,14 @@ const AddCourseAd = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
 
   useEffect(() => {
-    setUploadProgress(imageUploadProgress + videoUploadProgress);
+    setUploadProgress((imageUploadProgress + videoUploadProgress) / 2);
   }, [imageUploadProgress, videoUploadProgress]);
 
   const { uploadToCloud } = useUploadToCloud();
 
-  const { loadingInstructors, instructors } = useInstructors({});
+  const { loading: loadingInstructors, instructors } = useInstructors({
+    limit: 100,
+  });
 
   const { addCourse } = useAddCourse();
 
