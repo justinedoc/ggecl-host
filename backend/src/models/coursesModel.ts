@@ -17,7 +17,7 @@ export interface ICourse {
   level: string;
   price: number;
   img: string;
-  badge: string;
+  badge?: string;
 }
 
 export const CourseSchema = new Schema<ICourse>({

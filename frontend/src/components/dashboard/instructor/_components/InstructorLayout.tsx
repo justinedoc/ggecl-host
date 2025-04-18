@@ -70,7 +70,7 @@ function InstructorLayout() {
       <InstructorContext.Provider value={{ instructor }}>
         <SidebarProvider>
           <InstructorSide />
-          <main className="w-full overflow-x-hidden">
+          <main className="h-screen w-full overflow-x-hidden overflow-y-scroll">
             <InstructorNav />
             <Outlet />
           </main>

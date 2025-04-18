@@ -5,6 +5,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAdmins } from "../hooks/useAdmins";
 import { useEnrollAdmin } from "../hooks/useEnrollAdmin";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 // ---------------- Validation Schema ----------------
 const AdminRegistrationSchema = z.object({
@@ -39,7 +42,7 @@ const AdminForm: React.FC = () => {
   };
 
   return (
-    <div className="rounded-lg border p-6 shadow-md dark:bg-gray-800">
+    <div className="w-full rounded-lg border p-6 shadow-md md:max-w-xl dark:bg-gray-800">
       <h2 className="mb-4 text-xl font-semibold text-gray-700 dark:text-gray-200">
         Add New Admin
       </h2>
@@ -48,10 +51,10 @@ const AdminForm: React.FC = () => {
         className="grid grid-cols-1 gap-4 md:grid-cols-2"
       >
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <Label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
             Full Name
-          </label>
-          <input
+          </Label>
+          <Input
             type="text"
             {...register("fullName")}
             className="w-full rounded-md border px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
@@ -64,10 +67,10 @@ const AdminForm: React.FC = () => {
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <Label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
             Email Address
-          </label>
-          <input
+          </Label>
+          <Input
             type="email"
             {...register("email")}
             className="w-full rounded-md border px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
@@ -77,23 +80,20 @@ const AdminForm: React.FC = () => {
           )}
         </div>
 
-        <button
-          type="submit"
-          disabled={isEnrolling}
-          className="w-fit rounded-md bg-blue-600 px-6 py-2 font-medium text-white transition hover:bg-blue-700 disabled:opacity-50 md:col-span-3"
-        >
-          {isEnrolling ? "Enrolling..." : "Add Admin"}
-        </button>
+        <Button type="submit" disabled={isEnrolling} className="w-fit px-5">
+          {isEnrolling ? "Adding..." : "Add Admin"}
+        </Button>
       </form>
     </div>
   );
 };
 
 const AdminList: React.FC = () => {
-  const { admins, loadingAdmins } = useAdmins({});
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+
+  const { admins, loadingAdmins } = useAdmins({});
 
   useEffect(() => {
     setCurrentPage(1);
@@ -137,7 +137,7 @@ const AdminList: React.FC = () => {
       </h2>
 
       <div className="flex flex-col items-start gap-4 md:flex-row md:justify-between">
-        <input
+        <Input
           type="text"
           placeholder="Search by name..."
           value={searchTerm}
@@ -173,15 +173,14 @@ const AdminList: React.FC = () => {
               <th className="px-4 py-3 text-left text-sm font-semibold dark:text-gray-300">
                 <input type="checkbox" />
               </th>
-              <th className="px-4 py-3 text-left text-sm font-semibold dark:text-gray-300">
-                Name
-              </th>
-              <th className="px-4 py-3 text-left text-sm font-semibold dark:text-gray-300">
-                Email
-              </th>
-              <th className="px-4 py-3 text-left text-sm font-semibold dark:text-gray-300">
-                Actions
-              </th>
+              {["Name", "Email", "Actions"].map((a) => (
+                <th
+                  key={a}
+                  className="px-4 py-3 text-left text-sm font-semibold dark:text-gray-300"
+                >
+                  {a}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900">

@@ -215,6 +215,7 @@ export const adminRouter = router({
 
       const cacheKey = getCacheKey(input);
       const cachedData = CACHE.get<IAdminListResponse>(cacheKey);
+
       if (cachedData) {
         console.log(`[CACHE] Hit for ${cacheKey}`);
         return cachedData;

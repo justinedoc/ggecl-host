@@ -6,15 +6,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Assignment } from "../pages/Assignment";
 import { Button } from "@/components/ui/button";
+import { SAssignment } from "@/utils/trpc";
+import { format } from "date-fns";
 import { Upload } from "lucide-react";
 
 type AssignmentModalProps = {
-  assignment: Assignment;
+  assignment: SAssignment;
   isOpen: boolean;
   onClose: () => void;
-  onUpload: (assignment: Assignment) => void;
+  onUpload: (assignment: SAssignment) => void;
 };
 
 export default function AssignmentModal({
@@ -36,13 +37,14 @@ export default function AssignmentModal({
             {assignment.title}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            Course: {assignment.course} | Due: {assignment.dueDate} | Status:{" "}
+            Course: {assignment.course.title} | Due:{" "}
+            {format(new Date(assignment.dueDate), "dd-MM-yyyy")} | Status:{" "}
             {assignment.status}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
         <div className="my-4 text-sm text-gray-700 dark:text-gray-300">
-          <p>Details about the assignment could go here.</p>
+          <p>{assignment.question}</p>
         </div>
 
         <AlertDialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

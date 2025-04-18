@@ -5,6 +5,9 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useStudents } from "../hooks/useStudents";
 import { useEnrollStudent } from "../hooks/useEnrollStudent";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 // Define the registration schema with Zod validation
 const StudentRegistrationSchema = z.object({
@@ -57,7 +60,7 @@ const StudentInfo: React.FC = () => {
 
   // Filter students by the search term (case-insensitive)
   const filteredStudents = students.filter((student) =>
-    student.fullName.toLowerCase().includes(searchTerm.toLowerCase())
+    student.fullName.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   // Calculate pagination details
@@ -65,7 +68,7 @@ const StudentInfo: React.FC = () => {
   const currentDataStart = (currentPage - 1) * rowsPerPage;
   const paginatedStudents = filteredStudents.slice(
     currentDataStart,
-    currentDataStart + rowsPerPage
+    currentDataStart + rowsPerPage,
   );
 
   // Handlers for pagination and rows changes
@@ -86,8 +89,8 @@ const StudentInfo: React.FC = () => {
     <div className="min-h-screen bg-white p-4 dark:bg-gray-900">
       <div className="grid grid-cols-1 gap-6">
         {/* Add Student Section */}
-        <div className="rounded-lg border  p-4 shadow dark:bg-gray-900">
-          <h2 className="mb-4 text-lg font-semibold text-gray-700 dark:text-gray-200">
+        <div className="mt-5 w-full rounded-lg border p-4 shadow md:max-w-xl dark:bg-gray-900">
+          <h2 className="mb-4 text-xl font-semibold text-gray-700 dark:text-gray-200">
             Add Student
           </h2>
           <form
@@ -96,10 +99,10 @@ const StudentInfo: React.FC = () => {
           >
             {/* Full Name Field */}
             <div className="col-span-2">
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <Label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Full Name
-              </label>
-              <input
+              </Label>
+              <Input
                 type="text"
                 {...register("fullName")}
                 className="w-full rounded-md border px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
@@ -112,10 +115,10 @@ const StudentInfo: React.FC = () => {
             </div>
             {/* Email Field */}
             <div className="col-span-2">
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <Label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Email
-              </label>
-              <input
+              </Label>
+              <Input
                 type="email"
                 {...register("email")}
                 className="w-full rounded-md border px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
@@ -128,9 +131,9 @@ const StudentInfo: React.FC = () => {
             </div>
             {/* Gender Field */}
             <div className="col-span-4">
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <Label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Gender
-              </label>
+              </Label>
               <select
                 {...register("gender")}
                 className="w-full rounded-md border px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
@@ -145,13 +148,9 @@ const StudentInfo: React.FC = () => {
                 </p>
               )}
             </div>
-            <button
-              disabled={isEnrolling}
-              type="submit"
-              className="col-span-1 w-full rounded-md bg-blue-600 py-2 text-white transition hover:bg-blue-700"
-            >
-              {isEnrolling ? "Enrolling" : " Add Student"}
-            </button>
+            <Button disabled={isEnrolling} type="submit" className="w-fit px-5">
+              {isEnrolling ? "Enrolling..." : " Enroll Student"}
+            </Button>
           </form>
         </div>
 
@@ -162,7 +161,7 @@ const StudentInfo: React.FC = () => {
           </h2>
           {/* Search Field */}
           <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <input
+            <Input
               type="text"
               placeholder="Search by full name"
               className="w-full rounded-md border border-gray-300 px-4 py-2 md:w-1/3 dark:border-gray-700 dark:bg-gray-800 dark:text-white"

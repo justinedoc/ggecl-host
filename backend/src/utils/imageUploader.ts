@@ -4,6 +4,7 @@ import { cloudinary } from "../cloudinary.js";
 export async function uploadImageIfNeeded(
   picture?: string
 ): Promise<string | undefined> {
+  
   if (!picture) return undefined;
 
   if (picture.startsWith("http")) {

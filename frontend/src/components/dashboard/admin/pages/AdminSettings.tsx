@@ -18,6 +18,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useUpdateAdmin } from "../hooks/useUpdateAdmin";
 import { useUpdateAdminPassword } from "../hooks/useUpdateAdminPassword";
+import { validateFile } from "@/utils/validateFile";
+import { toBase64 } from "@/utils/toBase64";
 
 // --- Zod Schemas ---
 
@@ -77,32 +79,23 @@ const AdminSettings: React.FC = () => {
   });
 
   const togglePasswordVisibility = () => setShowPassword((prev) => !prev);
+  const handleSetBase64Img = (s: string) => {
+    setBase64Image(s);
+  };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        toast.error("Image size should be under 2MB.");
-        return;
-      }
 
-      const imageUrl = URL.createObjectURL(file);
-      setSelectedImage(imageUrl);
-      console.log("Selected file:", file);
+    const { valid, error: validationError } = validateFile(file, "image");
 
-      // Convert the file to base64
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setBase64Image(base64String);
-        console.log("Base64 Image:", base64String);
-      };
-      reader.onerror = () => {
-        toast.error("Failed to convert image to base64.");
-        console.error("Error reading file:", reader.error);
-      };
-      reader.readAsDataURL(file);
+    if (!valid || !file) {
+      toast.error(validationError);
+      return;
     }
+
+    const imageUrl = URL.createObjectURL(file);
+    setSelectedImage(imageUrl);
+    toBase64(file, handleSetBase64Img);
   };
 
   const onSubmitAccount = async (values: AccountFormValues) => {
@@ -126,7 +119,7 @@ const AdminSettings: React.FC = () => {
 
   const onSubmitPassword = async (values: PasswordFormValues) => {
     const { currentPassword, newPassword } = values;
-    console.log(currentPassword, newPassword)
+    console.log(currentPassword, newPassword);
     if (currentPassword === newPassword) {
       toast.info("New password cannot be the same as your old password");
       return;

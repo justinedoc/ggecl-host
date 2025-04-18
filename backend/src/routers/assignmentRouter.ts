@@ -11,11 +11,15 @@ import AssignmentModel, {
 } from "../models/assignmentModel.js";
 import { CACHE, wildcardDeleteCache } from "../utils/nodeCache.js";
 import { isValidObjectId } from "mongoose";
-import { ICourse } from "../models/coursesModel.js";
+import coursesModel, { ICourse } from "../models/coursesModel.js";
 
 type TSubmissionData = Partial<
   Omit<IStudentAssignment, "title" | "lesson" | "dueDate" | "question">
 >;
+
+export type IStudentAssignmentPopulated = Omit<IStudentAssignment, "course"> & {
+  course: ICourse;
+};
 
 // -- Validation Schemas --------------------------------------------------
 const SubmissionCompleteZodSchema = z.object({
@@ -91,7 +95,12 @@ export const assignmentRouter = router({
       const student = await studentModel
         .findById(studentId)
         .populate<{ assignments: IStudentAssignment[] }>("assignments")
+        .populate<{ assignments: IStudentAssignmentPopulated[] }>({
+          path: "assignments",
+          populate: { path: "course", model: coursesModel },
+        })
         .lean();
+
       if (!student) {
         throw new TRPCError({
           code: "NOT_FOUND",

@@ -17,6 +17,10 @@ export type GetAssignmentsOutput = inferProcedureOutput<
   AppRouter["assignment"]["getAllForInstructor"]
 >;
 
+export type GetAssignmentsStudentOutput = inferProcedureOutput<
+  AppRouter["assignment"]["getAllForStudent"]
+>;
+
 export type GetCourseOutput = inferProcedureOutput<
   AppRouter["course"]["getById"]
 >;
@@ -32,6 +36,7 @@ export type GetAdminOutput = inferProcedureOutput<
 export type ICourseSummary = GetAllCoursesOutput["courses"][number];
 
 export type Assignment = GetAssignmentsOutput[number];
+export type SAssignment = GetAssignmentsStudentOutput[number];
 
 export const queryClient = new QueryClient();
 

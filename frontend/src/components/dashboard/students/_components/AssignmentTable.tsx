@@ -16,15 +16,16 @@ import {
 } from "@/components/ui/table";
 import { EllipsisVertical } from "lucide-react";
 import { TABLE_ACTIONS, TableActionName } from "../utils/tableActions";
-import { Assignment } from "../pages/Assignment";
+import { SAssignment } from "@/utils/trpc";
+import { format } from "date-fns";
 
 type AssignmentTableProps = {
   totalAssignments: number;
   onHandleTableAction: (
     actionName: TableActionName,
-    assignment: Assignment,
+    assignment: SAssignment,
   ) => void;
-  paginatedData: Assignment[];
+  paginatedData: SAssignment[];
 };
 
 function AssignmentTable({
@@ -58,7 +59,7 @@ function AssignmentTable({
       </TableHeader>
       <TableBody>
         {paginatedData.map((assignment, i) => (
-          <TableRow key={assignment.id} className="border-b">
+          <TableRow key={assignment._id.toString()} className="border-b">
             <TableCell className="font-medium whitespace-nowrap">
               {i + 1}
             </TableCell>
@@ -66,17 +67,17 @@ function AssignmentTable({
               {assignment.title}
             </TableCell>
             <TableCell className="whitespace-nowrap">
-              {assignment.course}
+              {assignment.course.title}
             </TableCell>
             <TableCell className="whitespace-nowrap">
-              {assignment.dueDate}
+              {format(new Date(assignment.dueDate), "dd-MM-yyyy")}
             </TableCell>
             <TableCell className="whitespace-nowrap">
               <span
                 className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                  assignment.status === "Completed"
+                  assignment.status === "graded"
                     ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                    : assignment.status === "Pending"
+                    : assignment.status === "submitted"
                       ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
                       : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" // Progress
                 }`}
