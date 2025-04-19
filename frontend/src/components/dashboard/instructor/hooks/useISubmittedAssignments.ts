@@ -1,26 +1,22 @@
-import { AssignmentFilterStatusType } from "@/types/assignment";
 import { trpc } from "@/utils/trpc";
 import { useQuery } from "@tanstack/react-query";
 
-export function useAssignments({
+export function useISubmittedAssignments({
   page = 1,
   limit = 10,
   search = "",
-  status,
   dueDate,
 }: {
   page?: number;
   limit?: number;
   search?: string;
-  status?: AssignmentFilterStatusType | undefined;
-  dueDate?: Date | undefined;
+  dueDate: Date | undefined;
 }) {
   const { data, isLoading } = useQuery(
-    trpc.assignment.getAllForStudent.queryOptions({
+    trpc.assignment.getAllSubmitted.queryOptions({
       page,
       limit,
       search,
-      status,
       dueDate,
     }),
   );

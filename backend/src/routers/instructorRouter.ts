@@ -86,9 +86,9 @@ const GetInstructorByIdZodSchema = z.object({
 type TGetInstructorsInput = z.infer<typeof GetInstructorsZodSchema>;
 
 // Helper to generate cache key for instructor list.
-const getCacheKey = (input: TGetInstructorsInput) => {
+const getCacheKey = (prefix: string, input: TGetInstructorsInput) => {
   const { page, limit, search, sortBy, order } = input;
-  return `instructors-${page}-${limit}-${search}-${sortBy}-${order}`;
+  return `${prefix}-${page}-${limit}-${search}-${sortBy}-${order}`;
 };
 
 export const instructorRouter = router({
@@ -166,7 +166,7 @@ export const instructorRouter = router({
 
   // Get a paginated list of instructors with optional search and sorting.
   getAll: procedure.input(GetInstructorsZodSchema).query(async ({ input }) => {
-    const cacheKey = getCacheKey(input);
+    const cacheKey = getCacheKey("instructors", input);
     const cachedData = CACHE.get<IInstructorListResponse>(cacheKey);
     if (cachedData) {
       console.log(`[CACHE] Hit for ${cacheKey}`);
@@ -179,12 +179,15 @@ export const instructorRouter = router({
     const sortOrder = order === "asc" ? 1 : -1;
 
     const searchQuery: FilterQuery<IInstructorSummary> = {};
+
+    const pattern = new RegExp(search, "i");
+
     if (search) {
       searchQuery.$or = [
-        { fullName: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-        { username: { $regex: search, $options: "i" } },
-        { schRole: { $regex: search, $options: "i" } },
+        { fullName: pattern },
+        { email: pattern },
+        { username: pattern },
+        { schRole: pattern },
       ];
     }
 

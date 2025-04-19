@@ -5,11 +5,7 @@ export function useMarkAssignmentSubmissionComplete() {
   const queryClient = useQueryClient();
   const { mutateAsync: markSubmissionComplete } = useMutation(
     trpc.assignment.markSubmissionComplete.mutationOptions({
-      onSuccess: (data) => {
-        console.log(data);
-        queryClient.invalidateQueries({
-          queryKey: trpc.assignment.getAllForInstructor.queryKey(),
-        });
+      onSuccess: () => {
         queryClient.invalidateQueries({
           queryKey: trpc.assignment.getAllForStudent.queryKey(),
         });

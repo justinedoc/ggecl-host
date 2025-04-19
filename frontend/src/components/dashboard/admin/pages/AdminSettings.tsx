@@ -19,7 +19,8 @@ import { toast } from "sonner";
 import { useUpdateAdmin } from "../hooks/useUpdateAdmin";
 import { useUpdateAdminPassword } from "../hooks/useUpdateAdminPassword";
 import { validateFile } from "@/utils/validateFile";
-import { toBase64 } from "@/utils/toBase64";
+import { Progress } from "@/components/ui/progress";
+import { useUploadImage } from "@/hooks/useUploadImage";
 
 // --- Zod Schemas ---
 
@@ -53,9 +54,16 @@ type PasswordFormValues = z.infer<typeof passwordFormSchema>;
 
 const AdminSettings: React.FC = () => {
   const { admin } = useAdmin();
+
   const [showPassword, setShowPassword] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [base64Image, setBase64Image] = useState<string | null>(null);
+
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const {
+    isImageUploading: isUploadingImage,
+    uploadImage,
+    uploadProgress,
+  } = useUploadImage();
 
   const { isUpdatingAdmin, updateAdmin } = useUpdateAdmin();
   const { isUpdatingAdminPassword, updateAdminPassword } =
@@ -79,61 +87,61 @@ const AdminSettings: React.FC = () => {
   });
 
   const togglePasswordVisibility = () => setShowPassword((prev) => !prev);
-  const handleSetBase64Img = (s: string) => {
-    setBase64Image(s);
-  };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-
-    const { valid, error: validationError } = validateFile(file, "image");
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const { valid, error } = validateFile(file, "image");
 
     if (!valid || !file) {
-      toast.error(validationError);
+      toast.error(error);
       return;
     }
 
-    const imageUrl = URL.createObjectURL(file);
-    setSelectedImage(imageUrl);
-    toBase64(file, handleSetBase64Img);
+    setImageFile(file);
+    setSelectedImage(URL.createObjectURL(file));
   };
 
   const onSubmitAccount = async (values: AccountFormValues) => {
-    const updateData = {
-      ...(admin.email !== values.email && { email: values.email }),
-      ...(admin.fullName !== values.fullName && { fullName: values.fullName }),
-      ...(base64Image && { picture: base64Image }),
+    const { fullName, email } = values;
+
+    const changes: Partial<AccountFormValues> = {
+      ...(fullName && fullName !== admin.fullName && { fullName }),
+      ...(email && email !== admin.email && { email }),
     };
 
-    if (Object.keys(updateData).length === 0) {
+    if (!imageFile && Object.keys(changes).length === 0) {
       toast.info("No changes detected.");
       return;
     }
 
-    console.log("Account details:", updateData);
+    let pictureUrl;
+    if (imageFile) {
+      pictureUrl = await uploadImage(imageFile, "profile_pictures");
+    }
+
     updateAdmin({
-      data: updateData,
       id: admin._id.toString(),
+      data: {
+        ...changes,
+        ...(pictureUrl && { picture: pictureUrl }),
+      },
     });
   };
 
-  const onSubmitPassword = async (values: PasswordFormValues) => {
-    const { currentPassword, newPassword } = values;
-    console.log(currentPassword, newPassword);
-    if (currentPassword === newPassword) {
-      toast.info("New password cannot be the same as your old password");
+  const onSubmitPassword = (values: PasswordFormValues) => {
+    if (values.currentPassword === values.newPassword) {
+      toast.info("New password cannot be the same as the old one.");
       return;
     }
-    updateAdminPassword({ currentPassword, newPassword });
+    updateAdminPassword({ ...values });
   };
 
   return (
-    <div className="p-6 text-gray-800 md:p-8 dark:text-gray-200">
-      <h1 className="text-3xl font-bold md:text-4xl">Account Settings</h1>
+    <div className="p-6 dark:text-gray-200">
+      <h1 className="text-3xl font-bold">Account Settings</h1>
 
       <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-10">
-        {/* Account Info Form */}
-        <div className="col-span-10 rounded-lg border p-4 md:col-span-7 dark:border-gray-700">
+        <div className="col-span-1 rounded-lg border p-4 md:col-span-7 dark:border-gray-700">
           <h2 className="mb-6 text-2xl font-semibold">Profile Information</h2>
           <Form {...accountForm}>
             <form
@@ -163,8 +171,8 @@ const AdminSettings: React.FC = () => {
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder="Enter your email"
                         type="email"
+                        placeholder="Enter your email"
                       />
                     </FormControl>
                     <FormMessage />
@@ -174,47 +182,52 @@ const AdminSettings: React.FC = () => {
 
               <Button
                 type="submit"
-                disabled={isUpdatingAdmin}
+                disabled={isUpdatingAdmin || isUploadingImage}
                 className="mt-2 self-start"
               >
-                {isUpdatingAdmin ? "Saving..." : "Save Changes"}
+                {isUpdatingAdmin || isUploadingImage
+                  ? "Saving..."
+                  : "Save Changes"}
               </Button>
             </form>
           </Form>
         </div>
 
-        {/* Image Upload Section */}
-        <div className="col-span-10 flex flex-col items-center justify-start gap-4 rounded-lg border p-4 md:col-span-3 dark:border-gray-700">
-          <h3 className="mb-4 text-lg font-semibold">Profile Picture</h3>
+        <div className="col-span-1 flex flex-col items-center gap-4 rounded-lg border p-4 md:col-span-3 dark:border-gray-700">
+          <h3 className="text-lg font-semibold">Profile Picture</h3>
           <div className="relative">
             <img
               src={selectedImage || admin.picture}
-              alt="User Profile"
-              className="h-36 w-36 rounded-full border border-gray-300 object-cover dark:border-gray-700" // Make it round?
+              alt="Profile"
+              className="h-36 w-36 rounded-full border object-cover dark:border-gray-700"
             />
             <label
-              htmlFor="imageUpload"
-              className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-black/40 text-sm text-white opacity-0 transition-opacity hover:opacity-100"
+              htmlFor="upload"
+              className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-black/40 text-white opacity-0 transition-opacity hover:opacity-100"
             >
               Click to Upload
             </label>
             <input
-              id="imageUpload"
+              id="upload"
               type="file"
-              accept="image/png, image/jpeg, image/webp" // Be more specific with accepted types
+              accept="image/png, image/jpeg, image/webp"
               className="hidden"
-              onChange={handleImageUpload}
+              onChange={handleImageSelect}
             />
           </div>
-          <p className="w-40 text-center text-xs text-gray-500 dark:text-gray-400">
-            PNG, JPG, WEBP up to 2MB. <br /> Recommended 1:1 ratio.
+          <p className="text-center text-xs text-gray-500 dark:text-gray-400">
+            PNG, JPG, WEBP up to 2MB. 1:1 ratio recommended.
           </p>
-          {/* Optional: Add a button to save the uploaded image */}
-          {/* <Button variant="outline" size="sm" className="mt-2" disabled={!selectedImage}>Upload Image</Button> */}
+
+          {isUploadingImage && (
+            <div className="w-full">
+              <Progress value={uploadProgress} className="h-2 rounded-full" />
+              <p className="mt-1 text-sm">Uploading: {uploadProgress}%</p>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Password Change Form */}
       <div className="mt-10 max-w-md rounded-lg border p-4 dark:border-gray-700">
         <h2 className="mb-6 text-2xl font-semibold">Change Password</h2>
         <Form {...passwordForm}>
@@ -239,15 +252,15 @@ const AdminSettings: React.FC = () => {
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder={`Enter ${label.toLowerCase()}`}
                         type={showPassword ? "text" : "password"}
+                        placeholder={`Enter ${label.toLowerCase()}`}
                         className="pr-10"
                       />
                     </FormControl>
                     <button
                       type="button"
                       onClick={togglePasswordVisibility}
-                      className="absolute top-2/3 right-3 -translate-y-1/2 transform cursor-pointer text-gray-500 dark:text-gray-400"
+                      className="absolute top-1/2 right-3 -translate-y-1/2 transform text-gray-500 dark:text-gray-400"
                       aria-label={
                         showPassword ? "Hide password" : "Show password"
                       }

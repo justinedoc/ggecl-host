@@ -5,13 +5,15 @@ export function useStudents({
   page = 1,
   limit = 10,
   search = "",
+  instructor
 }: {
   page?: number;
   limit?: number;
   search?: string;
+  instructor?: string
 }) {
   const { data, isLoading } = useQuery(
-    trpc.student.getAll.queryOptions({ page, limit, search }),
+    trpc.student.getAll.queryOptions({ page, limit, search, instructor }),
   );
 
   return {

@@ -9,9 +9,11 @@ import studentModel from "../models/studentModel.js";
 import AssignmentModel, {
   IStudentAssignment,
 } from "../models/assignmentModel.js";
-import { CACHE, wildcardDeleteCache } from "../utils/nodeCache.js";
+import { wildcardDeleteCache } from "../utils/nodeCache.js";
 import { isValidObjectId } from "mongoose";
 import coursesModel, { ICourse } from "../models/coursesModel.js";
+import { FilterQuery } from "mongoose";
+import { getCacheOrFetch } from "../utils/getCacheOrFetch.js";
 
 type TSubmissionData = Partial<
   Omit<IStudentAssignment, "title" | "lesson" | "dueDate" | "question">
@@ -48,33 +50,55 @@ const CreateAssignmentSchema = z.object({
   dueDate: z.date(),
 });
 
-async function getCacheOrFetch<T>(
-  key: string,
-  fetcher: () => Promise<T>
-): Promise<T> {
-  const cached = CACHE.get<T>(key);
-  if (cached) {
-    console.debug(`[CACHE] hit ${key}`);
-    return cached;
-  }
-  console.debug(`[CACHE] miss ${key}`);
-  const data = await fetcher();
-  CACHE.set(key, data);
-  console.debug(`[CACHE] set ${key}`);
-  return data;
-}
+const GetAssignmentsZodSchema = z.object({
+  page: z.number().default(1),
+  limit: z.number().default(10),
+  search: z.string().optional(),
+  sortBy: z.enum(["title", "status", "dueDate"]).default("title"),
+  order: z.enum(["asc", "desc"]).default("asc"),
+  status: z.enum(["pending", "graded", "submitted"]).optional(),
+  dueDate: z.date().optional(),
+});
+
+type TGetAssignmentsInput = z.infer<typeof GetAssignmentsZodSchema>;
+
+const getCacheKey = (prefix: string, input: TGetAssignmentsInput) => {
+  const { page, limit, search, sortBy, order, status, dueDate } = input || {};
+  return `${prefix}-${page}-${limit}-${search}-${sortBy}-${order}-${status}-${dueDate}`;
+};
 
 export const assignmentRouter = router({
   create: protectedProcedure
     .input(CreateAssignmentSchema)
     .mutation(async ({ ctx, input }) => {
+      const instructorId = ctx.user.id;
+
       try {
+        const course = await coursesModel.findById(input.course);
+        if (!course) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: `Course with id ${input.course} not found`,
+          });
+        }
+
+        // 2) Create the assignment
         const assignment = await AssignmentModel.create({
           ...input,
-          instructorId: ctx.user.id,
+          instructorId,
         });
-        // Invalidate instructor cache
-        wildcardDeleteCache(`assignments-instructor-${ctx.user.id}`);
+
+        await studentModel.updateMany(
+          { enrolledCourses: course._id },
+          {
+            $addToSet: {
+              assignments: assignment._id,
+              instructors: instructorId,
+            },
+          }
+        );
+
+        wildcardDeleteCache(`assignments-`);
         return assignment;
       } catch (err) {
         console.error("Failed to create assignment:", err);
@@ -87,50 +111,216 @@ export const assignmentRouter = router({
     }),
 
   // Get all assignments for a student
-  getAllForStudent: protectedProcedure.query(async ({ ctx }) => {
-    const studentId = ctx.user.id;
-    const cacheKey = `assignments-student-${studentId}`;
+  getAllForStudent: protectedProcedure
+    .input(GetAssignmentsZodSchema)
+    .query(async ({ ctx, input }) => {
+      const studentId = ctx.user.id;
+      const cacheKey = `assignments-student-${studentId}`;
 
-    return getCacheOrFetch(cacheKey, async () => {
-      const student = await studentModel
-        .findById(studentId)
-        .populate<{ assignments: IStudentAssignment[] }>("assignments")
-        .populate<{ assignments: IStudentAssignmentPopulated[] }>({
-          path: "assignments",
-          populate: { path: "course", model: coursesModel },
-        })
-        .lean();
+      try {
+        return await getCacheOrFetch(cacheKey, async () => {
+          const { page, limit, search, sortBy, order, status, dueDate } = input;
+          const skip = (page - 1) * limit;
+          const sortOrder = order === "asc" ? 1 : -1;
 
-      if (!student) {
+          const searchQuery: FilterQuery<IStudentAssignment> = {
+            studentId,
+            ...(status && { status }),
+          };
+
+          if (dueDate) {
+            const start = new Date(dueDate);
+            const end = new Date(dueDate);
+            end.setDate(end.getDate() + 1);
+            searchQuery.dueDate = { $gte: start, $lt: end };
+          }
+
+          if (search) {
+            const pattern = new RegExp(search, "i");
+            searchQuery.$or = [
+              { title: pattern },
+              { question: pattern },
+              { "course.title": pattern },
+            ];
+          }
+
+          const [assignments, total] = await Promise.all([
+            AssignmentModel.find(searchQuery)
+              .populate<{ course: ICourse }>("course")
+              .select("-syllabus -reviews -description")
+              .sort({ [sortBy]: sortOrder })
+              .skip(skip)
+              .limit(limit)
+              .lean(),
+            AssignmentModel.countDocuments(searchQuery),
+          ]);
+
+          return {
+            assignments,
+            meta: {
+              total,
+              page,
+              limit,
+              totalPages: Math.ceil(total / limit),
+            },
+          };
+        });
+      } catch (err) {
+        console.error("Error fetching student assignments:", err);
+        if (err instanceof TRPCError) throw err;
         throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Student not found",
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch student assignments",
         });
       }
-      return student.assignments;
-    });
-  }),
+    }),
 
-  // Get all assignments for an instructor
-  getAllForInstructor: protectedProcedure.query(async ({ ctx }) => {
-    const instructorId = ctx.user.id;
-    const cacheKey = `assignments-instructor-${instructorId}`;
+  getAllForInstructor: protectedProcedure
+    .input(GetAssignmentsZodSchema)
+    .query(async ({ ctx, input }) => {
+      const instructorId = ctx.user.id;
 
-    return getCacheOrFetch(cacheKey, async () => {
-      const assignments = await AssignmentModel.find({ instructorId })
-        .populate<{ course: ICourse }>("course")
-        .lean();
+      const cacheKey = getCacheKey(
+        `assignments-instructor-${instructorId}`,
+        input
+      );
 
-      if (!assignments) {
+      try {
+        return await getCacheOrFetch(cacheKey, async () => {
+          const { page, limit, search, sortBy, order, status, dueDate } = input;
+          const skip = (page - 1) * limit;
+          const sortOrder = order === "asc" ? 1 : -1;
+
+          const searchQuery: FilterQuery<IStudentAssignment> = {
+            instructorId,
+            ...(status && { status }),
+          };
+
+          if (dueDate) {
+            const start = new Date(dueDate);
+            const end = new Date(dueDate);
+            end.setDate(end.getDate() + 1);
+            searchQuery.dueDate = { $gte: start, $lt: end };
+          }
+
+          if (search) {
+            const pattern = new RegExp(search, "i");
+            searchQuery.$or = [
+              { title: pattern },
+              { question: pattern },
+              { "course.title": pattern },
+            ];
+          }
+
+          const [assignments, total] = await Promise.all([
+            AssignmentModel.find(searchQuery)
+              .select("-studentId")
+              .populate<{ course: ICourse }>("course")
+              .select("-syllabus -reviews -description")
+              .sort({ [sortBy]: sortOrder })
+              .skip(skip)
+              .limit(limit)
+              .lean(),
+            AssignmentModel.countDocuments(searchQuery),
+          ]);
+
+          return {
+            assignments,
+            meta: {
+              total,
+              page,
+              limit,
+              totalPages: Math.ceil(total / limit),
+            },
+          };
+        });
+      } catch (err) {
+        console.error("Error fetching instructors assignments:", err);
+        if (err instanceof TRPCError) throw err;
         throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "No assignments found",
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch instructors assignments",
+        });
+      }
+    }),
+
+  getAllSubmitted: protectedProcedure
+    .input(GetAssignmentsZodSchema)
+    .query(async ({ ctx, input }) => {
+      const { id: instructorId, role } = ctx.user;
+      const cacheKey = getCacheKey(
+        `assignments-instructor-submitted-${instructorId}`,
+        input
+      );
+
+      if (role !== "instructor") {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "You don't have access to this resource",
         });
       }
 
-      return assignments;
-    });
-  }),
+      try {
+        return await getCacheOrFetch(cacheKey, async () => {
+          const { page, limit, search, sortBy, order, dueDate } = input;
+          const skip = (page - 1) * limit;
+          const sortOrder = order === "asc" ? 1 : -1;
+
+          const searchQuery: FilterQuery<IStudentAssignment> = {
+            instructorId,
+            status: "submitted",
+          };
+
+          if (dueDate) {
+            const start = new Date(dueDate);
+            const end = new Date(dueDate);
+            end.setDate(end.getDate() + 1);
+            searchQuery.dueDate = { $gte: start, $lt: end };
+          }
+
+          if (search) {
+            const pattern = new RegExp(search, "i");
+            searchQuery.$or = [
+              { title: pattern },
+              { question: pattern },
+              { "course.title": pattern },
+              { "student.fullName": pattern },
+            ];
+          }
+
+          const [assignments, total] = await Promise.all([
+            AssignmentModel.find(searchQuery)
+              .populate<{ studentId: { _id: string; fullName: string } }>(
+                "studentId"
+              )
+              .populate<{ course: ICourse }>("course")
+              .select("-syllabus -reviews -description")
+              .sort({ [sortBy]: sortOrder })
+              .skip(skip)
+              .limit(limit)
+              .lean(),
+            AssignmentModel.countDocuments(searchQuery),
+          ]);
+
+          return {
+            assignments,
+            meta: {
+              total,
+              page,
+              limit,
+              totalPages: Math.ceil(total / limit),
+            },
+          };
+        });
+      } catch (err) {
+        console.error("Error fetching assignments:", err);
+        if (err instanceof TRPCError) throw err;
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch submitted assignments",
+        });
+      }
+    }),
 
   createCloudinarySignature: protectedProcedure
     .input(
@@ -257,6 +447,8 @@ export const assignmentRouter = router({
             message: "Assignment could not be updated.",
           });
         }
+
+        wildcardDeleteCache("assignments-");
 
         return { success: true, assignment: updatedAssignment };
       } catch (error) {

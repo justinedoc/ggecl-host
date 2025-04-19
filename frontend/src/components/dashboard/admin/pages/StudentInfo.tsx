@@ -180,7 +180,7 @@ const StudentInfo: React.FC = () => {
               <tbody className="divide-y divide-gray-200 bg-white dark:bg-gray-900">
                 {loading ? (
                   <tr>
-                    <td colSpan={4} className="py-6 text-center">
+                    <td colSpan={4} className="py-6 text-center italic">
                       Loading...
                     </td>
                   </tr>

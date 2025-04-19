@@ -2,7 +2,7 @@ import { AssignmentFilterStatusType } from "@/types/assignment";
 import { trpc } from "@/utils/trpc";
 import { useQuery } from "@tanstack/react-query";
 
-export function useAssignments({
+export function useIAssignments({
   page = 1,
   limit = 10,
   search = "",
@@ -16,7 +16,7 @@ export function useAssignments({
   dueDate?: Date | undefined;
 }) {
   const { data, isLoading } = useQuery(
-    trpc.assignment.getAllForStudent.queryOptions({
+    trpc.assignment.getAllForInstructor.queryOptions({
       page,
       limit,
       search,

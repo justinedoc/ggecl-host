@@ -15,19 +15,24 @@ const IsCalendar = () => {
   ]);
 
   return (
-    <div className="p-6 bg-white dark:bg-gray-900 min-h-screen">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Calendar</h2>
+    <div className="min-h-screen bg-white p-6 dark:bg-gray-900">
+      <div className="mb-4 flex items-center justify-between">
+        <div className="mb-5 space-y-0.5">
+          <h1 className="text-3xl font-bold md:text-4xl">Calendar</h1>
+          <p className="text-muted-foreground text-sm">
+            Manage and schedule events.
+          </p>
+        </div>{" "}
         <Button variant="outline">+ Add Event</Button>
       </div>
-      
+
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
         initialView="dayGridMonth"
         events={events}
         eventContent={(eventInfo) => (
           <span
-            className="px-2 py-1 rounded text-white mf"
+            className="mf rounded px-2 py-1 text-white"
             style={{ backgroundColor: eventInfo.event.extendedProps.color }}
           >
             {eventInfo.event.title}

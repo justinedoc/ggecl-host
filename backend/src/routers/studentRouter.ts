@@ -65,6 +65,10 @@ const GetStudentsZodSchema = z.object({
   search: z.string().optional(),
   sortBy: z.enum(["isVerified", "fullName", "email"]).default("fullName"),
   order: z.enum(["asc", "desc"]).default("asc"),
+  instructor: z
+    .string()
+    .refine(isValidObjectId, { message: "invaild instructor id" })
+    .optional(),
 });
 
 export const StudentEnrollSchema = z.object({
@@ -90,8 +94,8 @@ type TGetStudentsInput = z.infer<typeof GetStudentsZodSchema>;
 
 // Helper to build a cache key for student lists.
 const getCacheKey = (input: TGetStudentsInput) => {
-  const { page, limit, search, sortBy, order } = input;
-  return `students-${page}-${limit}-${search}-${sortBy}-${order}`;
+  const { page, limit, search, sortBy, order, instructor } = input;
+  return `students-${page}-${limit}-${search}-${sortBy}-${order}-${instructor}`;
 };
 
 export const studentRouter = router({
@@ -132,9 +136,16 @@ export const studentRouter = router({
           });
         }
 
-        const student = await studentModel.findById(studentId, {
-          $push: { enrolledCourses: courseId },
-        });
+        const student = await studentModel.findByIdAndUpdate(
+          studentId,
+          {
+            $addToSet: {
+              enrolledCourses: courseId,
+              instructors: course.instructor,
+            },
+          },
+          { new: true, runValidators: true }
+        );
 
         if (!student) {
           throw new TRPCError({
@@ -145,8 +156,8 @@ export const studentRouter = router({
 
         await instructorModel.findByIdAndUpdate(
           course.instructor,
-          { $push: { students: studentId } },
-          { runvalidators: true }
+          { $addToSet: { students: studentId } },
+          { runValidators: true }
         );
 
         return { success: true, student };
@@ -250,17 +261,23 @@ export const studentRouter = router({
       }
       console.log(`[CACHE] Miss for ${cacheKey}`);
 
-      const { page, limit, search, sortBy, order } = input;
+      const { page, limit, search, sortBy, order, instructor } = input;
       const skip = (page - 1) * limit;
       const sortOrder = order === "asc" ? 1 : -1;
 
-      // Build search query based on optional search term.
+      const pattern = new RegExp(search, "i");
+
       const searchQuery: FilterQuery<IStudentSummary> = {};
+
+      if (instructor) {
+        searchQuery.instructors = { $in: [instructor] };
+      }
+
       if (search) {
         searchQuery.$or = [
-          { fullName: { $regex: search, $options: "i" } },
-          { email: { $regex: search, $options: "i" } },
-          { username: { $regex: search, $options: "i" } },
+          { fullName: pattern },
+          { email: pattern },
+          { username: pattern },
         ];
       }
 

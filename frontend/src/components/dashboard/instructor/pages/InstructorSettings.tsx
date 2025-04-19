@@ -19,7 +19,9 @@ import { useInstructor } from "@/hooks/useInstructor";
 import { useUpdateInstructorPassword } from "../hooks/useUpdateInstructorPassword";
 import { useUpdateInstructor } from "../hooks/useUpdateInstructor";
 import { Textarea } from "@/components/ui/textarea";
-import { toBase64 } from "@/utils/toBase64";
+import { validateFile } from "@/utils/validateFile";
+import { useUploadImage } from "@/hooks/useUploadImage";
+import { Progress } from "@/components/ui/progress";
 
 // --- Zod Schemas ---
 
@@ -54,9 +56,16 @@ type PasswordFormValues = z.infer<typeof passwordFormSchema>;
 
 const InstructorSettings: React.FC = () => {
   const { instructor } = useInstructor();
+
   const [showPassword, setShowPassword] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [base64Image, setBase64Image] = useState<string | null>(null);
+
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const {
+    isImageUploading: isUploadingImage,
+    uploadImage,
+    uploadProgress,
+  } = useUploadImage();
 
   const { isUpdatingInstructor, updateInstructor } = useUpdateInstructor();
   const { isUpdatingInstructorPassword, updateInstructorPassword } =
@@ -82,42 +91,45 @@ const InstructorSettings: React.FC = () => {
 
   const togglePasswordVisibility = () => setShowPassword((prev) => !prev);
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      if (file.size > 1 * 1024 * 1024) {
-        toast.error("Image size should be under 1MB.");
-        return;
-      }
+    const { valid, error } = validateFile(file, "image");
 
-      const imageUrl = URL.createObjectURL(file);
-      setSelectedImage(imageUrl);
-
-      console.log("Selected file:", file);
-
-      toBase64(file, setBase64Image);
+    if (!valid || !file) {
+      toast.error(error);
+      return;
     }
+
+    setImageFile(file);
+    setSelectedImage(URL.createObjectURL(file));
   };
 
   const onSubmitAccount = async (values: AccountFormValues) => {
+    const { fullName, email, bio } = values;
+
     const updateData = {
-      ...(instructor.email !== values.email && { email: values.email }),
-      ...(instructor.bio !== values.bio && { bio: values.bio }),
-      ...(instructor.fullName !== values.fullName && {
-        fullName: values.fullName,
-      }),
-      ...(base64Image && { picture: base64Image }),
+      ...(fullName && fullName !== instructor.fullName && { fullName }),
+      ...(email && email !== instructor.email && { email }),
+      ...(bio && bio !== instructor.bio && { bio }),
     };
 
-    if (Object.keys(updateData).length === 0) {
+    if (!imageFile && Object.keys(updateData).length === 0) {
       toast.info("No changes detected.");
       return;
+    }
+
+    let pictureUrl;
+    if (imageFile) {
+      pictureUrl = await uploadImage(imageFile, "profile_pictures");
     }
 
     console.log("Account details:", updateData);
 
     updateInstructor({
-      data: updateData,
+      data: {
+        ...updateData,
+        ...(pictureUrl && { picture: pictureUrl }),
+      },
       id: instructor._id.toString(),
     });
   };
@@ -134,8 +146,12 @@ const InstructorSettings: React.FC = () => {
 
   return (
     <div className="p-6 text-gray-800 md:p-8 dark:text-gray-200">
-      <h1 className="text-3xl font-bold md:text-4xl">Account Settings</h1>
-
+      <div className="mb-5 space-y-0.5">
+        <h1 className="text-3xl font-bold md:text-4xl">Account Settings</h1>
+        <p className="text-muted-foreground text-sm">
+          Customize your your account
+        </p>
+      </div>
       <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-10">
         {/* Account Info Form */}
         <div className="col-span-10 rounded-lg border p-4 md:col-span-7 dark:border-gray-700">
@@ -168,8 +184,8 @@ const InstructorSettings: React.FC = () => {
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder="Enter your email"
                         type="email"
+                        placeholder="Enter your email"
                       />
                     </FormControl>
                     <FormMessage />
@@ -205,7 +221,7 @@ const InstructorSettings: React.FC = () => {
         </div>
 
         {/* Image Upload Section */}
-        <div className="col-span-10 flex flex-col items-center justify-start gap-4 rounded-lg border p-4 md:col-span-3 dark:border-gray-700">
+        <div className="col-span-10 flex max-h-fit flex-col items-center justify-start gap-4 rounded-lg border p-4 md:col-span-3 dark:border-gray-700">
           <h3 className="mb-4 text-lg font-semibold">Profile Picture</h3>
           <div className="relative">
             <img
@@ -224,12 +240,19 @@ const InstructorSettings: React.FC = () => {
               type="file"
               accept="image/png, image/jpeg, image/webp"
               className="hidden"
-              onChange={handleImageUpload}
+              onChange={handleImageSelect}
             />
           </div>
           <p className="w-40 text-center text-xs text-gray-500 dark:text-gray-400">
             PNG, JPG, WEBP up to 2MB. <br /> Recommended 1:1 ratio.
           </p>
+
+          {isUploadingImage && (
+            <div className="w-full">
+              <Progress value={uploadProgress} className="h-2 rounded-full" />
+              <p className="mt-1 text-sm">Uploading: {uploadProgress}%</p>
+            </div>
+          )}
         </div>
       </div>
 
