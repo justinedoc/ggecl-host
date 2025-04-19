@@ -110,7 +110,6 @@ export const adminRouter = router({
         }
 
         const adminPassword = generatePassword(8);
-        console.log(adminPassword);
 
         const adminEnrollmentData = {
           ...input,

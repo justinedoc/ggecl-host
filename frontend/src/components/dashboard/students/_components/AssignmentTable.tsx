@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table";
 import { EllipsisVertical } from "lucide-react";
 import { TABLE_ACTIONS, TableActionName } from "../utils/tableActions";
-import { SAssignment } from "@/utils/trpc";
+import { Assignment } from "@/utils/trpc";
 import { format } from "date-fns";
 import { useCallback, useEffect, useState } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type TStudentAssignmentStatusWithAll = SAssignment["status"] | "all";
+type TStudentAssignmentStatusWithAll = Assignment["status"] | "all";
 
 const STATUS_OPTIONS: TStudentAssignmentStatusWithAll[] = [
   "all",
@@ -43,7 +43,7 @@ const STATUS_OPTIONS: TStudentAssignmentStatusWithAll[] = [
 type AssignmentTableProps = {
   onHandleTableAction: (
     actionName: TableActionName,
-    assignment: SAssignment,
+    assignment: Assignment,
   ) => void;
 };
 
@@ -192,7 +192,7 @@ function AssignmentTable({ onHandleTableAction }: AssignmentTableProps) {
                       {TABLE_ACTIONS.map((action) => (
                         <Button
                           onClick={() =>
-                            onHandleTableAction(action.name, assignment)
+                            onHandleTableAction(action.name, assignment as unknown as Assignment)
                           }
                           key={action.name}
                           variant="ghost"

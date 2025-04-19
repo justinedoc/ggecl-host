@@ -180,9 +180,8 @@ export const instructorRouter = router({
 
     const searchQuery: FilterQuery<IInstructorSummary> = {};
 
-    const pattern = new RegExp(search, "i");
-
     if (search) {
+      const pattern = new RegExp(search, "i");
       searchQuery.$or = [
         { fullName: pattern },
         { email: pattern },

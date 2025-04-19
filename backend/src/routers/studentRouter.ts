@@ -81,13 +81,17 @@ export const StudentEnrollSchema = z.object({
     .default("other"),
 });
 
-const EnrollStudentToCourseZodSchema = z.object({
-  studentId: z.string().refine(isValidObjectId, {
-    message: "Student id must be a valid id",
-  }),
-  courseId: z.string().refine(isValidObjectId, {
-    message: "course id must be a valid id",
-  }),
+const EnrollStudentsToCourseSchema = z.object({
+  studentIds: z
+    .array(
+      z.string().refine(isValidObjectId, {
+        message: "Each student ID must be a valid ObjectId",
+      })
+    )
+    .nonempty({ message: "You must supply at least one student ID" }),
+  courseId: z
+    .string()
+    .refine(isValidObjectId, { message: "Course ID must be a valid ObjectId" }),
 });
 
 type TGetStudentsInput = z.infer<typeof GetStudentsZodSchema>;
@@ -100,78 +104,66 @@ const getCacheKey = (input: TGetStudentsInput) => {
 
 export const studentRouter = router({
   enrollToCourse: protectedProcedure
-    .input(EnrollStudentToCourseZodSchema)
+    .input(EnrollStudentsToCourseSchema)
     .mutation(async ({ ctx, input }) => {
       const { id: adminId, role } = ctx.user;
-      const { courseId, studentId } = input;
+      const { courseId, studentIds } = input;
 
-      try {
-        const adminExists = await adminModel.exists({ _id: adminId });
-
-        if (!adminExists || role !== "admin") {
-          throw new TRPCError({
-            code: "UNAUTHORIZED",
-            message: "Only admins can enroll students on a course",
-          });
-        }
-
-        if (
-          await studentModel.exists({
-            _id: studentId,
-            enrolledCourses: courseId,
-          })
-        ) {
-          throw new TRPCError({
-            code: "CONFLICT",
-            message: "Student has already been enrolled to course",
-          });
-        }
-
-        const course = await coursesModel.findById(courseId);
-
-        if (!course) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: `Course with id ${courseId} was not found`,
-          });
-        }
-
-        const student = await studentModel.findByIdAndUpdate(
-          studentId,
-          {
-            $addToSet: {
-              enrolledCourses: courseId,
-              instructors: course.instructor,
-            },
-          },
-          { new: true, runValidators: true }
-        );
-
-        if (!student) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: `Student with id ${studentId} was not found`,
-          });
-        }
-
-        await instructorModel.findByIdAndUpdate(
-          course.instructor,
-          { $addToSet: { students: studentId } },
-          { runValidators: true }
-        );
-
-        return { success: true, student };
-      } catch (error) {
-        console.error(
-          "An error occured while trying to enroll student on a course: ",
-          error
-        );
-        if (error instanceof TRPCError) throw error;
+      const isAdmin =
+        role === "admin" && (await adminModel.exists({ _id: adminId }));
+      if (!isAdmin) {
         throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "An unexpected error occured",
+          code: "UNAUTHORIZED",
+          message: "Only admins can enroll students on a course",
         });
       }
+
+      const course = await coursesModel.findById(courseId);
+      if (!course) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Course with id ${courseId} was not found`,
+        });
+      }
+
+      const toEnroll = await studentModel
+        .find({
+          _id: { $in: studentIds },
+          enrolledCourses: { $ne: course._id },
+        })
+        .select("_id");
+
+      if (toEnroll.length === 0) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "All selected students are already enrolled in this course",
+        });
+      }
+
+      const toEnrollIds = toEnroll.map((s) => s._id);
+
+      await studentModel.updateMany(
+        { _id: { $in: toEnrollIds } },
+        {
+          $addToSet: {
+            enrolledCourses: course._id,
+            instructors: course.instructor,
+          },
+        }
+      );
+
+      await instructorModel.findByIdAndUpdate(
+        course.instructor,
+        { $addToSet: { students: { $each: toEnrollIds } } },
+        { new: true, runValidators: true }
+      );
+
+      return {
+        success: true,
+        newlyEnrolledCount: toEnrollIds.length,
+        courseId,
+        studentIds: toEnrollIds,
+      };
     }),
 
   enroll: protectedProcedure
@@ -265,8 +257,6 @@ export const studentRouter = router({
       const skip = (page - 1) * limit;
       const sortOrder = order === "asc" ? 1 : -1;
 
-      const pattern = new RegExp(search, "i");
-
       const searchQuery: FilterQuery<IStudentSummary> = {};
 
       if (instructor) {
@@ -274,6 +264,7 @@ export const studentRouter = router({
       }
 
       if (search) {
+        const pattern = new RegExp(search, "i");
         searchQuery.$or = [
           { fullName: pattern },
           { email: pattern },

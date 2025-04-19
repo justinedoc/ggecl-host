@@ -7,15 +7,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { SAssignment } from "@/utils/trpc";
+import { Assignment } from "@/utils/trpc";
 import { format } from "date-fns";
 import { Upload } from "lucide-react";
 
 type AssignmentModalProps = {
-  assignment: SAssignment;
+  assignment: Assignment;
   isOpen: boolean;
   onClose: () => void;
-  onUpload: (assignment: SAssignment) => void;
+  onUpload: (assignment: Assignment) => void;
 };
 
 export default function AssignmentModal({

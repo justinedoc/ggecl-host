@@ -9,19 +9,19 @@ import { UploadOverlay } from "@/components/ui/UploadOverlay";
 import { useCreateAssignmentCloudinarySig } from "../hooks/useCreateAssignmentCloudinarySig";
 import { useMarkAssignmentSubmissionComplete } from "../hooks/useMarkAssignmentSubmissionComplete";
 import { uploadToCloudinary } from "@/api/services/uploadToCloudinary";
-import { SAssignment } from "@/utils/trpc";
+import { Assignment } from "@/utils/trpc";
 
 export default function AssignmentList() {
   // File upload state
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [assignmentToSubmitFor, setAssignmentToSubmitFor] =
-    useState<SAssignment | null>(null);
+    useState<Assignment | null>(null);
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAssignment, setSelectedAssignment] =
-    useState<SAssignment | null>(null);
+    useState<Assignment | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { createSignatureCloudinary } = useCreateAssignmentCloudinarySig();
@@ -49,7 +49,7 @@ export default function AssignmentList() {
 
   // Upload handler
   const submitToCloud = useCallback(
-    async (assignment: SAssignment, file: File) => {
+    async (assignment: Assignment, file: File) => {
       setIsSubmitting(true);
       setUploadProgress(0);
 
@@ -118,12 +118,12 @@ export default function AssignmentList() {
   );
 
   // Table action handlers
-  const handleView = useCallback((assignment: SAssignment) => {
+  const handleView = useCallback((assignment: Assignment) => {
     setSelectedAssignment(assignment);
     setIsModalOpen(true);
   }, []);
 
-  const handleUploadAction = useCallback((assignment: SAssignment) => {
+  const handleUploadAction = useCallback((assignment: Assignment) => {
     if (assignment.status === "submitted") {
       toast.info("Already submitted.");
       return;
@@ -133,7 +133,7 @@ export default function AssignmentList() {
   }, []);
 
   const handleTableAction = useCallback(
-    (action: string, assignment: SAssignment) => {
+    (action: string, assignment: Assignment) => {
       if (action === "View") handleView(assignment);
       if (action === "Upload") handleUploadAction(assignment);
     },
