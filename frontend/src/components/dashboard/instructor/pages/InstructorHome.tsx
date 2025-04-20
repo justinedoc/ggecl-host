@@ -1,6 +1,6 @@
 import profileImg from "@/assets/images/Frame 427319048.png";
 import { FaPlayCircle, FaUserCircle } from "react-icons/fa";
-import {Link} from "react-router-dom"
+import {Link} from "react-router"
 
 const features = [
   {
