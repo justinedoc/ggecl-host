@@ -1,4 +1,19 @@
-import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { useState, useMemo, useCallback } from "react";
+import { Assignment } from "@/utils/trpc";
+import { format } from "date-fns";
+import { toast } from "sonner";
+import { FaSearch } from "react-icons/fa";
 import {
   Table,
   TableHeader,
@@ -8,170 +23,184 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { FaSearch } from "react-icons/fa";
+import { useAssignments } from "../hooks/useAssignments";
+import { useInstructor } from "@/hooks/useInstructor";
+import { useCreateAssignment } from "../hooks/useCreateAssignment";
+import { useGradeAssignment } from "../hooks/useGradeAssignment";
+import MarkAssignmentModal, {
+  Grade,
+} from "@/components/ui/MarkAssignmentModal";
 
-const assignments = [
-  {
-    title: "Math Homework",
-    course: "Algebra",
-    dueDate: "2025-03-05",
-    status: "Pending",
-  },
-  {
-    title: "Science Project",
-    course: "Physics",
-    dueDate: "2025-03-10",
-    status: "Completed",
-  },
-  {
-    title: "History Essay",
-    course: "History",
-    dueDate: "2025-03-15",
-    status: "Pending",
-  },
-  {
-    title: "Chemistry Lab",
-    course: "Chemistry",
-    dueDate: "2025-03-20",
-    status: "Completed",
-  },
-  {
-    title: "Literature Review",
-    course: "English",
-    dueDate: "2025-03-25",
-    status: "Pending",
-  },
-  {
-    title: "Python Review",
-    course: "Comp Sci",
-    dueDate: "2025-05-03",
-    status: "In Progress",
-  },
-];
+export default function AssignmentDashboard() {
+  // Data hooks
+  const { assignments = [] } = useAssignments();
+  const { instructor } = useInstructor();
+  const { createAssignment, isCreatingAssignment } = useCreateAssignment();
+  const { isGradingStudent, gradeStudent } = useGradeAssignment();
 
-export default function AssignmentCheck() {
-  const [filterStatus, setFilterStatus] = useState("All");
-  const [filterDate, setFilterDate] = useState("");
-  const [rowsPerPage, setRowsPerPage] = useState(3);
-  const [currentPage, setCurrentPage] = useState(1);
+  // Filters & pagination
+  const [statusFilter, setStatusFilter] = useState<string>("All");
+  const [dateFilter, setDateFilter] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [rowsPerPage, setRowsPerPage] = useState<number>(5);
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
-  const filteredAssignments = assignments
-    .filter((a) => (filterStatus === "All" ? true : a.status === filterStatus))
-    .filter((a) => (filterDate ? a.dueDate === filterDate : true));
+  const courses = instructor.courses as {
+    _id: string;
+    title: string;
+  }[];
 
-  const totalPages = Math.ceil(filteredAssignments.length / rowsPerPage);
-  const paginatedData = filteredAssignments.slice(
-    (currentPage - 1) * rowsPerPage,
-    currentPage * rowsPerPage
+  const filtered = useMemo(() => {
+    return assignments
+      .filter((a) =>
+        statusFilter === "All" ? true : a.status === statusFilter,
+      )
+      .filter((a) =>
+        dateFilter
+          ? format(new Date(a.dueDate), "yyyy-MM-dd") === dateFilter
+          : true,
+      )
+      .filter((a) =>
+        searchTerm
+          ? a.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            a.course.title.toLowerCase().includes(searchTerm.toLowerCase())
+          : true,
+      );
+  }, [assignments, statusFilter, dateFilter, searchTerm]);
+
+  const totalPages = useMemo(
+    () => Math.ceil(filtered.length / rowsPerPage) || 1,
+    [filtered, rowsPerPage],
   );
 
-  const markAssignment = (index: number) => {
-    assignments[index].status = "Marked";
-    setCurrentPage(currentPage); // Trigger re-render
+  const pageData = useMemo(() => {
+    const start = (currentPage - 1) * rowsPerPage;
+    return filtered.slice(start, start + rowsPerPage);
+  }, [filtered, currentPage, rowsPerPage]);
+
+  // Modal state
+  const [selected, setSelected] = useState<Assignment | null>(null);
+  const openModal = useCallback(
+    (assignment: Assignment) => setSelected(assignment),
+    [],
+  );
+  const closeModal = useCallback(() => setSelected(null), []);
+
+  const handleGrade = (id: string, grade: Grade, remark: string) => {
+    gradeStudent({
+      assignmentId: id,
+      grade: grade!,
+      ...(remark && { remark }),
+    });
+    toast.success("Assignment graded successfully");
+    closeModal();
+  };
+
+  // New assignment state
+  const [newTitle, setNewTitle] = useState<string>("");
+  const [newCourse, setNewCourse] = useState<string>(
+    instructor.courses[0]?._id.toString() || "",
+  );
+  const [newDueDate, setNewDueDate] = useState<string>("");
+  const [newQuestion, setNewQuestion] = useState<string>("");
+
+  const handleCreate = () => {
+    if (!newTitle || !newCourse || !newDueDate || !newQuestion) {
+      toast.info("All fields are required");
+      return;
+    }
+    createAssignment(
+      {
+        title: newTitle,
+        course: newCourse,
+        dueDate: new Date(newDueDate),
+        question: newQuestion,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Assignment created");
+          setNewTitle("");
+          setNewDueDate("");
+          setNewQuestion("");
+        },
+      },
+    );
   };
 
   return (
-    <div className="container mx-auto py-8 px-4 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200">
-      {/* Header */}
-      <div className="md:grid grid-cols-1 md:grid-cols-2 flex flex-col justify-between items-start md:items-center mb-6 px-4">
+    <div className="container mx-auto rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+      {/* Header & Filters */}
+      <div className="mb-6 flex flex-col gap-4 md:flex-row md:justify-between">
         <div>
-          <h1 className="text-4xl font-bold mb-5">Assignments to Mark</h1>
-          <p>View and mark submitted assignments</p>
+          <h1 className="text-3xl font-extrabold">Assignments to Mark</h1>
+          <p className="text-gray-600 dark:text-gray-300">
+            View, search, and grade submitted assignments.
+          </p>
         </div>
-        <div className="flex gap-4 items-center justify-start md:flex-row flex-row-reverse md:justify-end">
-          <FaSearch className="bg-gray-100 dark:bg-gray-800 p-2 rounded-md text-[2rem] text-gray-700 dark:text-gray-300" />
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="p-2 bg-transparent outline-none border-none shadow-none"
-          >
-            <option
-              className="dark:bg-gray-900 bg-gray-100 outline-none"
-              value="All"
-            >
-              All Status
-            </option>
-            <option
-              className="dark:bg-gray-900 bg-gray-100 outline-none"
-              value="Pending"
-            >
-              Pending
-            </option>
-            <option
-              className="dark:bg-gray-900 bg-gray-100 outline-none"
-              value="Completed"
-            >
-              Completed
-            </option>
-            <option
-              className="dark:bg-gray-900 bg-gray-100 outline-none"
-              value="In Progress"
-            >
-              In Progress
-            </option>
-            <option
-              className="dark:bg-gray-900 bg-gray-100 outline-none"
-              value="Marked"
-            >
-              Marked
-            </option>
-          </select>
-          {/* Filter by Date */}
-          <input
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="relative">
+            <FaSearch className="absolute top-1/2 left-3 -translate-y-1/2 transform text-gray-400" />
+            <Input
+              placeholder="Search..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-64 pl-10"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              {["All", "Pending", "In Progress", "Completed", "Marked"].map(
+                (s) => (
+                  <SelectItem key={s} value={s}>
+                    {s}
+                  </SelectItem>
+                ),
+              )}
+            </SelectContent>
+          </Select>
+          <Input
             type="date"
-            value={filterDate}
-            onChange={(e) => setFilterDate(e.target.value)}
-            className="p-2 bg-transparent outline-none"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
           />
         </div>
       </div>
 
+      {/* Table */}
       <Table>
-        <TableHeader className="border bg-gray-50 dark:bg-secondary rounded-lg">
+        <TableHeader>
           <TableRow>
-            <TableHead className="font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">
-              Assignment Title
-            </TableHead>
-            <TableHead className="font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">
-              Course/Lesson
-            </TableHead>
-            <TableHead className="font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">
-              Due Date
-            </TableHead>
-            <TableHead className="font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">
-              Status
-            </TableHead>
-            <TableHead className="font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">
-              Action
-            </TableHead>
+            {["Title", "Course", "Due Date", "Status", "Grade", "Action"].map(
+              (h) => (
+                <TableHead key={h}>{h}</TableHead>
+              ),
+            )}
           </TableRow>
         </TableHeader>
         <TableBody>
-          {paginatedData.map((assignment, index) => (
-            <TableRow key={index} className="border mt-20 mb-20 rounded-lg ">
-              <TableCell className="whitespace-nowrap">
-                {assignment.title}
-              </TableCell>
-              <TableCell className="whitespace-nowrap">
-                {assignment.course}
-              </TableCell>
-              <TableCell className="whitespace-nowrap">
-                {assignment.dueDate}
-              </TableCell>
-              <TableCell className="whitespace-nowrap">
-                {assignment.status}
-              </TableCell>
-              <TableCell className="whitespace-nowrap">
-                {assignment.status === "Pending" || assignment.status === "In Progress" ? (
-                  <button
-                    onClick={() => markAssignment(index)}
-                    className="bg-blue-600 text-md text-white px-3 py-1 rounded-md"
+          {pageData.map((a) => (
+            <TableRow key={a._id.toString()}>
+              <TableCell>{a.title}</TableCell>
+              <TableCell>{a.course.title}</TableCell>
+              <TableCell>{format(new Date(a.dueDate), "dd-MM-yyyy")}</TableCell>
+              <TableCell>{a.status}</TableCell>
+              <TableCell>{a.grade ?? "-"}</TableCell>
+              <TableCell>
+                {a.status !== "graded" ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => openModal(a)}
                   >
                     Mark
-                  </button>
+                  </Button>
                 ) : (
-                  "Marked"
+                  <Button size="sm" variant="ghost" disabled>
+                    Graded
+                  </Button>
                 )}
               </TableCell>
             </TableRow>
@@ -179,73 +208,119 @@ export default function AssignmentCheck() {
         </TableBody>
         <TableFooter>
           <TableRow>
-            <TableCell colSpan={5}>
-              Total Assignments: {filteredAssignments.length}
-            </TableCell>
+            <TableCell colSpan={6}>Total: {filtered.length}</TableCell>
           </TableRow>
         </TableFooter>
       </Table>
 
-      <div className="flex justify-between items-center mt-4">
-        <div>
-          <span className="mr-2">Show</span>
-          <select
-            value={rowsPerPage}
-            onChange={(e) => setRowsPerPage(Number(e.target.value))}
-            className="border rounded-lg p-2 bg-transparent outline-none border-none shadow-none"
-          >
-            <option
-              className="dark:bg-gray-900 bg-gray-100 outline-none"
-              value={3}
-            >
-              3
-            </option>
-            <option
-              className="dark:bg-gray-900 bg-gray-100 outline-none"
-              value={5}
-            >
-              5
-            </option>
-            <option
-              className="dark:bg-gray-900 bg-gray-100 outline-none"
-              value={10}
-            >
-              10
-            </option>
-          </select>
-          <span className="ml-2">rows</span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+      {/* Pagination */}
+      <div className="mt-4 flex items-center justify-between">
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
             disabled={currentPage === 1}
-            className="p-2 border rounded-md disabled:opacity-50"
           >
-            <ChevronLeft size={20} />
-          </button>
-          {Array.from({ length: totalPages }, (_, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrentPage(i + 1)}
-              className={`px-3 py-1 border rounded-md ${
-                currentPage === i + 1 ? "bg-gray-300 dark:bg-gray-800" : ""
-              }`}
-            >
-              {i + 1}
-            </button>
-          ))}
-          <button
-            onClick={() =>
-              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-            }
+            Previous
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
             disabled={currentPage === totalPages}
-            className="p-2 border rounded-md disabled:opacity-50 "
           >
-            <ChevronRight size={20} />
-          </button>
+            Next
+          </Button>
         </div>
+        <div>
+          Page {currentPage} of {totalPages}
+        </div>
+        <Select
+          value={rowsPerPage.toString()}
+          onValueChange={(v) => setRowsPerPage(Number(v))}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {[5, 10, 20].map((n) => (
+              <SelectItem key={n} value={n.toString()}>
+                {n} / page
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
+
+      {/* Create Assignment */}
+      <div className="mt-8 rounded-lg bg-gray-50 p-6 shadow dark:bg-gray-700">
+        <h2 className="mb-4 text-2xl font-semibold">Create New Assignment</h2>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="flex flex-col space-y-1">
+            <Label htmlFor="new-title">Title</Label>
+            <Input
+              id="new-title"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              placeholder="Assignment title"
+            />
+          </div>
+          <div className="flex flex-col space-y-1">
+            <Label htmlFor="new-course">Course</Label>
+            <Select value={newCourse} onValueChange={setNewCourse}>
+              <SelectTrigger id="new-course">
+                <SelectValue placeholder="Select course" />
+              </SelectTrigger>
+              <SelectContent>
+                {courses.map((c) => (
+                  <SelectItem key={c._id.toString()} value={c._id.toString()}>
+                    {c.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col space-y-1">
+            <Label htmlFor="new-due-date">Due Date</Label>
+            <Input
+              id="new-due-date"
+              type="date"
+              value={newDueDate}
+              onChange={(e) => setNewDueDate(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-col space-y-1 md:col-span-3">
+            <Label htmlFor="new-question">Question</Label>
+            <Textarea
+              id="new-question"
+              value={newQuestion}
+              onChange={(e) => setNewQuestion(e.target.value)}
+              placeholder="Enter assignment question"
+              rows={4}
+            />
+          </div>
+        </div>
+        <Button
+          className="mt-4"
+          variant="secondary"
+          onClick={handleCreate}
+          disabled={isCreatingAssignment}
+        >
+          {isCreatingAssignment ? "Creating..." : "Create Assignment"}
+        </Button>
+      </div>
+
+      {/* Grading Modal */}
+      {selected && (
+        <MarkAssignmentModal
+          assignment={selected}
+          isOpen={Boolean(selected)}
+          onClose={closeModal}
+          onGradeSubmitted={handleGrade}
+          isGrading={isGradingStudent}
+        />
+      )}
     </div>
   );
 }

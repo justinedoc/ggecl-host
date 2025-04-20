@@ -14,8 +14,6 @@ import {
 } from "../utils/roleMappings.js";
 import { CACHE } from "../utils/nodeCache.js";
 
-const REFRESH_CACHE_TTL = 14 * 60;
-
 export interface JwtPayload {
   id: string;
   role: UserRole;
@@ -109,11 +107,7 @@ const refresh = asyncHandler(async (req: Request, res: Response) => {
   });
 
   // ✅ Set new token pair in node-cache with 14 min TTL
-  CACHE.set(
-    `refresh:${newRefreshToken}`,
-    { accessToken, newRefreshToken },
-    REFRESH_CACHE_TTL
-  );
+  CACHE.set(`refresh:${newRefreshToken}`, { accessToken, newRefreshToken });
 
   // ✅ Delete the old cache entry
   CACHE.del(`refresh:${refreshToken}`);

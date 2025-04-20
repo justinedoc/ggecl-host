@@ -26,6 +26,7 @@ interface ICourseListResponse {
 
 // Zod Schemas
 const CourseInputSchema = z.object({
+  videoUrl: z.string().url(),
   title: z.string().min(3).max(100),
   description: z.string().min(10),
   certification: z.string().min(3),

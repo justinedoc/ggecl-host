@@ -11,12 +11,17 @@ import AssignmentModel, {
 } from "../models/assignmentModel.js";
 import { CACHE, wildcardDeleteCache } from "../utils/nodeCache.js";
 import { isValidObjectId } from "mongoose";
+import { ICourse } from "../models/coursesModel.js";
 
 type TSubmissionData = Partial<
-  Omit<IStudentAssignment, "title" | "lesson" | "dueDate">
+  Omit<IStudentAssignment, "title" | "lesson" | "dueDate" | "question">
 >;
+
+// -- Validation Schemas --------------------------------------------------
 const SubmissionCompleteZodSchema = z.object({
-  assignmentId: z.string(),
+  assignmentId: z
+    .string()
+    .refine(isValidObjectId, { message: "Invalid assignment ID" }),
   publicId: z.string(),
   fileName: z.string(),
   fileSize: z.number(),
@@ -24,56 +29,98 @@ const SubmissionCompleteZodSchema = z.object({
   fileUrl: z.string().url(),
 });
 
-const MarkAssignmentZodSchema = z.object({
+const MarkAssignmentSchema = z.object({
   assignmentId: z
     .string()
-    .refine(isValidObjectId, { message: "Invalid assignment id" }),
-
-  score: z
-    .number()
-    .min(0, { message: "Assignment score cannot be less than zero" }),
+    .refine(isValidObjectId, { message: "Invalid assignment ID" }),
+  grade: z.enum(["A", "B", "C", "D", "E", "F"]),
+  remark: z.string().optional(),
 });
 
+const CreateAssignmentSchema = z.object({
+  title: z.string().min(2, { message: "Title must be at least 2 characters" }),
+  course: z.string().refine(isValidObjectId, { message: "Invalid course ID" }),
+  question: z.string(),
+  dueDate: z.date(),
+});
+
+async function getCacheOrFetch<T>(
+  key: string,
+  fetcher: () => Promise<T>
+): Promise<T> {
+  const cached = CACHE.get<T>(key);
+  if (cached) {
+    console.debug(`[CACHE] hit ${key}`);
+    return cached;
+  }
+  console.debug(`[CACHE] miss ${key}`);
+  const data = await fetcher();
+  CACHE.set(key, data);
+  console.debug(`[CACHE] set ${key}`);
+  return data;
+}
+
 export const assignmentRouter = router({
+  create: protectedProcedure
+    .input(CreateAssignmentSchema)
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const assignment = await AssignmentModel.create({
+          ...input,
+          instructorId: ctx.user.id,
+        });
+        // Invalidate instructor cache
+        wildcardDeleteCache(`assignments-instructor-${ctx.user.id}`);
+        return assignment;
+      } catch (err) {
+        console.error("Failed to create assignment:", err);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Could not create assignment",
+          cause: err,
+        });
+      }
+    }),
+
+  // Get all assignments for a student
   getAllForStudent: protectedProcedure.query(async ({ ctx }) => {
-    const { id: studentId } = ctx.user;
+    const studentId = ctx.user.id;
+    const cacheKey = `assignments-student-${studentId}`;
 
-    const cacheKey = `assignments-${studentId}`;
-
-    const cachedAssignments = CACHE.get<IStudentAssignment[]>(cacheKey);
-    if (cachedAssignments) {
-      console.log(`[CACHE] Hit for ${cacheKey}`);
-      return cachedAssignments;
-    }
-
-    console.log(`[CACHE] Miss for ${cacheKey}`);
-
-    try {
+    return getCacheOrFetch(cacheKey, async () => {
       const student = await studentModel
         .findById(studentId)
         .populate<{ assignments: IStudentAssignment[] }>("assignments")
         .lean();
-
       if (!student) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Student was not found",
+          message: "Student not found",
+        });
+      }
+      return student.assignments;
+    });
+  }),
+
+  // Get all assignments for an instructor
+  getAllForInstructor: protectedProcedure.query(async ({ ctx }) => {
+    const instructorId = ctx.user.id;
+    const cacheKey = `assignments-instructor-${instructorId}`;
+
+    return getCacheOrFetch(cacheKey, async () => {
+      const assignments = await AssignmentModel.find({ instructorId })
+        .populate<{ course: ICourse }>("course")
+        .lean();
+
+      if (!assignments) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No assignments found",
         });
       }
 
-      CACHE.set(cacheKey, student.assignments);
-      console.log(`[CACHE] Set for ${cacheKey}`);
-
-      return student.assignments;
-    } catch (error) {
-      console.error("An error occured while getting all assignments: ", error);
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "An unexpected error occured",
-        cause: error,
-      });
-    }
+      return assignments;
+    });
   }),
 
   createCloudinarySignature: protectedProcedure
@@ -216,47 +263,37 @@ export const assignmentRouter = router({
       }
     }),
 
+  // Grade assignment
   mark: protectedProcedure
-    .input(MarkAssignmentZodSchema)
-    .mutation(async ({ input, ctx }) => {
+    .input(MarkAssignmentSchema)
+    .mutation(async ({ ctx, input }) => {
       const { role } = ctx.user;
-      const { assignmentId, score } = input;
-
-      if (role !== "admin" && role !== "instructor") {
+      if (!["admin", "instructor"].includes(role)) {
         throw new TRPCError({
           code: "UNAUTHORIZED",
-          message: "Only instructors and admins can mark assignments",
+          message: "Insufficient permissions",
         });
       }
 
       try {
-        const assignment = await AssignmentModel.findByIdAndUpdate(
-          assignmentId,
-          { score },
-          { runValidators: true, new: true }
+        const updated = await AssignmentModel.findByIdAndUpdate(
+          input.assignmentId,
+          { grade: input.grade, status: "graded", remark: input.remark },
+          { new: true, runValidators: true }
         );
 
-        if (!assignment) {
+        if (!updated) {
           throw new TRPCError({
             code: "NOT_FOUND",
-            message: `Assignment with id ${assignmentId} was not found`,
+            message: "Assignment not found",
           });
         }
 
-        wildcardDeleteCache("assignments-");
-
-        return { success: true, assignment };
+        wildcardDeleteCache(`assignments-`);
+        return updated;
       } catch (err) {
-        console.error(
-          "An error occured while trying to mark assignment: ",
-          err
-        );
+        console.error("Grading error:", err);
         if (err instanceof TRPCError) throw err;
-
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "An unexpected error occured",
-        });
       }
     }),
 });

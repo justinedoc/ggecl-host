@@ -1,9 +1,9 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../trpc.js";
-import { isValidObjectId } from "mongoose";
+import { FilterQuery, isValidObjectId } from "mongoose";
 import { TRPCError } from "@trpc/server";
 import adminModel, { IAdmin } from "../models/adminModel.js";
-import { CACHE } from "../utils/nodeCache.js";
+import { CACHE, wildcardDeleteCache } from "../utils/nodeCache.js";
 import { generatePassword } from "../utils/genPassword.js";
 import { adminService } from "../services/adminService.js";
 import { frontEndLoginLink } from "../utils/feLoginLink.js";
@@ -13,6 +13,7 @@ import {
   ENROLL_EMAIL_SUBJECT,
   ENROLL_EMAIL_TEXT,
 } from "../constants/messages.js";
+import { uploadImageIfNeeded } from "../utils/imageUploader.js";
 
 // Types
 type IAdminSummary = Omit<
@@ -25,6 +26,16 @@ type IAdminSummary = Omit<
   | "passwordUpdateTokenExpiry"
 >;
 
+interface IAdminListResponse {
+  admins: IAdminSummary[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
 // Input validation
 const GetAdminByIdZodSchema = z.object({
   id: z
@@ -32,11 +43,61 @@ const GetAdminByIdZodSchema = z.object({
     .refine(isValidObjectId, { message: "Invalid MongoDB ObjectId" }),
 });
 
+const GetAdminsZodSchema = z.object({
+  page: z.number().default(1),
+  limit: z.number().default(10),
+  search: z.string().optional(),
+  sortBy: z
+    .enum(["isVerified", "fullName", "email", "schRole"])
+    .default("isVerified"),
+  order: z.enum(["asc", "desc"]).default("asc"),
+});
+
 const AdminEnrollmentSchema = z.object({
   email: z.string().email("Invalid email format"),
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
   picture: z.string().url("Invalid URL format").optional(),
 });
+
+// Schema for fields that can be edited.
+const AdminEditableSchema = z
+  .object({
+    fullName: z.string().min(2, "Full name must be at least 2 characters"),
+    gender: z.enum(["male", "female", "other"], {
+      errorMap: () => ({ message: "Gender selected is not valid" }),
+    }),
+    picture: z.string().url(),
+  })
+  .partial();
+
+// Schema for updating an instructor.
+const AdminUpdateSchema = z.object({
+  data: AdminEditableSchema,
+  id: z.string().refine(isValidObjectId, { message: "Invalid instructor ID" }),
+});
+
+const PasswordUpdateZodSchema = z
+  .object({
+    currentPassword: z
+      .string()
+      .min(1, { message: "Current password is required." }),
+    newPassword: z
+      .string()
+      .min(6, { message: "Password must be at least 8 characters long." }),
+  })
+  .refine((data) => data.currentPassword !== data.newPassword, {
+    message: "Old password cannot be same as new password",
+  });
+
+// Helpers
+
+type TGetAdminsInput = z.infer<typeof GetAdminsZodSchema>;
+type TAdminUpdatable = z.infer<typeof AdminEditableSchema>;
+
+const getCacheKey = (input: TGetAdminsInput) => {
+  const { page, limit, search, sortBy, order } = input;
+  return `instructors-${page}-${limit}-${search}-${sortBy}-${order}`;
+};
 
 export const adminRouter = router({
   enroll: protectedProcedure
@@ -153,6 +214,179 @@ export const adminRouter = router({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "An unexpected error occurred. Please try again later.",
+        });
+      }
+    }),
+
+  getAll: protectedProcedure
+    .input(GetAdminsZodSchema)
+    .query(async ({ input, ctx }) => {
+      const { role } = ctx.user;
+
+      if (role !== "admin") {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Only admins can view all admins.",
+        });
+      }
+
+      const cacheKey = getCacheKey(input);
+      const cachedData = CACHE.get<IAdminListResponse>(cacheKey);
+      if (cachedData) {
+        console.log(`[CACHE] Hit for ${cacheKey}`);
+        return cachedData;
+      }
+      console.log(`[CACHE] Miss for ${cacheKey}`);
+
+      const { page, limit, search, sortBy, order } = input;
+
+      const skip = (page - 1) * limit;
+      const sortOrder = order === "asc" ? 1 : -1;
+
+      const searchQuery: FilterQuery<IAdminSummary> = {};
+      if (search) {
+        searchQuery.$or = [
+          { fullName: { $regex: search, $options: "i" } },
+          { email: { $regex: search, $options: "i" } },
+        ];
+      }
+
+      const sortOptions: Record<string, 1 | -1> = { [sortBy]: sortOrder };
+
+      try {
+        const [admins, total] = await Promise.all([
+          adminModel
+            .find(searchQuery)
+            .sort(sortOptions)
+            .skip(skip)
+            .limit(limit)
+            .select(
+              "-password -refreshToken -passwordUpdateToken -passwordUpdateTokenExpiry"
+            )
+            .lean(),
+          adminModel.countDocuments(searchQuery),
+        ]);
+
+        const response = {
+          admins,
+          meta: {
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+          },
+        };
+
+        CACHE.set(cacheKey, response);
+        console.log(`[CACHE] Set for ${cacheKey}`);
+
+        return response;
+      } catch (error) {
+        console.error("[ERROR] Fetching admins failed:", error);
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch admins",
+        });
+      }
+    }),
+
+  update: protectedProcedure
+    .input(AdminUpdateSchema)
+    .mutation(async ({ input }) => {
+      const { id: adminId, data } = input;
+
+      const imageUrl = await uploadImageIfNeeded(data.picture);
+
+      const updatePayload: Partial<TAdminUpdatable> = {
+        ...data,
+        ...(imageUrl && { picture: imageUrl }),
+      };
+      if (data.picture == null) {
+        delete updatePayload.picture;
+      }
+
+      let updatedAdmin: IAdmin | null;
+      try {
+        updatedAdmin = await adminModel.findByIdAndUpdate(
+          adminId,
+          updatePayload,
+          {
+            new: true,
+            runValidators: true,
+          }
+        );
+      } catch (dbErr) {
+        console.error("[ERROR] Database update failed:", dbErr);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Could not update admin record",
+          cause: dbErr,
+        });
+      }
+
+      if (!updatedAdmin) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `No admin found with id "${adminId}"`,
+        });
+      }
+
+      CACHE.del(`admin-${adminId}`);
+      wildcardDeleteCache("admins-");
+
+      return updatedAdmin;
+    }),
+
+  updatePasswordWithOld: protectedProcedure
+    .input(PasswordUpdateZodSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { id: adminId, role } = ctx.user;
+      const { currentPassword, newPassword } = input;
+
+      if (role !== "admin") {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Admin role required",
+        });
+      }
+
+      try {
+        const admin = await adminModel.findById(adminId);
+        if (!admin) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Admin user not found",
+          });
+        }
+
+        const isPasswordMatch = await admin.comparePassword(currentPassword);
+
+        if (!isPasswordMatch) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Incorrect credentials",
+          });
+        }
+
+        const newHashedPassword = await adminService.hashPassword(newPassword);
+
+        admin.password = newHashedPassword;
+
+        await admin.save();
+
+        return { success: true };
+      } catch (error) {
+        console.error(
+          "An error occured while trying to update admin password: ",
+          error instanceof Error ? error.message : error
+        );
+
+        if (error instanceof TRPCError) throw error;
+
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Could not update password",
         });
       }
     }),

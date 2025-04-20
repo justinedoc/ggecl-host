@@ -1,12 +1,10 @@
 import { Server as IOServer, Socket } from "socket.io";
 import { Server as HttpServer } from "http";
-import { Group, Message } from "../models/messageSchema.js";
 
 interface GroupData {
   admin: string;
   name: string;
   students: string[];
-  instructors: string[];
 }
 
 interface CreateGroupData {
@@ -14,14 +12,13 @@ interface CreateGroupData {
   adminId: string;
   groupName: string;
   students: string[];
-  instructors: string[];
 }
 
 interface MessageData {
   groupId: string;
   senderId: string;
   sender: string;
-  role: "admin" | "student" | "instructor";
+  role: "admin" | "student";
   text: string | null;
   image: string | null;
 }
@@ -56,46 +53,21 @@ export class SocketService {
   private handleCreateGroup(socket: Socket): void {
     socket.on(
       "createGroup",
-      async ({
-        groupId,
-        adminId,
-        groupName,
-        students,
-        instructors,
-      }: CreateGroupData) => {
+      ({ groupId, adminId, groupName, students }: CreateGroupData) => {
         if (!this.groups[groupId]) {
           this.groups[groupId] = {
             admin: adminId,
             name: groupName,
             students,
-            instructors: instructors || [],
           };
-
-          const newGroup = new Group({
-            groupId,
-            name: groupName,
-            admin: adminId,
-            students,
-            instructors: instructors || [],
-          });
-
-          await newGroup
-            .save()
-            .then(() => {
-              console.log("Group saved to database:", newGroup);
-            })
-            .catch((err) => {
-              console.error("Error saving group to database:", err);
-            });
 
           socket.join(groupId);
 
-          console.log({
-            admin: adminId,
-            name: groupName,
-            students,
-            instructors,
-          });
+          console.log(
+            `Creating group ${groupName} by admin ${groupId} with students: ${students.join(
+              ", "
+            )}`
+          );
 
           this.io.emit("groupCreated", {
             groupId,
@@ -120,6 +92,7 @@ export class SocketService {
           const group = this.groups[groupId];
 
           if (group) {
+            // Make sure student is in group list
             if (!group.students.includes(studentId)) {
               group.students.push(studentId);
             }
@@ -140,7 +113,7 @@ export class SocketService {
   }
 
   private handleSendMessage(socket: Socket): void {
-    socket.on("sendMessage", async (data: MessageData) => {
+    socket.on("sendMessage", (data: MessageData) => {
       const { groupId, senderId, role, sender, text, image } = data;
       const group = this.groups[groupId];
 
@@ -154,30 +127,13 @@ export class SocketService {
         ((role === "admin" && group.admin === senderId) ||
           (role === "student" && group.students.includes(senderId)))
       ) {
-        const newMessage = new Message({
-          group: groupId,
-          sender: senderId,
-          role,
-          text: text ? text.trim() : null,
-          image: image || null,
-        });
-
-        await newMessage
-          .save()
-          .then(() => {
-            console.log("Message saved to database:", newMessage);
-          })
-          .catch((err) => {
-            console.error("Error saving message to database:", err);
-          });
-
         this.io.to(groupId).emit("message", {
-          groupId,
-          senderId,
-          role,
-          sender: sender,
-          text: text ? text.trim() : null,
-          image: image || null,
+          groupId, // the group id to access the group
+          senderId, // the id of the sender
+          role, // the role of the sender (admin or student)
+          sender: sender, // the name of the sender
+          text: text ? text.trim() : null, // the message text (if any)
+          image: image || null, // the image (if any)
         });
 
         console.log(role, senderId, text, image);

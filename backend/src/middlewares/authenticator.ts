@@ -35,6 +35,7 @@ export function authenticator(
     if (error instanceof jwt.TokenExpiredError) {
       res.status(401).json({
         success: false,
+        code: "TOKEN_EXPIRED",
         message: "Token has expired",
       });
 

@@ -185,6 +185,8 @@ export const useChat = (
         image: data.image,
       };
 
+      console.log("Received message:", message);
+
       setGroups((prev) =>
         prev.map((group) =>
           group.groupId === data.groupId

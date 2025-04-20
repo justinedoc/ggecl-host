@@ -94,7 +94,7 @@ const Testimonial = () => {
                 <div className="flex items-center gap-4 mt-4">
                   <img
                     src={testimonial.image}
-                    className="w-10 rounded-full bg-white"
+                    className="size-10 rounded-full bg-white object-center object-cover"
                     alt={testimonial.name}
                   />
                   <div className="text-left">
