@@ -64,52 +64,49 @@ const MarkAssignmentModal: React.FC<MarkAssignmentModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Mark Assignment</DialogTitle>
+          <DialogTitle className="text-2xl font-bold">
+            Mark Assignment
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Details */}
           <div className="border-b pb-4">
-            <h3 className="mb-3 text-lg font-semibold">Assignment Details</h3>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div>
+              <div className="space-y-0.5">
                 <p className="text-sm text-gray-500">Title</p>
                 <p className="font-medium">{assignment.title}</p>
               </div>
-              <div>
+              <div className="space-y-0.5">
                 <p className="text-sm text-gray-500">Course</p>
                 <p className="font-medium">{assignment.course.title}</p>
               </div>
-              <div>
-                <p className="text-sm text-gray-500">Question</p>
-                <p className="font-medium">{assignment.question}</p>
-              </div>
-              <div>
+              <div className="space-y-0.5">
                 <p className="text-sm text-gray-500">Due Date</p>
                 <p className="font-medium">
                   {format(new Date(assignment.dueDate), "dd-MM-yyyy")}
                 </p>
               </div>
-              {assignment.submissionFileUrl && (
-                <div className="md:col-span-2">
-                  <p className="text-sm text-gray-500">Submission</p>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      window.open(assignment.submissionFileUrl, "_blank")
-                    }
-                  >
-                    View File
-                  </Button>
-                </div>
-              )}
+
+              <div className="space-y-0.5">
+                <p className="text-sm text-gray-500">Submission</p>
+                <Button
+                  disabled={!assignment.submissionFileUrl}
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    window.open(assignment.submissionFileUrl, "_blank")
+                  }
+                >
+                  View File
+                </Button>
+              </div>
             </div>
           </div>
 
           {/* Grading */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Grade Assignment</h3>
+            <h3 className="text-xl font-semibold">Grade Assignment</h3>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="flex flex-col space-y-1">
                 <Label htmlFor="grade-select">Grade</Label>

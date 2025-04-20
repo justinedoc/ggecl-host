@@ -18,6 +18,7 @@ export const AssignmentZodSchema = z.object({
 
 export type IStudentAssignment = z.infer<typeof AssignmentZodSchema> & {
   _id: Types.ObjectId;
+  studentId?: Types.ObjectId;
   course: Types.ObjectId;
   instructorId: Types.ObjectId;
 };
@@ -25,6 +26,10 @@ export type IStudentAssignment = z.infer<typeof AssignmentZodSchema> & {
 export const AssignmentSchema = new Schema<IStudentAssignment>(
   {
     instructorId: Types.ObjectId,
+    studentId: {
+      type: Schema.Types.ObjectId,
+      ref: "student",
+    },
     title: { type: String, required: true },
     question: { type: String, required: true },
     course: {
@@ -35,7 +40,7 @@ export const AssignmentSchema = new Schema<IStudentAssignment>(
     dueDate: { type: Date, required: true },
     status: {
       type: String,
-      enum: ["submitted", "graded"],
+      enum: ["submitted", "graded", "pending"],
       default: "pending",
       required: true,
     },

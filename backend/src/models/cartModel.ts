@@ -12,6 +12,7 @@ export const CartZodSchema = z.object({
   level: z.string(),
   price: z.number(),
   img: z.string(),
+  badge: z.string().optional(),
 });
 
 export type ICart = z.infer<typeof CartZodSchema>;
@@ -27,4 +28,5 @@ export const CartSchema = new Schema<ICart>({
   level: { type: String, required: true },
   price: { type: Number, required: true },
   img: { type: String, required: true },
+  badge: String,
 });

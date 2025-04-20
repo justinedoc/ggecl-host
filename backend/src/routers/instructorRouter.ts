@@ -17,6 +17,8 @@ import {
   ENROLL_EMAIL_TEXT,
 } from "../constants/messages.js";
 import { SALT_ROUNDS } from "../constants/auth.js";
+import { PasswordUpdateZodSchema } from "../models/passwordUpdateSchema.js";
+import { uploadImageIfNeeded } from "../utils/imageUploader.js";
 
 // Define the instructor summary type by omitting sensitive fields.
 type IInstructorSummary = Omit<
@@ -40,22 +42,18 @@ interface IInstructorListResponse {
 }
 
 // Schema for fields that can be edited.
-const InstructorEditableSchema = z
-  .object({
-    fullName: z.string().min(2, "Full name must be at least 2 characters"),
-    dateOfBirth: z.string().transform((str) => new Date(str)),
-    gender: z.enum(["male", "female", "other"], {
-      errorMap: () => ({ message: "Gender selected is not valid" }),
-    }),
-    picture: z.string().url(),
-    bio: z.string().min(5, "Bio must be at least 5 characters"),
-    topics: z.array(z.string()),
-  })
-  .partial();
+const InstructorEditableSchema = z.object({
+  fullName: z.string().min(2, "Full name must be at least 2 characters"),
+  email: z.string().email("Invalid email format"),
+  username: z.string().min(2, "Username must be at least 2 characters"),
+  picture: z.string(),
+  bio: z.string().min(5, "Bio must be at least 5 characters"),
+  topics: z.array(z.string()),
+});
 
 // Schema for updating an instructor.
 const InstructorUpdateSchema = z.object({
-  data: InstructorEditableSchema,
+  data: InstructorEditableSchema.partial(),
   id: z.string().refine(isValidObjectId, { message: "Invalid instructor ID" }),
 });
 
@@ -81,19 +79,6 @@ const InstructorRegistrationSchema = z.object({
   picture: z.string().url("Invalid URL format").optional(),
 });
 
-const PasswordUpdateZodSchema = z
-  .object({
-    currentPassword: z
-      .string()
-      .min(1, { message: "Current password is required." }),
-    newPassword: z
-      .string()
-      .min(6, { message: "Password must be at least 8 characters long." }),
-  })
-  .refine((data) => data.currentPassword !== data.newPassword, {
-    message: "Old password cannot be same as new password",
-  });
-
 const GetInstructorByIdZodSchema = z.object({
   id: z.string().refine(isValidObjectId, { message: "Invalid instructor ID" }),
 });
@@ -101,9 +86,9 @@ const GetInstructorByIdZodSchema = z.object({
 type TGetInstructorsInput = z.infer<typeof GetInstructorsZodSchema>;
 
 // Helper to generate cache key for instructor list.
-const getCacheKey = (input: TGetInstructorsInput) => {
+const getCacheKey = (prefix: string, input: TGetInstructorsInput) => {
   const { page, limit, search, sortBy, order } = input;
-  return `instructors-${page}-${limit}-${search}-${sortBy}-${order}`;
+  return `${prefix}-${page}-${limit}-${search}-${sortBy}-${order}`;
 };
 
 export const instructorRouter = router({
@@ -181,7 +166,7 @@ export const instructorRouter = router({
 
   // Get a paginated list of instructors with optional search and sorting.
   getAll: procedure.input(GetInstructorsZodSchema).query(async ({ input }) => {
-    const cacheKey = getCacheKey(input);
+    const cacheKey = getCacheKey("instructors", input);
     const cachedData = CACHE.get<IInstructorListResponse>(cacheKey);
     if (cachedData) {
       console.log(`[CACHE] Hit for ${cacheKey}`);
@@ -194,12 +179,14 @@ export const instructorRouter = router({
     const sortOrder = order === "asc" ? 1 : -1;
 
     const searchQuery: FilterQuery<IInstructorSummary> = {};
+
     if (search) {
+      const pattern = new RegExp(search, "i");
       searchQuery.$or = [
-        { fullName: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-        { username: { $regex: search, $options: "i" } },
-        { schRole: { $regex: search, $options: "i" } },
+        { fullName: pattern },
+        { email: pattern },
+        { username: pattern },
+        { schRole: pattern },
       ];
     }
 
@@ -308,10 +295,13 @@ export const instructorRouter = router({
       const { role, id: currentUserId } = ctx.user;
       const { data, id: instructorId } = input;
 
+      const imageUrl = await uploadImageIfNeeded(data.picture);
+
       try {
         const instructorExists = await instructorModel.exists({
           _id: instructorId,
         });
+
         if (!instructorExists) {
           throw new TRPCError({
             code: "NOT_FOUND",
@@ -326,13 +316,17 @@ export const instructorRouter = router({
           ],
         };
 
+        const updatePayload = {
+          ...data,
+          ...(imageUrl && { picture: imageUrl }),
+        };
+
         const updatedInstructor = await instructorModel.findOneAndUpdate(
           filterQuery,
-          data,
+          updatePayload,
           {
             new: true,
             runValidators: true,
-            upsert: true,
           }
         );
 
@@ -402,7 +396,7 @@ export const instructorRouter = router({
         return { success: true };
       } catch (error) {
         console.error(
-          "An error occured while trying to update admin password: ",
+          "An error occured while trying to update instructor password: ",
           error instanceof Error ? error.message : error
         );
 

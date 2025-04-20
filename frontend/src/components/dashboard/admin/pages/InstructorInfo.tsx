@@ -1,10 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useInstructors } from "../hooks/useInstructors";
 import { useEnrollInstructor } from "../hooks/useEnrollInstructor";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useInstructors } from "@/hooks/useInstructors";
 
 // Define the registration schema with Zod validation
 const InstructorRegistrationSchema = z.object({
@@ -21,17 +25,35 @@ const InstructorRegistrationSchema = z.object({
 type InstructorRegistrationForm = z.infer<typeof InstructorRegistrationSchema>;
 
 const InstructorInfo: React.FC = () => {
-  // Local state for search, pagination, and rows per page
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
-  // Extract Instructor data and loading state
-  const { loadingInstructors, instructors } = useInstructors({});
+  const { debouncedValue } = useDebounce(searchTerm);
 
   const { enrollInstructor, isEnrolling } = useEnrollInstructor();
 
-  // Set up form with react-hook-form and zod schema resolver
+  const { loading, meta, instructors } = useInstructors({
+    page: currentPage,
+    limit: rowsPerPage,
+    search: debouncedValue,
+  });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  const totalPages = meta?.totalPages ?? 1;
+
+  const changePage = useCallback(
+    (dir: "prev" | "next") => {
+      setCurrentPage((p) =>
+        dir === "prev" ? Math.max(1, p - 1) : Math.min(totalPages, p + 1),
+      );
+    },
+    [totalPages],
+  );
+
   const {
     register,
     handleSubmit,
@@ -40,11 +62,6 @@ const InstructorInfo: React.FC = () => {
   } = useForm<InstructorRegistrationForm>({
     resolver: zodResolver(InstructorRegistrationSchema),
   });
-
-  // Reset page to first when search term changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
 
   // Handler for adding a Instructor
   const onSubmit = (data: InstructorRegistrationForm) => {
@@ -55,51 +72,24 @@ const InstructorInfo: React.FC = () => {
     }, 2000);
   };
 
-  // Filter Instructors by the search term (case-insensitive)
-  const filteredInstructors = instructors.filter((instructor) =>
-    instructor.fullName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Calculate pagination details
-  const totalPages = Math.ceil(filteredInstructors.length / rowsPerPage);
-  const currentDataStart = (currentPage - 1) * rowsPerPage;
-  const paginatedInstructors = filteredInstructors.slice(
-    currentDataStart,
-    currentDataStart + rowsPerPage
-  );
-
-  // Handlers for pagination and rows changes
-  const handlePageChange = (direction: "prev" | "next") => {
-    if (direction === "prev" && currentPage > 1) {
-      setCurrentPage((prev) => prev - 1);
-    } else if (direction === "next" && currentPage < totalPages) {
-      setCurrentPage((prev) => prev + 1);
-    }
-  };
-
-  const handleRowsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setRowsPerPage(Number(e.target.value));
-    setCurrentPage(1);
-  };
-
   return (
     <div className="min-h-screen bg-white p-4 dark:bg-gray-900">
       <div className="grid grid-cols-1 gap-6">
         {/* Add Instructor Section */}
-        <div className="rounded-lg border p-4 shadow dark:bg-gray-900">
-          <h2 className="mb-4 text-lg font-semibold text-gray-700 dark:text-gray-200">
+        <div className="mt-5 w-full rounded-lg border p-4 shadow md:max-w-xl dark:bg-gray-900">
+          <h1 className="mb-4 text-xl font-semibold text-gray-700 dark:text-gray-200">
             Add Instructor
-          </h2>
+          </h1>
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="grid grid-cols-4 gap-4"
           >
             {/* Full Name Field */}
             <div className="col-span-2">
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <Label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Full Name
-              </label>
-              <input
+              </Label>
+              <Input
                 type="text"
                 {...register("fullName")}
                 className="w-full rounded-md border px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
@@ -112,10 +102,10 @@ const InstructorInfo: React.FC = () => {
             </div>
             {/* Email Field */}
             <div className="col-span-2">
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <Label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Email
-              </label>
-              <input
+              </Label>
+              <Input
                 type="email"
                 {...register("email")}
                 className="w-full rounded-md border px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
@@ -128,9 +118,9 @@ const InstructorInfo: React.FC = () => {
             </div>
             {/* Gender Field */}
             <div className="col-span-4">
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <Label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Gender
-              </label>
+              </Label>
               <select
                 {...register("gender")}
                 className="w-full rounded-md border px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
@@ -145,13 +135,9 @@ const InstructorInfo: React.FC = () => {
                 </p>
               )}
             </div>
-            <button
-              disabled={isEnrolling}
-              type="submit"
-              className="col-span-1 w-full rounded-md bg-blue-600 py-2 text-white transition hover:bg-blue-700"
-            >
-              {isEnrolling ? "Enrolling" : " Add Instructor"}
-            </button>
+            <Button disabled={isEnrolling} type="submit" className="w-fit px-5">
+              {isEnrolling ? "Adding..." : " Add Instructor"}
+            </Button>
           </form>
         </div>
 
@@ -162,7 +148,7 @@ const InstructorInfo: React.FC = () => {
           </h2>
           {/* Search Field */}
           <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <input
+            <Input
               type="text"
               placeholder="Search by full name"
               className="w-full rounded-md border border-gray-300 px-4 py-2 md:w-1/3 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
@@ -191,14 +177,14 @@ const InstructorInfo: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white dark:bg-gray-900">
-                {loadingInstructors ? (
+                {loading ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center">
-                      Loading instructors...
+                    <td colSpan={7} className="px-4 py-10 text-center italic">
+                      Loading...
                     </td>
                   </tr>
-                ) : paginatedInstructors.length > 0 ? (
-                  paginatedInstructors.map((instructor) => (
+                ) : instructors.length > 0 ? (
+                  instructors.map((instructor) => (
                     <tr
                       key={instructor.email}
                       className="transition hover:bg-gray-50 dark:hover:bg-gray-800"
@@ -225,10 +211,10 @@ const InstructorInfo: React.FC = () => {
                 ) : (
                   <tr>
                     <td
-                      colSpan={7}
-                      className="px-4 py-10 text-center text-xl font-semibold"
+                      colSpan={4}
+                      className="py-10 text-center text-gray-500 italic"
                     >
-                      Enroll instructors to start managing.
+                      No instructors found.
                     </td>
                   </tr>
                 )}
@@ -243,7 +229,7 @@ const InstructorInfo: React.FC = () => {
               <select
                 className="ml-2 rounded-md border px-2 py-1 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                 value={rowsPerPage}
-                onChange={handleRowsPerPageChange}
+                onChange={(e) => setRowsPerPage(Number(e.target.value))}
               >
                 <option value={5}>5</option>
                 <option value={10}>10</option>
@@ -252,7 +238,7 @@ const InstructorInfo: React.FC = () => {
             </div>
             <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
               <button
-                onClick={() => handlePageChange("prev")}
+                onClick={() => changePage("prev")}
                 className={`rounded border px-2 py-1 dark:border-gray-600 ${
                   currentPage === 1 ? "cursor-not-allowed opacity-50" : ""
                 }`}
@@ -264,7 +250,7 @@ const InstructorInfo: React.FC = () => {
                 Page {currentPage} of {totalPages || 1}
               </span>
               <button
-                onClick={() => handlePageChange("next")}
+                onClick={() => changePage("next")}
                 className={`rounded border px-2 py-1 dark:border-gray-600 ${
                   currentPage === totalPages || totalPages === 0
                     ? "cursor-not-allowed opacity-50"

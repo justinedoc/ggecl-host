@@ -11,17 +11,19 @@ function isAxiosError(error: unknown): error is AxiosError {
     typeof error === "object" &&
     error !== null &&
     "isAxiosError" in error &&
-    (error as AxiosError).isAxiosError === true
+    error instanceof AxiosError &&
+    error.isAxiosError === true
   );
 }
 
 export function formatAxiosError(error: unknown): { response: ErrorResponse } {
+  console.log(error);
   if (isAxiosError(error)) {
     const data = error.response?.data as ErrorResponse | undefined;
     return {
       response: data || {
         success: false,
-        message: "An unknown Axios error occurred.",
+        message: error.message || "An unknown Axios error occurred.",
       },
     };
   }

@@ -1,4 +1,5 @@
 import { procedure, protectedProcedure, router } from "../trpc.js";
+import bcrypt from "bcrypt";
 import { z } from "zod";
 import { CACHE, wildcardDeleteCache } from "../utils/nodeCache.js";
 import studentModel, { IStudent } from "../models/studentModel.js";
@@ -16,6 +17,9 @@ import {
   ENROLL_EMAIL_SUBJECT,
   ENROLL_EMAIL_TEXT,
 } from "../constants/messages.js";
+import { uploadImageIfNeeded } from "../utils/imageUploader.js";
+import { PasswordUpdateZodSchema } from "../models/passwordUpdateSchema.js";
+import { SALT_ROUNDS } from "../constants/auth.js";
 
 // Define a summary type for students by omitting sensitive fields.
 type IStudentSummary = Omit<
@@ -39,20 +43,18 @@ interface IStudentListResponse {
 }
 
 // Schema for editable student fields.
-const StudentEditableSchema = z
-  .object({
-    fullName: z.string().min(2, "Full name must be at least 2 characters"),
-    gender: z.enum(["male", "female", "other"], {
-      errorMap: () => ({ message: "Gender selected is not valid" }),
-    }),
-    email: z.string().email(),
-    username: z.string(),
-    picture: z.string().url(),
-  })
-  .partial();
+const StudentEditableSchema = z.object({
+  fullName: z.string().min(2, "Full name must be at least 2 characters"),
+  gender: z.enum(["male", "female", "other"], {
+    errorMap: () => ({ message: "Gender selected is not valid" }),
+  }),
+  email: z.string().email(),
+  username: z.string(),
+  picture: z.string(),
+});
 
 const StudentUpdateZodSchema = z.object({
-  data: StudentEditableSchema,
+  data: StudentEditableSchema.partial(),
   id: z.string().refine(isValidObjectId, { message: "Invalid Student ID" }),
 });
 
@@ -63,6 +65,10 @@ const GetStudentsZodSchema = z.object({
   search: z.string().optional(),
   sortBy: z.enum(["isVerified", "fullName", "email"]).default("fullName"),
   order: z.enum(["asc", "desc"]).default("asc"),
+  instructor: z
+    .string()
+    .refine(isValidObjectId, { message: "invaild instructor id" })
+    .optional(),
 });
 
 export const StudentEnrollSchema = z.object({
@@ -73,93 +79,91 @@ export const StudentEnrollSchema = z.object({
       errorMap: () => ({ message: "Invalid gender selection" }),
     })
     .default("other"),
-  picture: z.string().url("Invaild image link").optional(),
 });
 
-const EnrollStudentToCourseZodSchema = z.object({
-  studentId: z.string().refine(isValidObjectId, {
-    message: "Student id must be a valid id",
-  }),
-  courseId: z.string().refine(isValidObjectId, {
-    message: "course id must be a valid id",
-  }),
+const EnrollStudentsToCourseSchema = z.object({
+  studentIds: z
+    .array(
+      z.string().refine(isValidObjectId, {
+        message: "Each student ID must be a valid ObjectId",
+      })
+    )
+    .nonempty({ message: "You must supply at least one student ID" }),
+  courseId: z
+    .string()
+    .refine(isValidObjectId, { message: "Course ID must be a valid ObjectId" }),
 });
 
 type TGetStudentsInput = z.infer<typeof GetStudentsZodSchema>;
 
 // Helper to build a cache key for student lists.
 const getCacheKey = (input: TGetStudentsInput) => {
-  const { page, limit, search, sortBy, order } = input;
-  return `students-${page}-${limit}-${search}-${sortBy}-${order}`;
+  const { page, limit, search, sortBy, order, instructor } = input;
+  return `students-${page}-${limit}-${search}-${sortBy}-${order}-${instructor}`;
 };
 
 export const studentRouter = router({
   enrollToCourse: protectedProcedure
-    .input(EnrollStudentToCourseZodSchema)
+    .input(EnrollStudentsToCourseSchema)
     .mutation(async ({ ctx, input }) => {
       const { id: adminId, role } = ctx.user;
-      const { courseId, studentId } = input;
+      const { courseId, studentIds } = input;
 
-      try {
-        const adminExists = await adminModel.exists({ _id: adminId });
-
-        if (!adminExists || role !== "admin") {
-          throw new TRPCError({
-            code: "UNAUTHORIZED",
-            message: "Only admins can enroll students on a course",
-          });
-        }
-
-        if (
-          await studentModel.exists({
-            _id: studentId,
-            enrolledCourses: courseId,
-          })
-        ) {
-          throw new TRPCError({
-            code: "CONFLICT",
-            message: "Student has already been enrolled to course",
-          });
-        }
-
-        const course = await coursesModel.findById(courseId);
-
-        if (!course) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: `Course with id ${courseId} was not found`,
-          });
-        }
-
-        const student = await studentModel.findById(studentId, {
-          $push: { enrolledCourses: courseId },
-        });
-
-        if (!student) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: `Student with id ${studentId} was not found`,
-          });
-        }
-
-        await instructorModel.findByIdAndUpdate(
-          course.instructor,
-          { $push: { students: studentId } },
-          { runvalidators: true }
-        );
-
-        return { success: true, student };
-      } catch (error) {
-        console.error(
-          "An error occured while trying to enroll student on a course: ",
-          error
-        );
-        if (error instanceof TRPCError) throw error;
+      const isAdmin =
+        role === "admin" && (await adminModel.exists({ _id: adminId }));
+      if (!isAdmin) {
         throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "An unexpected error occured",
+          code: "UNAUTHORIZED",
+          message: "Only admins can enroll students on a course",
         });
       }
+
+      const course = await coursesModel.findById(courseId);
+      if (!course) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Course with id ${courseId} was not found`,
+        });
+      }
+
+      const toEnroll = await studentModel
+        .find({
+          _id: { $in: studentIds },
+          enrolledCourses: { $ne: course._id },
+        })
+        .select("_id");
+
+      if (toEnroll.length === 0) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "All selected students are already enrolled in this course",
+        });
+      }
+
+      const toEnrollIds = toEnroll.map((s) => s._id);
+
+      await studentModel.updateMany(
+        { _id: { $in: toEnrollIds } },
+        {
+          $addToSet: {
+            enrolledCourses: course._id,
+            instructors: course.instructor,
+          },
+        }
+      );
+
+      await instructorModel.findByIdAndUpdate(
+        course.instructor,
+        { $addToSet: { students: { $each: toEnrollIds } } },
+        { new: true, runValidators: true }
+      );
+
+      return {
+        success: true,
+        newlyEnrolledCount: toEnrollIds.length,
+        courseId,
+        studentIds: toEnrollIds,
+      };
     }),
 
   enroll: protectedProcedure
@@ -249,17 +253,22 @@ export const studentRouter = router({
       }
       console.log(`[CACHE] Miss for ${cacheKey}`);
 
-      const { page, limit, search, sortBy, order } = input;
+      const { page, limit, search, sortBy, order, instructor } = input;
       const skip = (page - 1) * limit;
       const sortOrder = order === "asc" ? 1 : -1;
 
-      // Build search query based on optional search term.
       const searchQuery: FilterQuery<IStudentSummary> = {};
+
+      if (instructor) {
+        searchQuery.instructors = { $in: [instructor] };
+      }
+
       if (search) {
+        const pattern = new RegExp(search, "i");
         searchQuery.$or = [
-          { fullName: { $regex: search, $options: "i" } },
-          { email: { $regex: search, $options: "i" } },
-          { username: { $regex: search, $options: "i" } },
+          { fullName: pattern },
+          { email: pattern },
+          { username: pattern },
         ];
       }
 
@@ -355,9 +364,13 @@ export const studentRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { id: currentStudentId, role } = ctx.user;
       const { data, id: studentId } = input;
+
+      const imageUrl = await uploadImageIfNeeded(data.picture);
+
       try {
         // Ensure the student exists.
         const studentExists = await studentModel.exists({ _id: studentId });
+
         if (!studentExists) {
           throw new TRPCError({
             code: "NOT_FOUND",
@@ -372,9 +385,14 @@ export const studentRouter = router({
           ],
         };
 
+        const uploadPayload = {
+          ...data,
+          ...(imageUrl && { picture: imageUrl }),
+        };
+
         const updatedStudent = await studentModel.findOneAndUpdate(
           filterQuery,
-          data,
+          uploadPayload,
           {
             new: true,
             runValidators: true,
@@ -399,6 +417,55 @@ export const studentRouter = router({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "An unexpected error occurred",
+        });
+      }
+    }),
+
+  updatePasswordWithOld: protectedProcedure
+    .input(PasswordUpdateZodSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { id: studentId } = ctx.user;
+      const { currentPassword, newPassword } = input;
+
+      try {
+        const student = await studentModel.findById(studentId);
+        if (!student) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Student user not found",
+          });
+        }
+
+        const isPasswordMatch = await bcrypt.compare(
+          currentPassword,
+          student.password!
+        );
+
+        if (!isPasswordMatch) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Incorrect credentials",
+          });
+        }
+
+        const newHashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+        student.password = newHashedPassword;
+
+        await student.save();
+
+        return { success: true };
+      } catch (error) {
+        console.error(
+          "An error occured while trying to update student password: ",
+          error instanceof Error ? error.message : error
+        );
+
+        if (error instanceof TRPCError) throw error;
+
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Could not update password",
         });
       }
     }),

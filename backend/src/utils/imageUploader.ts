@@ -4,7 +4,12 @@ import { cloudinary } from "../cloudinary.js";
 export async function uploadImageIfNeeded(
   picture?: string
 ): Promise<string | undefined> {
+  
   if (!picture) return undefined;
+
+  if (picture.startsWith("http")) {
+    return picture;
+  }
 
   try {
     const { secure_url } = await cloudinary.uploader.upload(picture);

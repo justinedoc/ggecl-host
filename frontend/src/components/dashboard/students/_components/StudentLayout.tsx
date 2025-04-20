@@ -37,9 +37,7 @@ function StudentLayout() {
   }
 
   if (!isStudentDataPending && user && !isStudent(user)) {
-    toast.error(
-      "You do not have permission to access the student dashboard.",
-    );
+    toast.error("You do not have permission to access the student dashboard.");
     return (
       <RequireAuth>
         <div>You do not have permission to access the student dashboard.</div>
@@ -68,7 +66,7 @@ function StudentLayout() {
       <StudentContext.Provider value={{ student }}>
         <SidebarProvider>
           <AppSidebar />
-          <main className="w-full overflow-x-hidden">
+          <main className="h-screen w-full overflow-x-hidden overflow-y-scroll">
             <Navbar />
             <Outlet />
           </main>

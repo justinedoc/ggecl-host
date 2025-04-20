@@ -1,14 +1,22 @@
-import { trpc } from "@/utils/trpc";
 import { useQuery } from "@tanstack/react-query";
+import { trpc } from "@/utils/trpc";
 
-export function useAdmins({ limit = 100 }) {
-  const { data, isPending: loadingAdmins } = useQuery(
-    trpc.admin.getAll.queryOptions({ limit }),
+export function useAdmins({
+  page = 1,
+  limit = 10,
+  search = "",
+}: {
+  page?: number;
+  limit?: number;
+  search?: string;
+}) {
+  const { data, isLoading } = useQuery(
+    trpc.admin.getAll.queryOptions({ page, limit, search }),
   );
 
   return {
-    admins: data?.admins || [],
+    admins: data?.admins ?? [],
     meta: data?.meta,
-    loadingAdmins,
+    loading: isLoading,
   };
 }

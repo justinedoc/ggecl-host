@@ -1,43 +1,17 @@
-import profileImg from "@/assets/images/Frame 427319048.png";
 import { FaPlayCircle, FaUserCircle } from "react-icons/fa";
 import { Link } from "react-router";
-
-const features = [
-  {
-    id: 1,
-    amount: "957",
-    info: "Assigned Courses",
-    icon: (
-      <FaPlayCircle
-        className="rounded-sm bg-blue-200 p-2 text-blue-600"
-        size={40}
-      />
-    ),
-    border: "border-blue-300 dark:border-blue-600",
-  },
-
-  {
-    id: 4,
-    amount: "789",
-    info: "Total Students",
-    icon: (
-      <FaUserCircle
-        className="rounded-sm bg-orange-200 p-2 text-orange-600"
-        size={40}
-      />
-    ),
-    border: "border-orange-300 dark:border-orange-600",
-  },
-];
-
 import { motion } from "framer-motion";
-
 import {
   LucideUserPlus,
   LucideUserRoundPlus,
   LucideShieldPlus,
 } from "lucide-react";
-import { JSX } from "react";
+import { JSX, useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import { useInstructor } from "@/hooks/useInstructor";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { generateInitials } from "@/lib/generateInitial";
+import { useIAssignments } from "../hooks/useIAssignments";
 
 interface CtaBannerProps {
   title: string;
@@ -75,12 +49,68 @@ const ctaBanners: CtaBannerProps[] = [
 ];
 
 const InstructorHome = () => {
+  const { instructor } = useInstructor();
+  const { meta } = useIAssignments({});
+
+  const features = useMemo(
+    () => [
+      {
+        id: 1,
+        amount: instructor.courses.length,
+        info: "Assigned Courses",
+        icon: (
+          <FaPlayCircle
+            className="rounded-sm bg-blue-200 p-2 text-blue-600"
+            size={40}
+          />
+        ),
+        border: "border-blue-300 dark:border-blue-600",
+      },
+
+      {
+        id: 4,
+        amount: instructor.students.length,
+        info: "Total Students",
+        icon: (
+          <FaUserCircle
+            className="rounded-sm bg-orange-200 p-2 text-orange-600"
+            size={40}
+          />
+        ),
+        border: "border-orange-300 dark:border-orange-600",
+      },
+      {
+        id: 5,
+        amount: meta?.total ?? 0,
+        info: "Total Assignments Given",
+        icon: (
+          <FaUserCircle
+            className="rounded-sm bg-purple-200 p-2 text-purple-600"
+            size={40}
+          />
+        ),
+        border: "border-purple-300 dark:border-purple-600",
+      },
+    ],
+    [],
+  );
+
   return (
-    <div className="p-4 whitespace-nowrap">
+    <div className="bg-gray-50 p-6 transition-all dark:bg-gray-900">
       {/* Stats Section */}
-      <div className="p-4">
+      <header className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+          Hello, {instructor.fullName}!
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          At‑a‑glance view of your courses, student engagement, and teaching
+          tools.
+        </p>
+      </header>
+
+      <div>
         {/* First Row */}
-        <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-5">
+        <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
           {features.slice(0, 3).map((feature) => (
             <div
               key={feature.id}
@@ -113,51 +143,50 @@ const InstructorHome = () => {
       </div>
 
       {/* Profile Section */}
-      <div className="mt-10 flex min-h-32 w-full flex-col items-center justify-start gap-6 bg-gray-800 px-6 py-4 md:flex-row md:justify-between">
+      <div className="mx-auto my-10 flex min-h-32 w-full flex-col items-center justify-start gap-6 rounded-md bg-gray-800 px-6 py-4 md:flex-row md:justify-between">
         <div className="flex items-center gap-4">
-          <img
-            src={profileImg}
-            alt="Profile"
-            className="h-16 w-16 rounded-full object-cover"
-          />
+          <Avatar className="h-16 w-16 object-cover">
+            <AvatarImage src={instructor.picture} />
+            <AvatarFallback>
+              {generateInitials(instructor.fullName)}
+            </AvatarFallback>
+          </Avatar>
+
           <div>
-            <p className="font-semibold text-white">Josh Dickson</p>
-            <p className="text-sm text-gray-400">jodicksonjoshua@gmail.com</p>
+            <p className="font-semibold text-white">{instructor.fullName}</p>
+            <p className="text-sm text-gray-400">{instructor.email}</p>
           </div>
         </div>
 
-        <Link
-          to="/instructor/dashboard/settings"
-          className="btn rounded-md px-4 py-2 text-white"
-        >
-          Edit Bio
+        <Link to="/instructor/dashboard/settings">
+          <Button variant={"secondary"}>Edit Bio</Button>
         </Link>
       </div>
 
       {/* CTA Banners */}
-      <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
-        {ctaBanners.map((banner, index) => (
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {ctaBanners.map((banner) => (
           <motion.div
-            key={index}
+            key={banner.title}
             className={`rounded-lg p-6 shadow-md ${banner.colorClass} dark:border dark:border-gray-700`}
-            whileHover={{ scale: 1.02 }}
+            whileHover={{ scale: 1.01 }}
+            transition={{ duration: 0.1 }}
           >
             <div className="mb-4 flex items-center">
               {banner.icon}
-              <h3 className="ml-2 text-lg font-semibold">{banner.title}</h3>
+              <h3 className="ml-2 text-lg font-semibold dark:text-gray-100">
+                {banner.title}
+              </h3>
             </div>
             <p className="mb-3 text-sm text-gray-700 dark:text-gray-300">
               {banner.description}
             </p>
-            <Link
-              to={banner.link}
-              className="inline-block rounded-md bg-gray-800 px-4 py-2 text-sm font-medium text-gray-50 shadow-sm hover:bg-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-600"
-            >
-              Go to {banner.title}
+            <Link to={banner.link}>
+              <Button variant={"secondary"}>{banner.title}</Button>
             </Link>
           </motion.div>
         ))}
-      </div>
+      </section>
     </div>
   );
 };

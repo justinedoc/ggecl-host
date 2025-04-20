@@ -14,6 +14,7 @@ import {
   ENROLL_EMAIL_TEXT,
 } from "../constants/messages.js";
 import { uploadImageIfNeeded } from "../utils/imageUploader.js";
+import { PasswordUpdateZodSchema } from "../models/passwordUpdateSchema.js";
 
 // Types
 type IAdminSummary = Omit<
@@ -60,34 +61,16 @@ const AdminEnrollmentSchema = z.object({
 });
 
 // Schema for fields that can be edited.
-const AdminEditableSchema = z
-  .object({
-    fullName: z.string().min(2, "Full name must be at least 2 characters"),
-    gender: z.enum(["male", "female", "other"], {
-      errorMap: () => ({ message: "Gender selected is not valid" }),
-    }),
-    picture: z.string().url(),
-  })
-  .partial();
-
+const AdminEditableSchema = z.object({
+  fullName: z.string().min(2, "Full name must be at least 2 characters"),
+  email: z.string().email("Invalid email format"),
+  picture: z.string(),
+});
 // Schema for updating an instructor.
 const AdminUpdateSchema = z.object({
-  data: AdminEditableSchema,
+  data: AdminEditableSchema.partial(),
   id: z.string().refine(isValidObjectId, { message: "Invalid instructor ID" }),
 });
-
-const PasswordUpdateZodSchema = z
-  .object({
-    currentPassword: z
-      .string()
-      .min(1, { message: "Current password is required." }),
-    newPassword: z
-      .string()
-      .min(6, { message: "Password must be at least 8 characters long." }),
-  })
-  .refine((data) => data.currentPassword !== data.newPassword, {
-    message: "Old password cannot be same as new password",
-  });
 
 // Helpers
 
@@ -96,7 +79,7 @@ type TAdminUpdatable = z.infer<typeof AdminEditableSchema>;
 
 const getCacheKey = (input: TGetAdminsInput) => {
   const { page, limit, search, sortBy, order } = input;
-  return `instructors-${page}-${limit}-${search}-${sortBy}-${order}`;
+  return `admins-${page}-${limit}-${search}-${sortBy}-${order}`;
 };
 
 export const adminRouter = router({
@@ -127,7 +110,6 @@ export const adminRouter = router({
         }
 
         const adminPassword = generatePassword(8);
-        console.log(adminPassword);
 
         const adminEnrollmentData = {
           ...input,
@@ -232,6 +214,7 @@ export const adminRouter = router({
 
       const cacheKey = getCacheKey(input);
       const cachedData = CACHE.get<IAdminListResponse>(cacheKey);
+
       if (cachedData) {
         console.log(`[CACHE] Hit for ${cacheKey}`);
         return cachedData;
@@ -302,13 +285,9 @@ export const adminRouter = router({
         ...data,
         ...(imageUrl && { picture: imageUrl }),
       };
-      if (data.picture == null) {
-        delete updatePayload.picture;
-      }
 
-      let updatedAdmin: IAdmin | null;
       try {
-        updatedAdmin = await adminModel.findByIdAndUpdate(
+        const updatedAdmin = await adminModel.findByIdAndUpdate(
           adminId,
           updatePayload,
           {
@@ -316,26 +295,27 @@ export const adminRouter = router({
             runValidators: true,
           }
         );
+
+        if (!updatedAdmin) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: `No admin found with id "${adminId}"`,
+          });
+        }
+
+        CACHE.del(`admin-${adminId}`);
+        wildcardDeleteCache("admins-");
+
+        return updatedAdmin;
       } catch (dbErr) {
         console.error("[ERROR] Database update failed:", dbErr);
+        if (dbErr instanceof TRPCError) throw dbErr;
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Could not update admin record",
           cause: dbErr,
         });
       }
-
-      if (!updatedAdmin) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: `No admin found with id "${adminId}"`,
-        });
-      }
-
-      CACHE.del(`admin-${adminId}`);
-      wildcardDeleteCache("admins-");
-
-      return updatedAdmin;
     }),
 
   updatePasswordWithOld: protectedProcedure

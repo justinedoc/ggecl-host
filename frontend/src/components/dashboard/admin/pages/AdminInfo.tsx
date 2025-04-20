@@ -1,10 +1,14 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAdmins } from "../hooks/useAdmins";
 import { useEnrollAdmin } from "../hooks/useEnrollAdmin";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useDebounce } from "@/hooks/useDebounce";
 
 // ---------------- Validation Schema ----------------
 const AdminRegistrationSchema = z.object({
@@ -39,7 +43,7 @@ const AdminForm: React.FC = () => {
   };
 
   return (
-    <div className="rounded-lg border p-6 shadow-md dark:bg-gray-800">
+    <div className="w-full rounded-lg border p-6 shadow-md md:max-w-xl dark:bg-gray-800">
       <h2 className="mb-4 text-xl font-semibold text-gray-700 dark:text-gray-200">
         Add New Admin
       </h2>
@@ -48,10 +52,10 @@ const AdminForm: React.FC = () => {
         className="grid grid-cols-1 gap-4 md:grid-cols-2"
       >
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <Label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
             Full Name
-          </label>
-          <input
+          </Label>
+          <Input
             type="text"
             {...register("fullName")}
             className="w-full rounded-md border px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
@@ -64,10 +68,10 @@ const AdminForm: React.FC = () => {
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <Label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
             Email Address
-          </label>
-          <input
+          </Label>
+          <Input
             type="email"
             {...register("email")}
             className="w-full rounded-md border px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
@@ -77,50 +81,32 @@ const AdminForm: React.FC = () => {
           )}
         </div>
 
-        <button
-          type="submit"
-          disabled={isEnrolling}
-          className="w-fit rounded-md bg-blue-600 px-6 py-2 font-medium text-white transition hover:bg-blue-700 disabled:opacity-50 md:col-span-3"
-        >
-          {isEnrolling ? "Enrolling..." : "Add Admin"}
-        </button>
+        <Button type="submit" disabled={isEnrolling} className="w-fit px-5">
+          {isEnrolling ? "Adding..." : "Add Admin"}
+        </Button>
       </form>
     </div>
   );
 };
 
 const AdminList: React.FC = () => {
-  const { admins, loadingAdmins } = useAdmins({});
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+
+  const { debouncedValue } = useDebounce(searchTerm);
+
+  const { admins, meta, loading } = useAdmins({
+    page: currentPage,
+    limit: rowsPerPage,
+    search: debouncedValue,
+  });
 
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  const filteredAdmins = useMemo(
-    () =>
-      admins.filter((a) =>
-        a.fullName.toLowerCase().includes(searchTerm.toLowerCase()),
-      ),
-    [admins, searchTerm],
-  );
-
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredAdmins.length / rowsPerPage),
-  );
-
-  const paginated = useMemo(
-    () =>
-      filteredAdmins.slice(
-        (currentPage - 1) * rowsPerPage,
-        currentPage * rowsPerPage,
-      ),
-    [filteredAdmins, currentPage, rowsPerPage],
-  );
-
+  const totalPages = meta?.totalPages ?? 1;
   const changePage = useCallback(
     (dir: "prev" | "next") => {
       setCurrentPage((p) =>
@@ -137,7 +123,7 @@ const AdminList: React.FC = () => {
       </h2>
 
       <div className="flex flex-col items-start gap-4 md:flex-row md:justify-between">
-        <input
+        <Input
           type="text"
           placeholder="Search by name..."
           value={searchTerm}
@@ -173,26 +159,25 @@ const AdminList: React.FC = () => {
               <th className="px-4 py-3 text-left text-sm font-semibold dark:text-gray-300">
                 <input type="checkbox" />
               </th>
-              <th className="px-4 py-3 text-left text-sm font-semibold dark:text-gray-300">
-                Name
-              </th>
-              <th className="px-4 py-3 text-left text-sm font-semibold dark:text-gray-300">
-                Email
-              </th>
-              <th className="px-4 py-3 text-left text-sm font-semibold dark:text-gray-300">
-                Actions
-              </th>
+              {["Name", "Email", "Actions"].map((a) => (
+                <th
+                  key={a}
+                  className="px-4 py-3 text-left text-sm font-semibold dark:text-gray-300"
+                >
+                  {a}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900">
-            {loadingAdmins ? (
+            {loading ? (
               <tr>
                 <td colSpan={4} className="py-6 text-center">
                   Loading...
                 </td>
               </tr>
-            ) : paginated.length !== 0 ? (
-              paginated.map((admin) => (
+            ) : admins.length !== 0 ? (
+              admins.map((admin) => (
                 <tr
                   key={admin.email}
                   className="hover:bg-gray-50 dark:hover:bg-gray-800"
