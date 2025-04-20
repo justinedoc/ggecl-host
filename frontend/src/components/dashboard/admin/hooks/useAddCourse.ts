@@ -1,12 +1,24 @@
-import { useMutation } from 'react-query';  // Assuming react-query for API calls
+import { trpc } from "@/utils/trpc";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 export const useAddCourse = () => {
-  return useMutation(async (formData: FormData) => {
-    const response = await fetch('/api/add-course', {
-      method: 'POST',
-      body: formData,
-    });
-    if (!response.ok) throw new Error('Error adding course');
-    return response.json();
-  });
+  const queryClient = useQueryClient();
+  const { mutateAsync: addCourse } = useMutation(
+    trpc.course.create.mutationOptions({
+      onSuccess: () => {
+        toast.success("Course added successfully!");
+
+        queryClient.invalidateQueries({
+          queryKey: trpc.course.getAll.queryKey(),
+        });
+      },
+
+      onError: (err) => {
+        toast.error(err.message);
+      },
+    }),
+  );
+
+  return { addCourse };
 };

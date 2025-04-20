@@ -49,7 +49,7 @@ const Navbar = () => {
   return (
     <nav
       className={cn(
-        "bg-background text-foreground flex items-center justify-between border-b px-6 py-4",
+        "bg-background text-foreground sticky top-0 right-0 z-[40] flex items-center justify-between border-b px-6 py-4",
         "shadow-sm dark:border-gray-800",
       )}
     >

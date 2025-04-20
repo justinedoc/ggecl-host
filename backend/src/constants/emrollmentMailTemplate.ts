@@ -65,9 +65,7 @@ export function enrollMail<T>({
     `,
   };
 
-  // Format the role to have the first letter capitalized
   const roleFormatted = role.charAt(0).toUpperCase() + role.slice(1);
-  // Determine the correct article based on whether the role starts with a vowel
   const article = /^[aeiou]/i.test(roleFormatted) ? "an" : "a";
 
   return `
@@ -78,7 +76,7 @@ export function enrollMail<T>({
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Email Verification</title>
 </head>
-<body style="margin: 0; padding: 1rem; background: #f5f5f5;">
+<body style="margin: 0; padding: 0.5rem; background: #f5f5f5;">
   <div style="${styles.container}">
     <header>
       <h2 style="${styles.header}">Hello ${username}, Welcome to GGECL</h2>

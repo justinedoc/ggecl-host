@@ -114,7 +114,6 @@ const Support = lazy(
   () => import("@/components/dashboard/instructor/pages/Support.tsx"),
 );
 
-
 const VideoCall = lazy(
   () => import("@/components/dashboard/instructor/pages/VideoCall.tsx"),
 );
@@ -123,9 +122,7 @@ const VideoCall = lazy(
 const AdminHome = lazy(
   () => import("@/components/dashboard/admin/pages/AdminHome.tsx"),
 );
-const AssignmentAd = lazy(
-  () => import("@/components/dashboard/admin/pages/AssignmentAd.tsx"),
-);
+
 const AdminSettings = lazy(
   () => import("@/components/dashboard/admin/pages/AdminSettings.tsx"),
 );
@@ -491,14 +488,6 @@ function App() {
             element={
               <Suspense fallback={<AuthPageLoading />}>
                 <AdminHome />
-              </Suspense>
-            }
-          />
-          <Route
-            path="check-assignments"
-            element={
-              <Suspense fallback={<AuthPageLoading />}>
-                <AssignmentAd />
               </Suspense>
             }
           />

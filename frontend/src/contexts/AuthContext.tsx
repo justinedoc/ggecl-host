@@ -96,6 +96,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const handleLogin = useCallback(
     async (accessToken: string) => {
+      setState({
+        isAuthenticated: false,
+        isLoading: false,
+        userId: null,
+      });
       try {
         authProvider.setAccessToken(accessToken);
         await initializeAuth();
@@ -127,8 +132,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           }
         }
       },
-      14 * 60 * 1000,
-    ); // 14 minutes
+      10 * 60 * 1000,
+    ); // 10 mins
 
     return () => {
       abortController.abort();

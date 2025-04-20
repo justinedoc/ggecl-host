@@ -1,5 +1,6 @@
 import { procedure, protectedProcedure, router } from "../trpc.js";
 import { z } from "zod";
+import bcrypt from "bcrypt";
 import { CACHE, wildcardDeleteCache } from "../utils/nodeCache.js";
 import instructorModel, { IInstructor } from "../models/instructorModel.js";
 import { TRPCError } from "@trpc/server";
@@ -15,6 +16,9 @@ import {
   ENROLL_EMAIL_SUBJECT,
   ENROLL_EMAIL_TEXT,
 } from "../constants/messages.js";
+import { SALT_ROUNDS } from "../constants/auth.js";
+import { PasswordUpdateZodSchema } from "../models/passwordUpdateSchema.js";
+import { uploadImageIfNeeded } from "../utils/imageUploader.js";
 
 // Define the instructor summary type by omitting sensitive fields.
 type IInstructorSummary = Omit<
@@ -38,22 +42,18 @@ interface IInstructorListResponse {
 }
 
 // Schema for fields that can be edited.
-const InstructorEditableSchema = z
-  .object({
-    fullName: z.string().min(2, "Full name must be at least 2 characters"),
-    dateOfBirth: z.string().transform((str) => new Date(str)),
-    gender: z.enum(["male", "female", "other"], {
-      errorMap: () => ({ message: "Gender selected is not valid" }),
-    }),
-    picture: z.string().url(),
-    bio: z.string().min(5, "Bio must be at least 5 characters"),
-    topics: z.array(z.string()),
-  })
-  .partial();
+const InstructorEditableSchema = z.object({
+  fullName: z.string().min(2, "Full name must be at least 2 characters"),
+  email: z.string().email("Invalid email format"),
+  username: z.string().min(2, "Username must be at least 2 characters"),
+  picture: z.string(),
+  bio: z.string().min(5, "Bio must be at least 5 characters"),
+  topics: z.array(z.string()),
+});
 
 // Schema for updating an instructor.
 const InstructorUpdateSchema = z.object({
-  data: InstructorEditableSchema,
+  data: InstructorEditableSchema.partial(),
   id: z.string().refine(isValidObjectId, { message: "Invalid instructor ID" }),
 });
 
@@ -86,19 +86,19 @@ const GetInstructorByIdZodSchema = z.object({
 type TGetInstructorsInput = z.infer<typeof GetInstructorsZodSchema>;
 
 // Helper to generate cache key for instructor list.
-const getCacheKey = (input: TGetInstructorsInput) => {
+const getCacheKey = (prefix: string, input: TGetInstructorsInput) => {
   const { page, limit, search, sortBy, order } = input;
-  return `instructors-${page}-${limit}-${search}-${sortBy}-${order}`;
+  return `${prefix}-${page}-${limit}-${search}-${sortBy}-${order}`;
 };
 
 export const instructorRouter = router({
   enroll: protectedProcedure
     .input(InstructorRegistrationSchema)
     .mutation(async ({ ctx, input }) => {
-      const { id: adminId, role } = ctx.user;
+      const { id: instructorId, role } = ctx.user;
 
       try {
-        const adminExists = await adminModel.exists({ _id: adminId });
+        const adminExists = await adminModel.exists({ _id: instructorId });
 
         if (!adminExists || role !== "admin") {
           throw new TRPCError({
@@ -166,7 +166,7 @@ export const instructorRouter = router({
 
   // Get a paginated list of instructors with optional search and sorting.
   getAll: procedure.input(GetInstructorsZodSchema).query(async ({ input }) => {
-    const cacheKey = getCacheKey(input);
+    const cacheKey = getCacheKey("instructors", input);
     const cachedData = CACHE.get<IInstructorListResponse>(cacheKey);
     if (cachedData) {
       console.log(`[CACHE] Hit for ${cacheKey}`);
@@ -179,12 +179,14 @@ export const instructorRouter = router({
     const sortOrder = order === "asc" ? 1 : -1;
 
     const searchQuery: FilterQuery<IInstructorSummary> = {};
+
     if (search) {
+      const pattern = new RegExp(search, "i");
       searchQuery.$or = [
-        { fullName: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-        { username: { $regex: search, $options: "i" } },
-        { schRole: { $regex: search, $options: "i" } },
+        { fullName: pattern },
+        { email: pattern },
+        { username: pattern },
+        { schRole: pattern },
       ];
     }
 
@@ -200,10 +202,9 @@ export const instructorRouter = router({
           .select(
             "-password -refreshToken -emailVerificationExpires -emailVerificationToken -passwordUpdateToken -passwordUpdateTokenExpiry"
           )
-          .populate<{ courses: { title: string; image: string }[] }>(
-            "courses",
-            "title image"
-          )
+          .populate<{
+            courses: { _id: string; title: string; image: string }[];
+          }>("courses", "title image")
           .populate<{ students: { name: string; email: string }[] }>(
             "students",
             "name email"
@@ -256,10 +257,9 @@ export const instructorRouter = router({
           .select(
             "-password -refreshToken -emailVerificationExpires -emailVerificationToken -passwordUpdateToken -passwordUpdateTokenExpiry"
           )
-          .populate<{ courses: { title: string; image: string }[] }>(
-            "courses",
-            "title image"
-          )
+          .populate<{
+            courses: { _id: string; title: string; image: string }[];
+          }>("courses", "title image")
           .populate<{ students: { name: string; email: string }[] }>(
             "students",
             "name email"
@@ -295,11 +295,13 @@ export const instructorRouter = router({
       const { role, id: currentUserId } = ctx.user;
       const { data, id: instructorId } = input;
 
+      const imageUrl = await uploadImageIfNeeded(data.picture);
+
       try {
-        // Check if the instructor exists.
         const instructorExists = await instructorModel.exists({
           _id: instructorId,
         });
+
         if (!instructorExists) {
           throw new TRPCError({
             code: "NOT_FOUND",
@@ -314,13 +316,17 @@ export const instructorRouter = router({
           ],
         };
 
+        const updatePayload = {
+          ...data,
+          ...(imageUrl && { picture: imageUrl }),
+        };
+
         const updatedInstructor = await instructorModel.findOneAndUpdate(
           filterQuery,
-          data,
+          updatePayload,
           {
             new: true,
             runValidators: true,
-            upsert: true,
           }
         );
 
@@ -343,6 +349,62 @@ export const instructorRouter = router({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "An unexpected error occurred",
+        });
+      }
+    }),
+
+  updatePasswordWithOld: protectedProcedure
+    .input(PasswordUpdateZodSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { id: instructorId, role } = ctx.user;
+      const { currentPassword, newPassword } = input;
+
+      if (role !== "instructor") {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Insufficent permission",
+        });
+      }
+
+      try {
+        const instructor = await instructorModel.findById(instructorId);
+        if (!instructor) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Instructor user not found",
+          });
+        }
+
+        const isPasswordMatch = await bcrypt.compare(
+          currentPassword,
+          instructor.password!
+        );
+
+        if (!isPasswordMatch) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Incorrect credentials",
+          });
+        }
+
+        const newHashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+        instructor.password = newHashedPassword;
+
+        await instructor.save();
+
+        return { success: true };
+      } catch (error) {
+        console.error(
+          "An error occured while trying to update instructor password: ",
+          error instanceof Error ? error.message : error
+        );
+
+        if (error instanceof TRPCError) throw error;
+
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Could not update password",
         });
       }
     }),

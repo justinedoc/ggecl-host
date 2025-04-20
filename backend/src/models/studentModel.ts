@@ -1,7 +1,7 @@
-import { Document, Schema, model } from "mongoose";
-import { CartSchema, ICart } from "./cartModel.js";
-import { Types } from "mongoose";
+import { Schema, model, Types, Document } from "mongoose";
 import { INotification, NotificationSchema } from "./NotificationSchema.js";
+import { CartSchema, ICart } from "./cartModel.js";
+
 
 export interface IStudent extends Document {
   _id: Types.ObjectId;
@@ -9,7 +9,7 @@ export interface IStudent extends Document {
   fullName: string;
   gender: string;
   picture: string;
-  username?: string;
+  username: string;
   googleSignIn: boolean;
   emailVerified: boolean;
   isVerified: boolean;
@@ -22,12 +22,12 @@ export interface IStudent extends Document {
   passwordUpdateToken?: string;
   passwordUpdateTokenExpiry?: Date;
   cartItems: ICart[];
-  assignments: Types.ObjectId;
+  assignments: Types.ObjectId[];
   enrolledCourses: Types.ObjectId[];
+  instructors: Types.ObjectId[];
 }
 
-// Main Student Schema
-export const StudentSchema = new Schema<IStudent>(
+const StudentSchema = new Schema<IStudent>(
   {
     role: { type: String, default: "student" },
     fullName: { type: String, required: true },
@@ -41,52 +41,51 @@ export const StudentSchema = new Schema<IStudent>(
     googleSignIn: { type: Boolean, default: false },
     emailVerified: { type: Boolean, default: false },
     isVerified: { type: Boolean, default: false },
-    emailVerificationToken: { type: String },
-    emailVerificationExpires: { type: Date },
-    passwordUpdateToken: { type: String },
-    passwordUpdateTokenExpiry: { type: Date },
+    emailVerificationToken: String,
+    emailVerificationExpires: Date,
+    passwordUpdateToken: String,
+    passwordUpdateTokenExpiry: Date,
     email: { type: String, required: true, unique: true },
-    password: { type: String },
+    password: String,
     notifications: { type: [NotificationSchema], default: [] },
     cartItems: { type: [CartSchema], default: [] },
-    assignments: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "assignment",
-        default: [],
-      },
-    ],
-    enrolledCourses: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "course",
-        default: [],
-      },
-    ],
+    instructors: {
+      type: [Schema.Types.ObjectId],
+      ref: "instructor",
+      default: [],
+    },
+    assignments: {
+      type: [Schema.Types.ObjectId],
+      ref: "assignment",
+      default: [],
+    },
+    enrolledCourses: {
+      type: [Schema.Types.ObjectId],
+      ref: "course",
+      default: [],
+    },
     refreshToken: { type: String, select: false },
   },
   { timestamps: true }
 );
 
-StudentSchema.pre("save", async function (next) {
+StudentSchema.pre<IStudent>("save", async function (next) {
   if (!this.username && this.email) {
-    const baseUsername = this.email.split("@")[0];
-    let counter = 1;
-    let uniqueUsername = baseUsername;
+    const base = this.email.split("@")[0];
+    let candidate = base;
+    let count = 1;
 
-    while (await model("student").exists({ username: uniqueUsername })) {
-      uniqueUsername = `${baseUsername}${counter++}`;
+    while (await model<IStudent>("student").exists({ username: candidate })) {
+      candidate = `${base}${count++}`;
     }
-    this.username = uniqueUsername;
+    this.username = candidate;
   }
 
   if (!this.googleSignIn && !this.password) {
     return next(new Error("Password is required for email/password signups"));
   }
 
-  if (this.googleSignIn) {
-    this.emailVerified = true;
-  }
+  if (this.googleSignIn) this.emailVerified = true;
 
   next();
 });

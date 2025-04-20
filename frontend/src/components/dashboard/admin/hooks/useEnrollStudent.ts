@@ -14,6 +14,12 @@ export function useEnrollStudent() {
         queryClient.invalidateQueries({
           queryKey: trpc.cart.getAllItems.queryKey(),
         });
+        queryClient.invalidateQueries({
+          queryKey: trpc.student.getAll.queryKey(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: trpc.student.getById.queryKey(),
+        });
       },
       onError: (err) => {
         toast.error(err.message);

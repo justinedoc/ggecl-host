@@ -6,6 +6,10 @@ import { TRPCError } from "@trpc/server";
 import Instructor from "../models/instructorModel.js";
 import { Review } from "../models/reviewSchema.js";
 import { CACHE, wildcardDeleteCache } from "../utils/nodeCache.js";
+import { randomUUID } from "crypto";
+import { cloudinary } from "../cloudinary.js";
+import { envConfig } from "../config/envValidator.js";
+import { uploadImageIfNeeded } from "../utils/imageUploader.js";
 
 export type ICourseSummary = Omit<
   ICourse,
@@ -25,32 +29,48 @@ interface ICourseListResponse {
 }
 
 // Zod Schemas
-const CourseInputSchema = z.object({
-  title: z.string().min(3).max(100),
-  description: z.string().min(10),
-  certification: z.string().min(3),
-  syllabus: z.array(z.string()).optional().default([]),
-  duration: z.string().min(1),
-  lectures: z.number().int().positive(),
-  level: z.enum(["beginner", "intermediate", "advanced"]),
-  price: z.number().positive(),
-  img: z.string(),
-  totalRating: z.number().min(0).default(0),
-  totalStar: z.number().min(0).default(0),
-});
 
 const CourseCreateInputSchema = z.object({
   instructorId: z
     .string()
     .refine(isValidObjectId, { message: "Invalid course id" }),
-  courseData: CourseInputSchema,
+
+  videoUrl: z.string().url(),
+
+  title: z.string().min(5, { message: "Title must be at least 5 characters." }),
+
+  description: z
+    .string()
+    .min(20, { message: "Description must be at least 20 characters." })
+    .max(5000, { message: "Description cannot exceed 5000 characters." }),
+
+  certification: z.string().optional(),
+  syllabus: z.array(z.string()).optional().default([]),
+  duration: z.string().min(1, { message: "Please enter the course duration." }),
+  lectures: z.number().int().positive(),
+
+  level: z
+    .enum(["Beginner", "Intermediate", "Advanced"], {
+      required_error: "Please select a course level.",
+    })
+    .default("Beginner"),
+
+  price: z.coerce
+    .number({ invalid_type_error: "Must be a number" })
+    .min(0, { message: "Price cannot be negative." }),
+
+  badge: z.string().optional(),
+
+  img: z.string(),
+  totalRating: z.number().min(0).default(0),
+  totalStar: z.number().min(0).default(0),
 });
 
 const CourseUpdateInputSchema = z.object({
   courseId: z
     .string()
     .refine(isValidObjectId, { message: "Invalid course id" }),
-  courseData: CourseInputSchema.partial(),
+  courseData: CourseCreateInputSchema.partial(),
 });
 
 const GetCoursesZodSchema = z.object({
@@ -191,7 +211,9 @@ export const courseRouter = router({
     .input(CourseCreateInputSchema)
     .mutation(async ({ input, ctx }) => {
       const { role } = ctx.user;
-      const { instructorId, courseData } = input;
+      const { instructorId, ...courseData } = input;
+
+      const imageUrl = await uploadImageIfNeeded(courseData.img);
 
       if (role !== "instructor" && role !== "admin") {
         throw new TRPCError({
@@ -212,8 +234,13 @@ export const courseRouter = router({
         });
       }
 
+      const payload = {
+        ...courseData,
+        ...(imageUrl && { img: imageUrl }),
+      };
+
       const newCourse = new Course({
-        ...input.courseData,
+        ...payload,
         instructor: instructorId,
       });
 
@@ -240,6 +267,8 @@ export const courseRouter = router({
       const { id: instructorId, role } = ctx.user;
       const { courseId, courseData: updateData } = input;
 
+      const newImg = await uploadImageIfNeeded(updateData.img);
+
       try {
         if (role !== "instructor" && role !== "admin") {
           throw new TRPCError({
@@ -250,9 +279,12 @@ export const courseRouter = router({
         }
 
         const courseExists = await Course.exists({
-          _id: courseId,
-          instructor: instructorId,
+          $and: [
+            { _id: courseId },
+            ...(role !== "admin" ? [{ instructor: instructorId }] : []),
+          ],
         });
+
         if (!courseExists) {
           throw new TRPCError({
             code: "UNAUTHORIZED",
@@ -260,10 +292,17 @@ export const courseRouter = router({
           });
         }
 
-        const course = await Course.findByIdAndUpdate(courseId, updateData, {
-          new: true,
-          runValidators: true,
-        })
+        const course = await Course.findByIdAndUpdate(
+          courseId,
+          {
+            ...updateData,
+            ...(newImg && { img: newImg }),
+          },
+          {
+            new: true,
+            runValidators: true,
+          }
+        )
           .populate<{ instructor: { _id: string; fullName: string } }>(
             "instructor",
             "fullName"
@@ -299,6 +338,7 @@ export const courseRouter = router({
           _id: courseId,
           instructor: instructorId,
         });
+
         if (!courseExists) {
           throw new TRPCError({
             code: "UNAUTHORIZED",
@@ -316,6 +356,58 @@ export const courseRouter = router({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "An error occured while trying to delete course",
+        });
+      }
+    }), // FIXME: implement video deletion too
+
+  createCloudinarySignature: protectedProcedure
+    .input(
+      z.object({
+        originalFileName: z.string().optional(),
+        folder: z.string(),
+      })
+    )
+    .mutation(({ ctx, input }) => {
+      const { originalFileName, folder: fileLocation } = input;
+      const userId = ctx.user.id;
+      const timestamp = Math.round(new Date().getTime() / 1000);
+
+      const folder = `${fileLocation}/${userId}`;
+      const uniqueSuffix = randomUUID();
+      const baseFileName = originalFileName
+        ? originalFileName.split(".").slice(0, -1).join(".")
+        : "unnamed";
+      const public_id = `${folder}/${baseFileName}-${uniqueSuffix}`;
+
+      const paramsToSign = {
+        folder,
+        public_id,
+        timestamp,
+      };
+
+      try {
+        const signature = cloudinary.utils.api_sign_request(
+          paramsToSign,
+          envConfig.CLOUDINARY_API_SECRET!
+        );
+
+        return {
+          signature,
+          timestamp,
+          apiKey: envConfig.CLOUDINARY_API_KEY!,
+          cloudName: envConfig.CLOUDINARY_CLOUD_NAME!,
+          folder,
+          publicId: public_id,
+        };
+      } catch (error) {
+        console.error(
+          "Error signing Cloudinary request:",
+          error instanceof Error ? error.message : error
+        );
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to create upload signature.",
+          cause: error,
         });
       }
     }),

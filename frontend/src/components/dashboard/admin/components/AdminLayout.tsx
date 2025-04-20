@@ -66,7 +66,7 @@ function AdminLayout() {
       <AdminContext.Provider value={{ admin }}>
         <SidebarProvider>
           <AdminSidebar />
-          <main className="w-full overflow-x-hidden">
+          <main className="h-screen w-full overflow-x-hidden overflow-y-scroll">
             <AdminNav />
             <Outlet />
           </main>

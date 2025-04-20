@@ -7,12 +7,14 @@ export function useEnrollAdmin() {
   const { mutate: enrollAdmin, isPending: isEnrolling } = useMutation(
     trpc.admin.enroll.mutationOptions({
       onSuccess: ({ admin }) => {
-        toast.success(
-          `Admin ${admin.fullName} has been enrolled successfully`,
-        );
+        toast.success(`Admin ${admin.fullName} has been enrolled successfully`);
 
         queryClient.invalidateQueries({
-          queryKey: trpc.cart.getAllItems.queryKey(),
+          queryKey: trpc.admin.getAll.queryKey(),
+        });
+
+        queryClient.invalidateQueries({
+          queryKey: trpc.admin.getById.queryKey(),
         });
       },
       onError: (err) => {

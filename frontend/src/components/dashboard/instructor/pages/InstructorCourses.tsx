@@ -12,18 +12,6 @@ const courses = [
     category: "Design",
     students: ["Student A", "Student B", "Student C"],
   },
-  {
-    id: 2,
-    name: "React for Beginners",
-    category: "Development",
-    students: ["Student X", "Student Y"],
-  },
-  {
-    id: 3,
-    name: "Advanced UI/UX Principles",
-    category: "Design",
-    students: [],
-  },
 ];
 
 const InstructorCourses = () => {

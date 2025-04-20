@@ -2,13 +2,13 @@ import { useState, useEffect } from "react";
 import { FaPaperPlane, FaBars, FaTimes } from "react-icons/fa";
 import io from "socket.io-client";
 
-interface User {
-  id: string;
-  name: string;
-  message: string;
-  time: string;
-  active: boolean;
-}
+// interface User {
+//   id: string;
+//   name: string;
+//   message: string;
+//   time: string;
+//   active: boolean;
+// }
 
 interface Message {
   text: string;
