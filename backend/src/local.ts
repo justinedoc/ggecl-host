@@ -3,29 +3,33 @@ import { envConfig } from "./config/envValidator.js";
 import app, { init } from "./server.js";
 import { redis } from "./config/redisConfig.js";
 import { initSuperAdmin } from "./controllers/admins/index.js";
+import { initSocket } from "./socket/socket.js";
 
 const PORT = Number(envConfig.port) || 3000;
 
 async function startServer(): Promise<void> {
-  await init();
-  await initSuperAdmin().catch((error) => {
-    console.error("Unhandled error in superadmin initialization:", error);
-    process.exit(1);
-  });
-  const server = app.listen(PORT, () => {
-    console.log(`🚀 Server started on http://localhost:${PORT}`);
-  });
+  try {
+    await init();
+    await initSuperAdmin();
 
-  // Graceful shutdown
-  process.on("SIGINT", async () => {
-    console.log("\nShutting down server...");
-    await mongoose.disconnect();
-    await redis.disconnect();
-    server.close(() => {
-      console.log("Server and database connections closed.");
-      process.exit(0);
+    const server = app.listen(PORT, () => {
+      console.log(`🚀 Server started on http://localhost:${PORT}`);
+      initSocket(server);
     });
-  });
+
+    process.on("SIGINT", async () => {
+      console.log("\nShutting down server...");
+      await mongoose.disconnect();
+      await redis.disconnect();
+      server.close(() => {
+        console.log("Server and database connections closed.");
+        process.exit(0);
+      });
+    });
+  } catch (error) {
+    console.error("Unhandled error during server start:", error);
+    process.exit(1);
+  }
 }
 
 startServer();

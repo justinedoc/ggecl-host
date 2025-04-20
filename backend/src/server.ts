@@ -1,3 +1,4 @@
+import http from "http";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -10,13 +11,17 @@ import instructorRoutes from "./routes/instructorRoutes.js";
 import verifyEmailRoutes from "./routes/emailVerifyRoutes.js";
 import sessionRoute from "./routes/sessionRoute.js";
 import adminRoutes from "./routes/adminRoutes.js";
+import logoutRoute from "./routes/logoutRoute.js";
 
 // Configs & Middlewares
 import { errorHandler } from "./middlewares/errorHandler.js";
 // import { connectToCache } from "./config/redisConfig.js";
 import { connectToDb } from "./config/mongodbConfig.js";
-import logoutRoute from "./routes/logoutRoute.js";
 
+// Socket.IO integration
+import { initSocket } from "./socket/socket.js";
+
+// tRPC integration
 import { createContext } from "./context.js";
 import * as trpcExpress from "@trpc/server/adapters/express";
 import { appRouter } from "./routers/appRouter.js";
@@ -27,7 +32,7 @@ const app = express();
 app.use(
   cors({
     credentials: true,
-    origin: ["http://localhost:5173", "https://ggecl-preview.vercel.app"],
+    origin: ["http://localhost:5174", "https://ggecl-preview.vercel.app"],
   })
 );
 app.use(compression());
@@ -39,8 +44,6 @@ const ROUTE_PREFIX = "/api/v1";
 app.use(`${ROUTE_PREFIX}/student`, studentRoutes);
 app.use(`${ROUTE_PREFIX}/instructor`, instructorRoutes);
 app.use(`${ROUTE_PREFIX}/admin`, adminRoutes);
-
-// app.use(`${ROUTE_PREFIX}/course`, courseRoutes); MIGRATED TO TRPC
 app.use(`${ROUTE_PREFIX}`, verifyEmailRoutes);
 app.use(`${ROUTE_PREFIX}/refresh`, refresh);
 app.use(ROUTE_PREFIX, sessionRoute);
@@ -58,8 +61,11 @@ app.use(`${ROUTE_PREFIX}/health-check`, (req, res) => {
   res.send("Server is running!");
 });
 
-// Error handling middleware
 app.use(errorHandler);
+
+const server = http.createServer(app);
+
+initSocket(server);
 
 export async function init() {
   try {
@@ -71,4 +77,4 @@ export async function init() {
   }
 }
 
-export default app;
+export default server;
