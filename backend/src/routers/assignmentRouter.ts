@@ -82,20 +82,16 @@ export const assignmentRouter = router({
           });
         }
 
-        // 2) Create the assignment
         const assignment = await AssignmentModel.create({
           ...input,
           instructorId,
+          course: course._id,
+          status: "pending",
         });
 
         await studentModel.updateMany(
           { enrolledCourses: course._id },
-          {
-            $addToSet: {
-              assignments: assignment._id,
-              instructors: instructorId,
-            },
-          }
+          { $addToSet: { assignments: assignment._id } }
         );
 
         wildcardDeleteCache(`assignments-`);
@@ -105,7 +101,6 @@ export const assignmentRouter = router({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Could not create assignment",
-          cause: err,
         });
       }
     }),
@@ -123,8 +118,14 @@ export const assignmentRouter = router({
           const skip = (page - 1) * limit;
           const sortOrder = order === "asc" ? 1 : -1;
 
+          const student = await studentModel
+            .findById(studentId, { assignments: 1 })
+            .lean();
+
+          if (!student) throw new TRPCError({ code: "NOT_FOUND" });
+
           const searchQuery: FilterQuery<IStudentAssignment> = {
-            studentId,
+            _id: { $in: student.assignments },
             ...(status && { status }),
           };
 
@@ -409,6 +410,7 @@ export const assignmentRouter = router({
 
         // 2. Prepare submission data for update
         const submissionData: TSubmissionData = {
+          studentId: student._id,
           status: "submitted",
           submissionDate: new Date(),
           submissionFileUrl: fileUrl,

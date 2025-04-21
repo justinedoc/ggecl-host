@@ -1,12 +1,12 @@
 import InstructorBox from "./InstructorBox";
 import ListContainer from "../../ui/ListContainer";
-import { useInstructors } from "../hooks/useInstructors";
+import { useInstructors } from "@/hooks/useInstructors";
 
 function Instructors() {
-  const { instructors, loadingInstructors } = useInstructors({});
+  const { instructors, loading } = useInstructors({});
   return (
     <ListContainer
-      isLoading={loadingInstructors}
+      isLoading={loading}
       header="Top Instructors"
       path="/instructors"
       render={instructors.map((instructor) => (

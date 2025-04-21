@@ -156,9 +156,6 @@ const AdminList: React.FC = () => {
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-100 dark:bg-gray-700">
             <tr>
-              <th className="px-4 py-3 text-left text-sm font-semibold dark:text-gray-300">
-                <input type="checkbox" />
-              </th>
               {["Name", "Email", "Actions"].map((a) => (
                 <th
                   key={a}
@@ -182,16 +179,13 @@ const AdminList: React.FC = () => {
                   key={admin.email}
                   className="hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
-                  <td className="px-4 py-3">
-                    <input type="checkbox" />
-                  </td>
                   <td className="px-4 py-3 text-sm dark:text-gray-200">
                     {admin.fullName}
                   </td>
                   <td className="px-4 py-3 text-sm dark:text-gray-200">
                     {admin.email}
                   </td>
-                  <td className="px-4 py-3 text-right text-sm dark:text-gray-400">
+                  <td className="py-3 text-center text-sm dark:text-gray-400">
                     <button className="text-red-600 hover:text-red-800">
                       Delete
                     </button>
@@ -239,6 +233,10 @@ const AdminList: React.FC = () => {
 
 const AdminInfo: React.FC = () => (
   <div className="min-h-screen bg-gray-50 p-6 dark:bg-gray-900">
+    <div className="mb-5 space-y-0.5">
+      <h1 className="text-3xl font-bold md:text-4xl">Admin Management</h1>
+      <p className="text-muted-foreground text-sm">veiw your fellow admins</p>
+    </div>
     <AdminForm />
     <AdminList />
   </div>

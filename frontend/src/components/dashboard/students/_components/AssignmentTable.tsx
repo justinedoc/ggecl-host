@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 type TStudentAssignmentStatusWithAll = Assignment["status"] | "all";
 
@@ -192,11 +193,24 @@ function AssignmentTable({ onHandleTableAction }: AssignmentTableProps) {
                       {TABLE_ACTIONS.map((action) => (
                         <Button
                           onClick={() =>
-                            onHandleTableAction(action.name, assignment as unknown as Assignment)
+                            onHandleTableAction(
+                              action.name,
+                              assignment as unknown as Assignment,
+                            )
                           }
                           key={action.name}
                           variant="ghost"
-                          className="flex w-full items-center justify-start gap-2 px-3 py-1.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                          className={cn(
+                            "flex w-full items-center justify-start gap-2 px-3 py-1.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-700",
+                            {
+                              hidden:
+                                assignment.status === "graded" &&
+                                action.name === "Upload",
+                              "cursor-not-allowed opacity-50":
+                                assignment.status === "submitted" &&
+                                action.name === "Upload",
+                            },
+                          )}
                           aria-label={`${action.name} ${assignment.title}`}
                         >
                           <action.icon size={16} />

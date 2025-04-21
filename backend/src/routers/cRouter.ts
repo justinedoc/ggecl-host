@@ -79,6 +79,12 @@ const GetCoursesZodSchema = z.object({
   search: z.string().optional(),
   sortBy: z.enum(["title", "price", "rating"]).default("title"),
   order: z.enum(["asc", "desc"]).default("asc"),
+  instructor: z
+    .string()
+    .refine(isValidObjectId, {
+      message: "Invalid instructor ID",
+    })
+    .optional(),
 });
 
 type TGetCoursesInput = z.infer<typeof GetCoursesZodSchema>;
@@ -99,15 +105,20 @@ export const courseRouter = router({
     }
     console.log("Cache miss for:" + cacheKey);
 
-    const { page, limit, search, sortBy, order } = input;
+    const { page, limit, search, sortBy, order, instructor } = input;
     const skip = (page - 1) * limit;
     const sortOrder = order === "asc" ? 1 : -1;
 
-    const searchQuery: FilterQuery<ICourse> = {};
+    const searchQuery: FilterQuery<ICourse> = {
+      ...(instructor && { instructor: instructor }),
+    };
+
     if (search) {
+      const pattern = new RegExp(search, "i");
       searchQuery.$or = [
-        { title: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } },
+        { title: pattern },
+        { description: pattern },
+        { "instructor.fullName": pattern },
       ];
     }
 
@@ -156,7 +167,13 @@ export const courseRouter = router({
   }),
 
   getById: procedure
-    .input(z.object({ courseId: z.string().min(1, "Course ID is required") }))
+    .input(
+      z.object({
+        courseId: z
+          .string()
+          .refine(isValidObjectId, { message: "Course ID is Invalid" }),
+      })
+    )
     .query(async ({ input }) => {
       const { courseId } = input;
       const cacheKey = `course-${courseId}`;

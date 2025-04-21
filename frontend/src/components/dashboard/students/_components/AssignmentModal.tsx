@@ -7,6 +7,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Assignment } from "@/utils/trpc";
 import { format } from "date-fns";
 import { Upload } from "lucide-react";
@@ -33,7 +34,7 @@ export default function AssignmentModal({
     <AlertDialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <AlertDialogContent>
         <AlertDialogHeader className="text-center">
-          <AlertDialogTitle className="text-xl font-semibold">
+          <AlertDialogTitle className="text-2xl font-bold">
             {assignment.title}
           </AlertDialogTitle>
           <AlertDialogDescription>
@@ -43,19 +44,40 @@ export default function AssignmentModal({
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <div className="my-4 text-sm text-gray-700 dark:text-gray-300">
+        <div className="text-sm text-gray-700 dark:text-gray-300">
+          <h1 className="space-y-2 text-lg font-bold">Question:</h1>
           <p>{assignment.question}</p>
         </div>
+
+        {assignment.status === "graded" && (
+          <div className="space-y-5">
+            <div>
+              <h1 className="space-y-2 text-lg font-bold">Remark:</h1>
+              <p>{assignment.remark}</p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <h1 className="text-lg font-bold">Grade:</h1>
+              <p className="text-xl font-bold text-green-500">
+                {assignment.grade}
+              </p>
+            </div>
+          </div>
+        )}
 
         <AlertDialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
           <Button
+            disabled={
+              assignment.status === "graded" ||
+              assignment.status === "submitted"
+            }
             onClick={handleUploadClick}
             aria-label={`Upload assignment ${assignment.title}`}
           >
-            <Upload className="mr-2 h-4 w-4" /> Upload Submission
+            <Upload className={cn("mr-2 h-4 w-4")} /> Upload Submission
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

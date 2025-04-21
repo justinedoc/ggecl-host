@@ -16,15 +16,16 @@ import { Button } from "@/components/ui/button";
 import CourseInfo from "../_components/CourseInfo";
 import ListContainer from "@/components/ui/ListContainer";
 import { GetCourseOutput } from "@/utils/trpc";
-import { useCoursesById } from "../hooks/useCourseById";
-import { useCourses } from "../hooks/useCourses";
 import { TInstructor } from "@/types/instructorType";
 import { useAddCartItem } from "../hooks/useAddCartItem";
+import { useCourses } from "@/hooks/useCourses";
+import { useCoursesById } from "@/hooks/useCourseById";
 
 const CoursePage = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
 
-  const { courses, loadingCourses } = useCourses({ limit: 4 });
+  const { courses, loading } = useCourses({});
+
   const { singleCourse: course } = useCoursesById(id || "");
 
   if (!course) return "Course not found";
@@ -109,7 +110,7 @@ const CoursePage = () => {
         <CourseAction course={course} />
       </main>
 
-      {!loadingCourses && (
+      {!loading && (
         <ListContainer
           header="Similar courses"
           path="/courses"

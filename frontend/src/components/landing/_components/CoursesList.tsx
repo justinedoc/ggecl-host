@@ -1,17 +1,17 @@
 import CourseBox from "./CourseBox";
 import ListContainer from "../../ui/ListContainer";
-import { useCourses } from "../hooks/useCourses";
+import { useCourses } from "@/hooks/useCourses";
 
 function Courses() {
-  const { courses, loadingCourses } = useCourses({});
+  const { courses, loading } = useCourses({});
 
   return (
     <ListContainer
-      isLoading={loadingCourses}
+      isLoading={loading}
       header="Top courses"
       path="/courses"
       render={courses.map((course) => (
-        <CourseBox key={course.title} course={course} />
+        <CourseBox key={course._id.toString()} course={course} />
       ))}
     />
   );

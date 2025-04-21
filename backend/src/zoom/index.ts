@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import jwt from "jsonwebtoken";
 
 dotenv.config();
@@ -35,11 +35,16 @@ export async function getMeetings() {
     );
 
     return response.data;
-  } catch (error: any) {
-    console.error(
-      "Error fetching meetings:",
-      error?.response?.data || error.message
-    );
+  } catch (error) {
+    let message: string;
+    if (error instanceof AxiosError) {
+      message = error.response?.data?.message;
+    }
+
+    if (error instanceof Error) {
+      message = error.message;
+    }
+    console.error("Error fetching meetings:", message || error);
     throw error;
   }
 }

@@ -32,7 +32,7 @@ const app = express();
 app.use(
   cors({
     credentials: true,
-    origin: ["http://localhost:5174", "https://ggecl-preview.vercel.app"],
+    origin: ["http://localhost:5173", "https://ggecl-preview.vercel.app"],
   })
 );
 app.use(compression());
@@ -65,13 +65,11 @@ app.use(errorHandler);
 
 const server = http.createServer(app);
 
-initSocket(server);
-
 export async function init() {
   try {
     await connectToDb();
-    // await connectToCache();
-    console.log("✅ Database and Cache connected.");
+    initSocket(server);
+    console.log("✅ Database connected.");
   } catch (err) {
     console.error("Initialization error:", err);
   }

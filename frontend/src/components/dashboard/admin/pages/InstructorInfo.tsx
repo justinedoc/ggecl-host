@@ -74,6 +74,12 @@ const InstructorInfo: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white p-4 dark:bg-gray-900">
+      <div className="mb-5 space-y-0.5">
+        <h1 className="text-3xl font-bold md:text-4xl">Instructor Management</h1>
+        <p className="text-muted-foreground text-sm">
+          veiw and manage instructors who teach at your school
+        </p>
+      </div>
       <div className="grid grid-cols-1 gap-6">
         {/* Add Instructor Section */}
         <div className="mt-5 w-full rounded-lg border p-4 shadow md:max-w-xl dark:bg-gray-900">

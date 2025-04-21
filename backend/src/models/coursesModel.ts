@@ -5,6 +5,7 @@ export interface ICourse {
   _id: Types.ObjectId;
   title: string;
   instructor: Types.ObjectId;
+  students: Types.ObjectId[];
   description: string;
   videoUrl: string;
   certification: string;
@@ -26,6 +27,10 @@ export const CourseSchema = new Schema<ICourse>({
     type: Schema.Types.ObjectId,
     ref: "instructor",
     required: true,
+  },
+  students: {
+    type: [Schema.Types.ObjectId],
+    ref: "student",
   },
   videoUrl: {
     type: String,

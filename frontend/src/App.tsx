@@ -126,6 +126,10 @@ const AdminHome = lazy(
 const AdminSettings = lazy(
   () => import("@/components/dashboard/admin/pages/AdminSettings.tsx"),
 );
+
+const AdminEditCourse = lazy(
+  () => import("@/components/dashboard/admin/pages/EditCourse.tsx"),
+);
 const AdminChat = lazy(
   () => import("@/components/dashboard/admin/pages/AdminChat.tsx"),
 );
@@ -523,6 +527,16 @@ function App() {
               </Suspense>
             }
           />
+
+          <Route
+            path="edit-course/:courseId"
+            element={
+              <Suspense fallback={<AuthPageLoading />}>
+                <AdminEditCourse />
+              </Suspense>
+            }
+          />
+
           <Route
             path="students"
             element={

@@ -33,7 +33,7 @@ export class SocketService {
   constructor(server: HttpServer) {
     this.io = new IOServer(server, {
       cors: {
-        origin: ["http://localhost:5174", "https://ggecl-preview.vercel.app"],
+        origin: ["http://localhost:5173", "https://ggecl-preview.vercel.app"],
         credentials: true,
       },
     });

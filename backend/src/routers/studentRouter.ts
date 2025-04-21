@@ -69,6 +69,10 @@ const GetStudentsZodSchema = z.object({
     .string()
     .refine(isValidObjectId, { message: "invaild instructor id" })
     .optional(),
+  course: z
+    .string()
+    .refine(isValidObjectId, { message: "invaild instructor id" })
+    .optional(),
 });
 
 export const StudentEnrollSchema = z.object({
@@ -88,7 +92,7 @@ const EnrollStudentsToCourseSchema = z.object({
         message: "Each student ID must be a valid ObjectId",
       })
     )
-    .nonempty({ message: "You must supply at least one student ID" }),
+    .min(1, { message: "You must supply at least one student ID" }),
   courseId: z
     .string()
     .refine(isValidObjectId, { message: "Course ID must be a valid ObjectId" }),
@@ -98,8 +102,8 @@ type TGetStudentsInput = z.infer<typeof GetStudentsZodSchema>;
 
 // Helper to build a cache key for student lists.
 const getCacheKey = (input: TGetStudentsInput) => {
-  const { page, limit, search, sortBy, order, instructor } = input;
-  return `students-${page}-${limit}-${search}-${sortBy}-${order}-${instructor}`;
+  const { page, limit, search, sortBy, order, instructor, course } = input;
+  return `students-${page}-${limit}-${search}-${sortBy}-${order}-${instructor}-${course}`;
 };
 
 export const studentRouter = router({
@@ -150,6 +154,12 @@ export const studentRouter = router({
             instructors: course.instructor,
           },
         }
+      );
+
+      await coursesModel.findByIdAndUpdate(
+        course._id,
+        { $addToSet: { students: { $each: toEnrollIds } } },
+        { new: true, runValidators: true }
       );
 
       await instructorModel.findByIdAndUpdate(
@@ -253,7 +263,7 @@ export const studentRouter = router({
       }
       console.log(`[CACHE] Miss for ${cacheKey}`);
 
-      const { page, limit, search, sortBy, order, instructor } = input;
+      const { page, limit, search, sortBy, order, instructor, course } = input;
       const skip = (page - 1) * limit;
       const sortOrder = order === "asc" ? 1 : -1;
 
@@ -261,6 +271,10 @@ export const studentRouter = router({
 
       if (instructor) {
         searchQuery.instructors = { $in: [instructor] };
+      }
+
+      if (course) {
+        searchQuery.enrolledCourses = { $ne: [course] };
       }
 
       if (search) {
