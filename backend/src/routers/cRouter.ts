@@ -10,6 +10,7 @@ import { randomUUID } from "crypto";
 import { cloudinary } from "../cloudinary.js";
 import { envConfig } from "../config/envValidator.js";
 import { uploadImageIfNeeded } from "../utils/imageUploader.js";
+import studentModel from "../models/studentModel.js";
 
 export type ICourseSummary = Omit<
   ICourse,
@@ -90,8 +91,8 @@ const GetCoursesZodSchema = z.object({
 type TGetCoursesInput = z.infer<typeof GetCoursesZodSchema>;
 
 const getCacheKey = (input: TGetCoursesInput) => {
-  const { page, limit, search, sortBy, order } = input || {};
-  return `courses-${page}-${limit}-${search}-${sortBy}-${order}`;
+  const { page, limit, search, sortBy, order, instructor } = input || {};
+  return `courses-${page}-${limit}-${search}-${sortBy}-${order}-${instructor}`;
 };
 
 export const courseRouter = router({
@@ -165,6 +166,87 @@ export const courseRouter = router({
       });
     }
   }),
+
+  getAllForStudent: protectedProcedure
+    .input(GetCoursesZodSchema)
+    .query(async ({ input, ctx }) => {
+      const studentId = ctx.user.id;
+      const cacheKey = getCacheKey(input);
+
+      const cachedData = CACHE.get<ICourseListResponse>(cacheKey);
+      if (cachedData) {
+        console.log("Cache hit for:", cacheKey);
+        return cachedData;
+      }
+      console.log("Cache miss for:" + cacheKey);
+
+      try {
+        const student = await studentModel.findById(studentId).lean();
+        if (!student) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Student not found",
+          });
+        }
+
+        const { page, limit, search, sortBy, order } = input;
+        const skip = (page - 1) * limit;
+        const sortOrder = order === "asc" ? 1 : -1;
+
+        const searchQuery: FilterQuery<ICourse> = {
+          _id: { $in: student.enrolledCourses },
+        };
+
+        if (search) {
+          const pattern = new RegExp(search, "i");
+          searchQuery.$or = [
+            { title: pattern },
+            { description: pattern },
+            { "instructor.fullName": pattern },
+          ];
+        }
+
+        const sortOptions: Record<string, 1 | -1> = {};
+        if (sortBy) {
+          sortOptions[sortBy] = sortOrder;
+        }
+
+        const [courses, total] = await Promise.all([
+          Course.find(searchQuery)
+            .populate<{
+              instructor: { _id: string; fullName: string; picture: string };
+            }>("instructor", "fullName picture")
+            .sort(sortOptions)
+            .skip(skip)
+            .limit(limit)
+            .select("-syllabus -reviews -description")
+            .lean(),
+          Course.countDocuments(searchQuery),
+        ]);
+
+        const response = {
+          courses,
+          meta: {
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+          },
+        };
+
+        CACHE.set(cacheKey, response);
+        console.log("Cache set for:", cacheKey);
+
+        return response;
+      } catch (error) {
+        console.error("Error fetching courses:", error);
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch courses",
+        });
+      }
+    }),
 
   getById: procedure
     .input(

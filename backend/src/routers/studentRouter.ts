@@ -251,7 +251,6 @@ export const studentRouter = router({
       }
     }),
 
-  // Get all students (paginated, searchable, and sortable).
   getAll: protectedProcedure
     .input(GetStudentsZodSchema)
     .query(async ({ input }) => {
