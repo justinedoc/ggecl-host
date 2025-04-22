@@ -388,7 +388,7 @@ function App() {
             }
           />
           <Route
-            path="video-call"
+            path="video"
             element={
               <Suspense fallback={<AuthPageLoading />}>
                 <VideoCall />
