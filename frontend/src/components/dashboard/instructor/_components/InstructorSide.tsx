@@ -22,6 +22,7 @@ import {
     Users,
     BarChart,
     BookOpen,
+    Video
   } from "lucide-react";
   import logoImg from "@/assets/images/LOGO.png";
   
@@ -58,6 +59,11 @@ import {
       title: "Student Discussions",
       url: `${urlPrefix}/chat`,
       icon: MessagesSquare,
+    },
+    {
+      title: "Video Call",
+      url: `${urlPrefix}/video`,
+      icon: Video,
     },
     {
       title: "Manage Students",
