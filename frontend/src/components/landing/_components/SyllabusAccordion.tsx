@@ -1,4 +1,3 @@
-import React from "react";
 import {
   Accordion,
   AccordionContent,
@@ -7,51 +6,7 @@ import {
 } from "@/components/ui/accordion";
 import { Separator } from "@/components/ui/separator";
 
-interface SyllabusItem {
-  title: string;
-  topics: string[];
-  time: string;
-}
-
-const syllabusData: SyllabusItem[] = [
-  {
-    title: "Introduction to UX Design",
-    topics: ["What is UX?", "History of UX", "UX vs UI", "Importance of UX"],
-    time: "1 Hour",
-  },
-  {
-    title: "User Research",
-    topics: [
-      "Understanding Users",
-      "Conducting Surveys",
-      "User Personas",
-      "Competitor Analysis",
-    ],
-    time: "1 Hour",
-  },
-  {
-    title: "Prototyping & Wireframing",
-    topics: [
-      "Low-fidelity Prototypes",
-      "Wireframing Basics",
-      "Usability Testing",
-      "Iterative Design",
-    ],
-    time: "1 Hour",
-  },
-  {
-    title: "Advanced UX Strategies",
-    topics: [
-      "A/B Testing",
-      "Accessibility in UX",
-      "Emotional Design",
-      "Future of UX",
-    ],
-    time: "1 Hour",
-  },
-];
-
-const SyllabusAccordion: React.FC = () => {
+function SyllabusAccordion({ accordion }: { accordion: string[] }) {
   return (
     <section className="py-6">
       <header className="mb-4">
@@ -62,23 +17,23 @@ const SyllabusAccordion: React.FC = () => {
           type="multiple"
           className="max-w-[40rem] min-w-[32rem] rounded-md border p-3 dark:border-blue-300/30"
         >
-          {syllabusData.map((syllabus) => (
-            <AccordionItem key={syllabus.title} value={syllabus.title}>
+          {accordion.map((syllabus, i) => (
+            <AccordionItem key={i} value={syllabus}>
               <AccordionTrigger className="hover:no-underline focus:outline-none">
                 <div className="flex w-full justify-between px-4">
-                  <h3 className="text-base font-bold">{syllabus.title}</h3>
-                  <div className="flex items-center gap-2 text-sm font-semibold text-gray-500">
-                    <span>{syllabus.topics.length} Lessons</span>
+                  <h3 className="text-base font-bold">{syllabus}</h3>
+                  <div className="hidden items-center gap-2 text-sm font-semibold text-gray-500">
+                    <span>{syllabus.length} Lessons</span>
                     <Separator orientation="vertical" />
-                    <span>{syllabus.time}</span>
+                    <span>{syllabus}</span>
                   </div>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-4">
                 <ul className="space-y-2">
-                  {syllabus.topics.map((topic) => (
-                    <li key={topic} className="font-medium">
-                      {topic}
+                  {accordion.map((s) => (
+                    <li key={s} className="font-medium">
+                      {s}
                     </li>
                   ))}
                 </ul>
@@ -89,6 +44,6 @@ const SyllabusAccordion: React.FC = () => {
       </div>
     </section>
   );
-};
+}
 
 export default SyllabusAccordion;

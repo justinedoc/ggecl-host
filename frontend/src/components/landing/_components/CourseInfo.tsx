@@ -21,7 +21,7 @@ const CourseInfo: React.FC<{ course: GetCourseOutput }> = ({ course }) => {
           <>
             <CourseDescription description={course.description} />
             <InstructorInfo instructor={course.instructor} />
-            <SyllabusAccordion />
+            <SyllabusAccordion accordion={course.syllabus} />
             <StudentReviews reviews={course.reviews} />
           </>
         );
@@ -30,7 +30,7 @@ const CourseInfo: React.FC<{ course: GetCourseOutput }> = ({ course }) => {
       case "Instructor":
         return <InstructorInfo instructor={course.instructor} />;
       case "Syllabus":
-        return <SyllabusAccordion />;
+        return <SyllabusAccordion accordion={course.syllabus} />;
       case "Reviews":
         return <StudentReviews reviews={course.reviews} />;
       default:
