@@ -9,6 +9,7 @@ function Instructors() {
       isLoading={loading}
       header="Top Instructors"
       path="/instructors"
+      className="flex justify-center flex-wrap gap-4"
       render={instructors.map((instructor) => (
         <InstructorBox
           key={instructor._id.toString()}
