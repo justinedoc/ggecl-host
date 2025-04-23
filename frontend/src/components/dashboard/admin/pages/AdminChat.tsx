@@ -69,6 +69,7 @@ const AdminChat = () => {
   ]);
   const { groupsData, loading, messages } = useChatData(selectedGroup?.groupId);
 
+  const [searchTerm, setSearchTerm] = useState("");
   const { instructors = [] } = useInstructors({ limit: 200 });
   const { students = [] } = useStudents({ limit: 200 });
 
@@ -88,7 +89,14 @@ const AdminChat = () => {
     }
   }, [groupsData, instructors, students]);
 
-  console.log({ availableInstructors });
+  const filteredInstructors = availableInstructors.filter((instructor) =>
+    instructor.name.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+  const filteredStudents = availableStudents.filter((student) =>
+    student.name.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+
+  // console.log({ availableInstructors });
 
   // console.log("Instructors:", instructors);
   // console.log("Students:", students);
@@ -740,6 +748,14 @@ const AdminChat = () => {
                   value={newGroupName}
                   onChange={(e) => setNewGroupName(e.target.value)}
                 />
+
+                <input
+                  type="text"
+                  placeholder="Search Instructors/Students..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="mt-2 w-full rounded-md border-1 border-amber-50 p-1.5 outline-0 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                />
               </div>
 
               <div className="mb-4 text-left">
@@ -747,7 +763,7 @@ const AdminChat = () => {
                   Instructors
                 </label>
                 <ul className="h-28 overflow-y-auto rounded-md border dark:border-gray-600">
-                  {availableInstructors.map((instructor) => (
+                  {filteredInstructors.map((instructor) => (
                     <li
                       key={instructor.id}
                       className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -774,7 +790,7 @@ const AdminChat = () => {
                   Students
                 </label>
                 <ul className="h-32 overflow-y-scroll rounded-md border dark:border-gray-600">
-                  {availableStudents.map((student) => (
+                  {filteredStudents.map((student) => (
                     <li
                       key={student.id}
                       className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700"
