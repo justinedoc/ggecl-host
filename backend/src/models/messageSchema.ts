@@ -37,6 +37,7 @@ const messageSchema = new mongoose.Schema(
   {
     group: { type: String, required: true },
     sender: { type: String, required: true },
+    senderId: { type: String, required: true },
     role: {
       type: String,
       enum: ["admin", "student", "instructor"],

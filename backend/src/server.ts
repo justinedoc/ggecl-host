@@ -12,6 +12,7 @@ import verifyEmailRoutes from "./routes/emailVerifyRoutes.js";
 import sessionRoute from "./routes/sessionRoute.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import logoutRoute from "./routes/logoutRoute.js";
+import chatRouter from "./routes/chatRoute.js";
 
 // Configs & Middlewares
 import { errorHandler } from "./middlewares/errorHandler.js";
@@ -48,6 +49,7 @@ app.use(`${ROUTE_PREFIX}`, verifyEmailRoutes);
 app.use(`${ROUTE_PREFIX}/refresh`, refresh);
 app.use(ROUTE_PREFIX, sessionRoute);
 app.use(`${ROUTE_PREFIX}`, logoutRoute);
+app.use(`${ROUTE_PREFIX}/chat`, chatRouter);
 
 app.use(
   `${ROUTE_PREFIX}/trpc`,

@@ -9,6 +9,13 @@ import {
 import socketService from "@/socket/socketService";
 import { formatDistanceToNow } from "date-fns";
 
+//Chat hook
+import { useChatData } from "@/hooks/useChatData";
+import { useAuth } from "@/hooks/useAuth";
+import { useInstructors } from "@/hooks/useInstructors";
+import { useStudents } from "@/hooks/useStudents";
+import { GroupItem } from "./GroupItem";
+
 interface Message {
   text: string | null;
   sender: string;
@@ -29,14 +36,15 @@ interface Group {
 }
 
 const AdminChat = () => {
-  const currentUserId = "admin1";
-  const currentUserRole = "admin";
+  const { userId, role } = useAuth();
+  const currentUserId = userId || "admin";
+  const currentUserRole = role || "admin";
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [image, setImage] = useState<string | null>(null);
@@ -50,20 +58,97 @@ const AdminChat = () => {
   const [newGroupName, setNewGroupName] = useState("");
   const [selectedInstructors, setSelectedInstructors] = useState<string[]>([]);
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
-  const [availableInstructors] = useState([
+
+  const [availableInstructors, setAvailableInstructors] = useState([
     { id: "instructor1", name: "Instructor One" },
     { id: "instructor2", name: "Instructor Two" },
   ]);
-  const [availableStudents] = useState([
+  const [availableStudents, setAvailableStudents] = useState([
     { id: "student1", name: "Student One" },
     { id: "student2", name: "Student Two" },
   ]);
+  const { groupsData, loading, messages } = useChatData(selectedGroup?.groupId);
+
+  const { instructors = [] } = useInstructors({ limit: 200 });
+  const { students = [] } = useStudents({ limit: 200 });
+
+  useEffect(() => {
+    if (instructors) {
+      setAvailableInstructors(
+        instructors.map((ins) => ({
+          id: ins._id.toString(),
+          name: ins.fullName,
+        })),
+      );
+    }
+    if (students) {
+      setAvailableStudents(
+        students.map((stu) => ({ id: stu._id.toString(), name: stu.fullName })),
+      );
+    }
+  }, [groupsData, instructors, students]);
+
+  console.log({ availableInstructors });
+
+  // console.log("Instructors:", instructors);
+  // console.log("Students:", students);
+
+  // // console.log("User ID:", { userId, role });
+  // // console.log("Selected Group:", selectedGroup);
+
+  useEffect(() => {
+    // console.log("Groups data updated:", groupsData);
+    // console.log("Groups data loading:", loading);
+    // console.log("Groups message:", messages);
+  }, [groupsData, selectedGroup, messages]);
+
+  useEffect(() => {
+    if (!Array.isArray(messages) || messages.length === 0) return;
+
+    const groupMessages = messages.filter(
+      (msg) => msg.group === selectedGroup?.groupId,
+    );
+    if (groupMessages.length === 0) return;
+
+    const transformedMessages = groupMessages.map((msg) => ({
+      text: msg.text ?? null,
+      sender: msg.sender,
+      senderId: msg.senderId,
+      role: msg.role as "admin" | "student" | "instructor",
+      timestamp: new Date(msg.createdAt).getTime(),
+      image: msg.image,
+    }));
+
+    const latestMessage = groupMessages[groupMessages.length - 1];
+
+    setGroups((prev) =>
+      prev.map((group) =>
+        group.groupId === selectedGroup?.groupId
+          ? {
+              ...group,
+              messages: transformedMessages,
+              lastMessageTime: new Date(latestMessage.createdAt),
+            }
+          : group,
+      ),
+    );
+
+    if (selectedGroup) {
+      setSelectedGroup((prev) => ({
+        ...prev!,
+        messages: transformedMessages,
+        lastMessageTime: new Date(latestMessage.createdAt),
+      }));
+    }
+  }, [messages, selectedGroup?.groupId]);
+
+  // console.log("Groups:", groups);
 
   // Join groups when groups data is loaded
   useEffect(() => {
     if (currentUserId && groups.length > 0) {
       const groupIds = groups.map((g) => g.groupId);
-      socketService.emit("joinGroups", { groupIds, adminId: currentUserId });
+      socketService.emit("joinGroups", { groupIds, admin: currentUserId });
     }
   }, [currentUserId, groups]);
 
@@ -77,43 +162,23 @@ const AdminChat = () => {
     socketService.connect(currentUserId);
 
     const loadInitialGroups = () => {
-      setIsLoading(true);
-      setError(null);
-
-      // Mock initial groups - replace with actual API call
-      setTimeout(() => {
-        try {
-          const initialGroups: Group[] = [
-            {
-              groupId: "group1",
-              groupName: "React Learners",
-              adminId: "admin1",
-              students: ["student1", "student2"],
-              instructors: ["instructor1"],
-              messages: [], // Start with empty messages array
-              lastMessageTime: null,
-            },
-            {
-              groupId: "group2",
-              groupName: "Next.js Pros",
-              adminId: "admin1",
-              students: ["student1", "student2"],
-              instructors: ["instructor2"],
-              messages: [], // Start with empty messages array
-              lastMessageTime: null,
-            },
-          ];
-
-          setGroups(initialGroups);
-          if (initialGroups.length > 0) {
-            setSelectedGroup(initialGroups[0]);
-          }
-        } catch (err) {
-          setError("Failed to load groups");
-        } finally {
-          setIsLoading(false);
-        }
-      }, 500);
+      try {
+        setGroups(
+          groupsData.map((group) => ({
+            ...group,
+            groupId: group.groupId,
+            groupName: group.name,
+            adminId: group.admin,
+            students: group.students,
+            instructors: group.instructors,
+          })),
+        );
+        // if (groups.length > 0) {
+        //   setSelectedGroup(groups[0]);
+        // }
+      } catch (err) {
+        setError("Failed to load groups");
+      }
     };
 
     loadInitialGroups();
@@ -121,7 +186,7 @@ const AdminChat = () => {
     return () => {
       socketService.disconnect();
     };
-  }, [currentUserId]);
+  }, [currentUserId, groupsData]);
 
   // Handle sending messages
   const sendMessage = useCallback(async () => {
@@ -314,6 +379,7 @@ const AdminChat = () => {
   };
 
   const handleToggleStudent = (studentId: string) => {
+    console.log("compare Students:", userId, studentId);
     setSelectedStudents((prev) =>
       prev.includes(studentId)
         ? prev.filter((id) => id !== studentId)
@@ -327,7 +393,7 @@ const AdminChat = () => {
       return;
     }
 
-    console.log(selectedInstructors);
+    // console.log(selectedInstructors);
 
     const groupDetails = {
       groupId: new Date().getTime().toString(16).padStart(24, "0"),
@@ -371,6 +437,8 @@ const AdminChat = () => {
     return grouped;
   };
 
+  // // console.log("messages", messages);
+
   const groupedMessages = groupMessagesByDate(selectedGroup?.messages);
 
   return (
@@ -408,7 +476,7 @@ const AdminChat = () => {
         </button>
 
         <div className="mt-4">
-          {isLoading ? (
+          {loading ? (
             <div className="flex h-64 items-center justify-center">
               <FaSpinner className="h-8 w-8 animate-spin text-blue-500" />
             </div>
@@ -437,20 +505,12 @@ const AdminChat = () => {
                   </div>
                   <div className="ml-3 flex-1 overflow-hidden">
                     <p className="truncate font-medium">{group.groupName}</p>
-                    <p className="truncate text-sm text-gray-500 dark:text-gray-400">
-                      {group.messages && group.messages.length > 0
-                        ? `${
-                            group.messages[group.messages.length - 1]
-                              .senderId === currentUserId
-                              ? "You"
-                              : group.messages[group.messages.length - 1].sender
-                          }: ${
-                            group.messages[group.messages.length - 1].image
-                              ? "📷 Image"
-                              : group.messages[group.messages.length - 1].text
-                          }`
-                        : "No messages yet"}
-                    </p>
+                    <GroupItem
+                      key={group.groupId}
+                      group={group.groupId}
+                      fullName={group.groupName}
+                      role={currentUserRole}
+                    />
                   </div>
                   {group.messages && group.messages.length > 0 && (
                     <span className="ml-2 text-xs text-gray-400">
@@ -517,7 +577,7 @@ const AdminChat = () => {
               {Object.entries(groupedMessages).map(([date, messages]) => (
                 <div key={date}>
                   <div className="mb-4 flex justify-center">
-                    <span className="rounded-full bg-white px-3 py-1 text-sm text-gray-500 shadow dark:bg-gray-800 dark:text-gray-400">
+                    <span className="mt-5 rounded-full bg-white px-3 py-1 text-sm text-gray-500 shadow dark:bg-gray-800 dark:text-gray-400">
                       {new Date(date).toLocaleDateString([], {
                         weekday: "long",
                         month: "short",
