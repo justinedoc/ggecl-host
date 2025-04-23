@@ -7,6 +7,7 @@ interface User {
   isAuthenticated: boolean;
   isLoading: boolean;
   userId: string | null;
+  role?: string | null;
 }
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -16,6 +17,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     isAuthenticated: false,
     isLoading: true,
     userId: null,
+    role: null,
   });
 
   const navigate = useNavigate();
@@ -38,6 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         isAuthenticated: false,
         isLoading: false,
         userId: null,
+        role: null,
       });
     }
 
@@ -75,6 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           isAuthenticated: true,
           isLoading: false,
           userId: id,
+          role: role,
         });
       } catch (error: unknown) {
         if (!signal?.aborted) {
@@ -87,6 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             isAuthenticated: false,
             isLoading: false,
             userId: null,
+            role: null,
           });
         }
       }
@@ -100,6 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         isAuthenticated: false,
         isLoading: false,
         userId: null,
+        role: null,
       });
       try {
         authProvider.setAccessToken(accessToken);
