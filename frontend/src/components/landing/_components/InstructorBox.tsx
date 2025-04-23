@@ -10,9 +10,9 @@ import { Instructor } from "@/types/userTypes";
 
 function InstructorBox({ instructor }: { instructor: Instructor }) {
   return (
-    <Card className="w-full cursor-pointer overflow-hidden rounded-2xl shadow-md transition hover:shadow-lg md:max-w-[17rem] dark:border-gray-800 dark:bg-gray-900">
-      <CardHeader className="flex flex-col items-center gap-2 px-4 py-3">
-        <div className="h-[180px] w-full overflow-hidden rounded-xl">
+    <Card className=" w-full cursor-pointer overflow-hidden rounded-2xl shadow-md transition hover:shadow-lg md:max-w-[17rem] dark:border-gray-800 dark:bg-gray-900">
+      <CardHeader className="flex flex-col items-center gap-2 md:px-4 px-2">
+        <div className="md:h-[220px] w-full overflow-hidden rounded-xl">
           <img
             src={instructor.picture}
             alt={`${instructor.fullName}'s profile`}
