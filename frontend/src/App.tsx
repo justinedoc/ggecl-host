@@ -320,14 +320,6 @@ function App() {
             }
           />
           <Route
-            path="video"
-            element={
-              <Suspense fallback={<AuthPageLoading />}>
-                <Video />
-              </Suspense>
-            }
-          />
-          <Route
             path="settings"
             element={
               <Suspense fallback={<AuthPageLoading />}>
@@ -343,6 +335,14 @@ function App() {
               </Suspense>
             }
           />
+            <Route
+              path="courses/:courseId"
+              element={
+                <Suspense fallback={<AuthPageLoading />}>
+                  <Video />
+                </Suspense>
+              }
+            />
           <Route
             path="calendar"
             element={
@@ -388,7 +388,7 @@ function App() {
             }
           />
           <Route
-            path="video-call"
+            path="video"
             element={
               <Suspense fallback={<AuthPageLoading />}>
                 <VideoCall />

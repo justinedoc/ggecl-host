@@ -1,167 +1,236 @@
 import { useState } from "react";
-import { FaStar, FaClock, FaDownload, FaUsers, FaChevronDown, FaChevronRight } from "react-icons/fa";
+import { Link, useParams } from "react-router";
+import {
+  FaStar,
+  FaClock,
+  FaUsers,
+  FaListAlt,
+  FaDollarSign,
+  FaAward,
+} from "react-icons/fa";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useCoursesById } from "@/hooks/useCourseById";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
-const Video = () => {
-  const [activeTab, setActiveTab] = useState("overview");
-  const [openSections, setOpenSections] = useState<number[]>([0, 1, 2]); // Open all sections by default
+const VideoPage = () => {
+  const { courseId } = useParams<{ courseId: string }>();
+  const [activeTab, setActiveTab] = useState<string>("overview");
 
-  const toggleSection = (index: number) => {
-    setOpenSections((prev) =>
-      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
+  const { singleCourse: course, loadingSingleCourse: loading } = useCoursesById(
+    courseId || "",
+  );
+
+  if (loading) {
+    return (
+      <div className="container mx-auto p-8 text-center">
+        <p className="text-muted-foreground">Loading course...</p>
+      </div>
     );
-  };
+  }
 
-  const courseContent = [
-    {
-      section: "Introduction to Digital Marketing",
-      lessons: [
-        "What is Digital Marketing?",
-        "History & Evolution",
-        "Digital vs Traditional Marketing",
-        "Figma Introduction",
-      ],
-    },
-    {
-      section: "SEO Basics",
-      lessons: ["SEO Fundamentals", "On-page SEO", "Off-page SEO"],
-    },
-    {
-      section: "Content Marketing",
-      lessons: ["Creating Engaging Content", "Content Strategy"],
-    },
-  ];
+  if (!course) {
+    return (
+      <div className="container mx-auto p-8 text-center">
+        <p className="text-red-500">Course not found.</p>
+      </div>
+    );
+  }
+
+  const avgRating =
+    course.totalRating > 0
+      ? (course.totalStar / course.totalRating).toFixed(1)
+      : "0.0";
+
+  const completedPercent = 0;
 
   return (
-    <div>
-      <div className="grid md:grid-cols-3 gap-4 p-4">
-        {/* Video Section */}
-        <div className="md:col-span-2 space-y-6">
-          <div className="bg-white dark:bg-gray-800 shadow-lg p-6 rounded-md">
-            <video controls className="w-full rounded-md">
-              <source
-                src="https://www.w3schools.com/html/mov_bbb.mp4"
-                type="video/mp4"
-              />
-              Your browser does not support the video tag.
-            </video>
-            <div className="flex w-full justify-between items-center mt-4">
-              <h2 className="text-2xl font-semibold">History & Evolution</h2>
-              <div className="flex justify-center items-center gap-4 text-gray-600">
-                <FaClock className="text-xl" />
-                <FaDownload className="text-xl" />
-              </div>
-            </div>
-          </div>
-
-          {/* Tabs Navigation */}
-          <div>
-            <div className="flex space-x-6 border-b dark:border-gray-700">
-              {["overview", "assignments", "resources", "reviews"].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`pb-2 text-lg font-medium transition-all duration-300 ${
-                    activeTab === tab
-                      ? "border-b-2 border-blue-600 text-blue-600 dark:text-blue-400"
-                      : "text-gray-500 dark:text-gray-400 hover:text-blue-500"
-                  }`}
-                >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                </button>
-              ))}
-            </div>
-
-            {/* Tab Content */}
-            <div className="mt-4">
-              {activeTab === "overview" && (
-                <div>
-                  <h3 className="text-lg font-semibold">Course Overview</h3>
-                  <p className="text-gray-600 dark:text-gray-300 mt-2">
-                    Learn the basics of digital marketing, including SEO, content marketing,
-                    social media strategy, email marketing, and paid ads.
-                  </p>
-                  <div className="flex space-x-6 mt-4 text-gray-600 dark:text-gray-300">
-                    <span className="flex items-center space-x-1">
-                      <FaClock />
-                      <span>51m</span>
-                    </span>
-                    <span className="flex items-center space-x-1">
-                      <FaStar className="text-yellow-500" />
-                      <span>4.8</span>
-                    </span>
-                    <span className="flex items-center space-x-1">
-                      <FaUsers />
-                      <span>854 students</span>
-                    </span>
-                  </div>
-                </div>
-              )}
-              {activeTab === "assignments" && <p>Assignments will be shown here.</p>}
-              {activeTab === "resources" && <p>Resources will be available here.</p>}
-              {activeTab === "reviews" && <p>Reviews from students will be listed here.</p>}
-            </div>
-          </div>
-        </div>
-
-        {/* Sidebar - Accordion */}
-        <div className="bg-white dark:bg-gray-800 shadow-lg p-6 rounded-md max-h-full overflow-y-auto">
-          <h3 className="text-lg font-semibold mb-4">
-            Course Contents{" "}
-            <span className="text-green-500 text-sm font-normal">20% Completed</span>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value="20"
-              className="w-full h-2 appearance-none rounded-lg cursor-pointer
-                bg-gradient-to-r from-green-500 to-white dark:to-gray-600/20
-                [&::-webkit-slider-thumb]:appearance-none
-                [&::-webkit-slider-thumb]:h-4
-                [&::-webkit-slider-thumb]:w-4
-                [&::-webkit-slider-thumb]:rounded-full
-                [&::-webkit-slider-thumb]:bg-green-500
-                [&::-webkit-slider-thumb]:border-2
-                [&::-webkit-slider-thumb]:border-white
-                [&::-webkit-slider-thumb]:shadow
-                [&::-moz-range-thumb]:bg-green-500
-                [&::-moz-range-thumb]:border-2
-                [&::-moz-range-thumb]:border-white
-                [&::-moz-range-thumb]:rounded-full
-                [&::-moz-range-thumb]:h-4
-                [&::-moz-range-thumb]:w-4"
+    <div className="container mx-auto grid gap-6 p-4 md:grid-cols-3 md:p-8">
+      <div className="space-y-6 md:col-span-2">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <Link to="/student/dashboard">Home</Link>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <Link to="/student/dashboard/courses">Courses</Link>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage className="text-blue-300">
+                {course.title}
+              </BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+        {/* Video Player & Info */}
+        <Card className="overflow-hidden">
+          <div className="aspect-video bg-black">
+            <video
+              controls
+              className="h-full w-full object-cover"
+              src={course.videoUrl}
             />
-          </h3>
-          <div className="divide-y dark:divide-gray-700">
-            {courseContent.map((content, index) => (
-              <div key={index} className="py-3">
-                <button
-                  onClick={() => toggleSection(index)}
-                  className="flex items-center justify-between w-full text-left text-md font-semibold text-gray-700 dark:text-gray-200 hover:text-blue-600 transition-all duration-300"
-                >
-                  <span>{content.section}</span>
-                  {openSections.includes(index) ? (
-                    <FaChevronDown className="text-sm transition-transform duration-300" />
-                  ) : (
-                    <FaChevronRight className="text-sm transition-transform duration-300" />
-                  )}
-                </button>
-                {openSections.includes(index) && (
-                  <ul className="mt-2 pl-4 space-y-2 text-gray-600 dark:text-gray-300">
-                    {content.lessons.map((lesson, i) => (
-                      <li key={i} className="flex items-center space-x-2">
-                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                        <span>{lesson}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ))}
           </div>
-        </div>
+          <CardContent>
+            <h2 className="mb-2 text-2xl font-bold">{course.title}</h2>
+            <div className="mb-4 flex flex-wrap items-center gap-4 text-gray-600 dark:text-gray-400">
+              <span className="flex items-center space-x-1">
+                <FaClock /> <span>{course.duration}</span>
+              </span>
+              <span className="flex items-center space-x-1">
+                <FaListAlt /> <span>{course.lectures} lectures</span>
+              </span>
+              <span className="flex items-center space-x-1">
+                <FaUsers /> <span>{course.students.length} students</span>
+              </span>
+              <span className="flex items-center space-x-1">
+                <FaStar className="text-yellow-500" /> <span>{avgRating}</span>
+              </span>
+              <Badge variant="outline">{course.level}</Badge>
+              {course.badge && <Badge>{course.badge}</Badge>}
+            </div>
+            <div className="mb-4 flex items-center justify-between">
+              <span className="text-lg font-semibold">Progress</span>
+              <span className="text-sm">{completedPercent}%</span>
+            </div>
+            <Progress value={completedPercent} className="h-3 rounded-full" />
+          </CardContent>
+        </Card>
+
+        {/* Tabs Section */}
+        <Card>
+          <Tabs defaultValue="overview" onValueChange={setActiveTab}>
+            <CardHeader>
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
+                <TabsTrigger value="reviews">Reviews</TabsTrigger>
+                <TabsTrigger value="stats">Stats</TabsTrigger>
+              </TabsList>
+            </CardHeader>
+            <CardContent>
+              <TabsContent value={activeTab} className="space-y-4">
+                {activeTab === "overview" && (
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-semibold">Description</h3>
+                    <p className="text-gray-700 dark:text-gray-300">
+                      {course.description}
+                    </p>
+                  </div>
+                )}
+
+                {activeTab === "curriculum" && (
+                  <Accordion type="multiple" className="space-y-2">
+                    {course.syllabus.map((lesson, index) => (
+                      <AccordionItem key={index} value={`lesson-${index}`}>
+                        <AccordionTrigger>{lesson}</AccordionTrigger>
+                        <AccordionContent>
+                          <p className="text-muted-foreground text-sm">
+                            {lesson}
+                          </p>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                )}
+
+                {activeTab === "reviews" && (
+                  <div className="space-y-4">
+                    {course.reviews.length === 0 ? (
+                      <p>No reviews yet.</p>
+                    ) : (
+                      course.reviews.map((review, idx) => (
+                        <Card key={idx}>
+                          <CardContent>
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium">
+                                {review.reviewer}
+                              </span>
+                              <span className="flex items-center space-x-1">
+                                <FaStar className="text-yellow-500" />{" "}
+                                <span>{review.rating}</span>
+                              </span>
+                            </div>
+                            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                              {review.comment}
+                            </p>
+                          </CardContent>
+                        </Card>
+                      ))
+                    )}
+                  </div>
+                )}
+
+                {activeTab === "stats" && (
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="flex items-center space-x-3 rounded-lg border p-4">
+                      <FaUsers className="h-6 w-6 text-blue-500" />
+                      <div>
+                        <p className="text-sm text-gray-500">Enrolled</p>
+                        <p className="text-lg font-semibold">
+                          {course.students.length}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3 rounded-lg border p-4">
+                      <FaDollarSign className="h-6 w-6 text-green-500" />
+                      <div>
+                        <p className="text-sm text-gray-500">Price</p>
+                        <p className="text-lg font-semibold">
+                          ${course.price.toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3 rounded-lg border p-4">
+                      <FaAward className="h-6 w-6 text-purple-500" />
+                      <div>
+                        <p className="text-sm text-gray-500">Certification</p>
+                        <p className="text-lg font-semibold">
+                          {course.certification}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
+            </CardContent>
+          </Tabs>
+        </Card>
       </div>
+
+      <aside className="sticky top-20 space-y-4">
+        <Card className="p-6">
+          <h3 className="mb-2 text-lg font-semibold">Syllabus</h3>
+          <Accordion type="single" collapsible>
+            {course.syllabus.map((lesson, i) => (
+              <AccordionItem key={i} value={`synopsis-${i}`}>
+                <AccordionTrigger>{lesson}</AccordionTrigger>
+                <AccordionContent>
+                  <p className="text-muted-foreground text-sm">{lesson}</p>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </Card>
+      </aside>
     </div>
   );
 };
 
-export default Video;
+export default VideoPage;

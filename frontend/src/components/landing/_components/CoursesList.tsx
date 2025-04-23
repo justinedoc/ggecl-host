@@ -1,5 +1,5 @@
+import ListContainer from "@/components/ui/ListContainer";
 import CourseBox from "./CourseBox";
-import ListContainer from "../../ui/ListContainer";
 import { useCourses } from "@/hooks/useCourses";
 
 function Courses() {

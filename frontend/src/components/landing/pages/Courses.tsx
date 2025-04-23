@@ -8,7 +8,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-// import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,11 +16,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 // Custom Components & Hooks
 import CourseBox, { Star } from "../_components/CourseBox";
 import InstructorBox from "../_components/InstructorBox";
-import ListContainer from "@/components/ui/ListContainer"; // Assuming this is styled appropriately
-import { useCourses } from "../hooks/useCourses";
-import { useInstructors } from "../hooks/useInstructors";
+import ListContainer from "@/components/ui/ListContainer";
+import { useCourses } from "@/hooks/useCourses";
+import { useInstructors } from "@/hooks/useInstructors";
 
-// Dummy data for filters (replace with actual data source if available)
 const filterOptions = {
   rating: Array.from({ length: 5 }, (_, i) => 5 - i), // 5 stars down to 1 star
   chapters: ["1-10", "11-20", "21-30", "31+"],
@@ -47,8 +45,8 @@ const CourseSkeleton = () => (
 );
 
 const Courses = () => {
-  const { courses, loadingCourses } = useCourses({ limit: 20 });
-  const { instructors, loadingInstructors } = useInstructors({});
+  const { courses, loading: loadingCourses } = useCourses({ limit: 100 });
+  const { instructors, loading: loadingInstructors } = useInstructors({});
 
   // Memoize filter sections to avoid recreating on every render
   const filterSections = useMemo(

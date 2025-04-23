@@ -127,7 +127,7 @@ const CourseManagement = () => {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem asChild>
                         <Link
-                          to={"/admin/dashboard/edit-course/" + course._id}
+                          to={"/admin/dashboard/edit-course/" + course._id.toString()}
                           className="flex flex-row items-center px-2"
                         >
                           <Edit className="h-4 w-4" />

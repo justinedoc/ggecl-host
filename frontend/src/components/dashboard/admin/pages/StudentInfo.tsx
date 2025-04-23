@@ -54,7 +54,7 @@ const StudentInfo: React.FC = () => {
     [totalPages],
   );
 
-  // Set up form with react-hook-form and zod schema resolver
+  // Set up form with react-hook-form and zod schema resolver -- okay sir y
   const {
     register,
     handleSubmit,
@@ -85,7 +85,7 @@ const StudentInfo: React.FC = () => {
         {/* Add Student Section */}
         <div className="mt-5 w-full rounded-lg border p-4 shadow md:max-w-xl dark:bg-gray-900">
           <h2 className="mb-4 text-xl font-semibold text-gray-700 dark:text-gray-200">
-            Add Student
+            Add a Student
           </h2>
           <form
             onSubmit={handleSubmit(onSubmit)}

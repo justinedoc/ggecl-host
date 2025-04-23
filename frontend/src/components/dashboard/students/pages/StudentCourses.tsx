@@ -1,131 +1,185 @@
-import { Search, ChevronLeft, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardFooter,
+} from "@/components/ui/card";
+import { Search } from "lucide-react";
+import { useDebounce } from "@/hooks/useDebounce";
+import { Link } from "react-router";
+import { useStudentCourses } from "../hooks/useStudentCourses";
 
-const courses = [
-  { id: 1, title: "Ultimate Design App Training", lesson: "1. Introduction", image: "https://i.ytimg.com/vi/e_dv7GBHka8/maxresdefault.jpg", progress: 100 },
-  { id: 2, title: "React for Beginners", lesson: "2. JSX & Components", image: "https://i.ytimg.com/vi/e_dv7GBHka8/maxresdefault.jpg", progress: 75 },
-  { id: 3, title: "Advanced UI/UX Principles", lesson: "3. Wireframing", image: "https://i.ytimg.com/vi/e_dv7GBHka8/maxresdefault.jpg", progress: 100 },
-  { id: 4, title: "Full-Stack Development", lesson: "4. Backend Basics", image: "https://i.ytimg.com/vi/e_dv7GBHka8/maxresdefault.jpg", progress: 90 },
-  { id: 5, title: "Building Scalable Systems", lesson: "5. Architecture", image: "https://i.ytimg.com/vi/e_dv7GBHka8/maxresdefault.jpg", progress: 30 },
-  { id: 6, title: "JavaScript Algorithms", lesson: "6. Data Structures", image: "https://i.ytimg.com/vi/e_dv7GBHka8/maxresdefault.jpg", progress: 100 },
-  { id: 7, title: "Mobile App Development", lesson: "7. React Native", image: "https://i.ytimg.com/vi/e_dv7GBHka8/maxresdefault.jpg", progress: 60 },
-  { id: 8, title: "Cybersecurity Essentials", lesson: "8. Encryption", image: "https://i.ytimg.com/vi/e_dv7GBHka8/maxresdefault.jpg", progress: 100 },
-  { id: 9, title: "AI & Machine Learning", lesson: "9. Neural Networks", image: "https://i.ytimg.com/vi/e_dv7GBHka8/maxresdefault.jpg", progress: 40 },
-  { id: 10, title: "Cloud Computing Basics", lesson: "10. AWS & GCP", image: "https://i.ytimg.com/vi/e_dv7GBHka8/maxresdefault.jpg", progress: 100 },
-];
-
-const ITEMS_PER_PAGE = 8;
+const PAGE_SIZES = [5, 10, 20];
 
 const StudentCourses = () => {
-  const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterCompleted] = useState(false);
-  const [sortOrder] = useState("asc");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(PAGE_SIZES[0]);
 
-  const filteredCourses = courses
-    .filter(course => 
-      course.title.toLowerCase().includes(searchTerm.toLowerCase()) && 
-      (!filterCompleted || course.progress === 100)
-    )
-    .sort((a, b) => sortOrder === "asc" ? a.title.localeCompare(b.title) : b.title.localeCompare(a.title));
+  const { debouncedValue } = useDebounce(searchTerm);
 
-  const totalPages = Math.ceil(filteredCourses.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const currentCourses = filteredCourses.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const { courses, meta, loading } = useStudentCourses({
+    page: currentPage,
+    limit: rowsPerPage,
+    search: debouncedValue,
+  });
+
+  // Reset to first page when debounced search changes or page size changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedValue, rowsPerPage]);
+
+  const totalPages = meta?.totalPages ?? 1;
+  const totalItems = meta?.total ?? 0;
+
+  const changePage = useCallback(
+    (dir: "prev" | "next") => {
+      setCurrentPage((p) =>
+        dir === "prev" ? Math.max(1, p - 1) : Math.min(totalPages, p + 1),
+      );
+    },
+    [totalPages],
+  );
+
+  const handlePageClick = (page: number) => {
+    setCurrentPage(page);
+  };
 
   return (
-    <div className="p-2 md:p-8 mb-32">
-        <div className="flex flex-row gap-2 mt-4 mb-10 items-center">
-            <h1 className="text-2xl font-bold">Courses</h1><span className="text-xl">(957)</span>
+    <div className="container mx-auto p-4 md:p-8">
+      <header className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-4xl font-bold">Your Courses</h1>
+          <p className="text-muted-foreground mt-1">
+            View courses you&apos;ve enrolled in and track your progress
+          </p>
         </div>
-        <div className="flex flex-col sm:flex-row items-center justify-between mb-4 gap-4">
-        <div className="flex flex-col gap-2 w-full md:max-w-lg">
-            <label htmlFor="filter">Search</label>
-            <div className="relative w-full md:max-w-lg">
-              <Search className="absolute left-3 top-2.5 text-gray-500 dark:text-gray-400" size={20} />
-              <input 
-                type="text" 
-                placeholder="Search courses..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 bg-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
-              />
-            </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-4 md:justify-end">
-        {/* <div className="flex flex-col gap-2 md:w-max w-full">
-        <label htmlFor="title">By title</label>
-              <select className="w-full sm:w-auto pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-700 bg-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500" id="title">
-                <option className="bg-gray-200 dark:bg-gray-900">Sort By</option>
-                <option className="bg-gray-200 dark:bg-gray-900">Progress</option>
-                <option className="bg-gray-200 dark:bg-gray-900">Title</option>
-              </select>
-          </div> */}
-          <div className="flex flex-col gap-2 md:w-max w-full">
-            <label htmlFor="filter">By completion</label>
-              <select className="w-full sm:w-auto pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-700 bg-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500" id="filter">
-                <option className="bg-gray-200 dark:bg-gray-900">Filter by Completion</option>
-                <option className="bg-gray-200 dark:bg-gray-900">Completed</option>
-                <option className="bg-gray-200 dark:bg-gray-900">In Progress</option>
-              </select>
+        <div className="flex flex-col space-y-4 md:flex-row md:items-center md:gap-4 md:space-y-0">
+          <div className="relative w-full">
+            <Search className="absolute top-3 left-3 h-4 w-4 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="Search courses..."
+              className="w-full pl-10"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-          <div className="flex flex-col gap-2 md:w-max w-full">
-            <label htmlFor="filter">By category</label>
-              <select className="w-full sm:w-auto pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-700 bg-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500">
-                <option className="bg-gray-200 dark:bg-gray-900">Category</option>
-                <option className="bg-gray-200 dark:bg-gray-900">Development</option>
-                <option className="bg-gray-200 dark:bg-gray-900">Design</option>
-              </select>
+          <div className="w-36">
+            <Select
+              value={rowsPerPage.toString()}
+              onValueChange={(val) => setRowsPerPage(Number(val))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Rows per page" />
+              </SelectTrigger>
+              <SelectContent>
+                {PAGE_SIZES.map((size) => (
+                  <SelectItem key={size} value={size.toString()}>
+                    {size} per page
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
-      </div>
-      
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-16">
-        {currentCourses.map((course) => (
-          <div key={course.id} className="relative border border-gray-200 dark:border-gray-800 shadow-md rounded-lg overflow-hidden min-w-60 mt-5">
-            <img src={course.image} alt={course.title} className="w-full h-40 object-cover" />
-            <div className="p-4">
-              <p className="font-semibold text-gray-900 dark:text-gray-100">{course.title}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{course.lesson}</p>
-              <div className="flex items-center justify-between mt-3">
-                
-                <button
-                  className={`flex items-center justify-center gap-2 py-2 px-4 rounded-md font-semibold transition-all  ${course.progress === 100 ? "btn w-full text-gray-50" : "dark:bg-gray-800 dark:hover:bg-gray-700 bg-gray-200 hover:bg-gray-300"}`}
-                >
-                  {course.progress === 100 ? "Watch Again" : "Continue"}
-                </button>
-                {course.progress !== 100 && (
-                  <div className="text-green-600 text-sm">{course.progress}% completed</div>
-                )}
-              </div>
-              {course.progress !== 100 ? <div className="w-full bg-gray-300 dark:bg-gray-700 h-1 rounded-full mt-4 absolute bottom-0 right-0 left-0">
-                <div
-                  className="h-1 rounded-full bg-green-600"
-                  style={{ width: `${course.progress}%` }}
-                ></div>
-              </div> : ""}
-            </div>
-          </div>
-        ))}
-      </div>
+      </header>
 
-      <div className="flex justify-center items-center mt-14">
-        <button 
-          disabled={currentPage === 1} 
-          onClick={() => setCurrentPage(currentPage - 1)}
-          className="px-3 py-2 mx-2 bg-gray-300 dark:bg-gray-800 rounded-md disabled:opacity-50"
-        >
-          <ChevronLeft size={20} />
-        </button>
-        <span className="text-gray-700 dark:text-gray-300">Page {currentPage} of {totalPages}</span>
-        <button 
-          disabled={currentPage === totalPages} 
-          onClick={() => setCurrentPage(currentPage + 1)}
-          className="px-3 py-2 mx-2 bg-gray-300 dark:bg-gray-800 rounded-md disabled:opacity-50"
-        >
-          <ChevronRight size={20} />
-        </button>
-      </div>
+      {loading ? (
+        <p className="text-muted-foreground text-center">Loading courses...</p>
+      ) : courses.length === 0 ? (
+        <p className="text-muted-foreground text-center">No courses found.</p>
+      ) : (
+        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+          {courses.map((course) => (
+            <Card
+              key={course._id.toString()}
+              className="group bg-card cursor-pointer gap-3 overflow-hidden rounded-2xl py-0 transition-shadow hover:shadow-lg"
+            >
+              <div className="relative h-40 overflow-hidden">
+                <img
+                  src={course.img}
+                  alt={course.title}
+                  className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                />
+              </div>
+              <CardHeader className="px-2">
+                <CardTitle className="text-lg font-semibold">
+                  {course.title}
+                </CardTitle>
+                <CardDescription className="mt-1 text-sm">
+                  Instructor: {course.instructor.fullName}
+                </CardDescription>
+              </CardHeader>
+              <CardFooter className="px-2 py-4">
+                <Link
+                  to={`/student/dashboard/courses/${course._id.toString()}`}
+                >
+                  <Button className="ml-auto max-w-xl">View</Button>
+                </Link>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {totalPages > 1 && !loading && (
+        <div className="mt-6 flex items-center justify-center space-x-2">
+          <Button
+            disabled={currentPage === 1}
+            onClick={() => changePage("prev")}
+          >
+            First
+          </Button>
+          <Button
+            disabled={currentPage === 1}
+            onClick={() => changePage("prev")}
+          >
+            Previous
+          </Button>
+
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+            <Button
+              key={page}
+              variant={page === currentPage ? "outline" : "ghost"}
+              onClick={() => handlePageClick(page)}
+            >
+              {page}
+            </Button>
+          ))}
+
+          <Button
+            disabled={currentPage === totalPages}
+            onClick={() => changePage("next")}
+          >
+            Next
+          </Button>
+          <Button
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage(totalPages)}
+          >
+            Last
+          </Button>
+        </div>
+      )}
+
+      {meta && !loading && (
+        <p className="text-muted-foreground mt-4 text-center text-sm">
+          Showing page {currentPage} of {totalPages} — {totalItems} courses
+          total
+        </p>
+      )}
     </div>
   );
 };

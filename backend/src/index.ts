@@ -3,7 +3,6 @@ import { envConfig } from "./config/envValidator.js";
 import app, { init } from "./server.js";
 import { redis } from "./config/redisConfig.js";
 import { initSuperAdmin } from "./controllers/admins/index.js";
-// import { initSocket } from "./socket/socket.js";
 
 const PORT = Number(envConfig.port) || 3000;
 
@@ -14,7 +13,6 @@ async function startServer(): Promise<void> {
 
     const server = app.listen(PORT, () => {
       console.log(`🚀 Server started on http://localhost:${PORT}`);
-      // initSocket(server);
     });
 
     process.on("SIGINT", async () => {
